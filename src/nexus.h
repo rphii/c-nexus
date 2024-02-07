@@ -8,6 +8,7 @@
 
 typedef struct Nexus {
     TNode nodes;
+    VrNode history;
 } Nexus;
 
 #define ERR_NEXUS_INIT "failed initialization of nexus"
@@ -34,8 +35,10 @@ ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
 ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst);
 
 #define NEXUS_LINKS_EV_STR(nexus, src, ...)     do { \
-        for(size_t i64789 = 0; i64789+1 < sizeof((char *[]){__VA_ARGS__}) / sizeof(char *)+1; i64789++) { \
-            char *s = (char *[]){__VA_ARGS__}[i64789]; \
+        char *arr64789[] = {__VA_ARGS__}; \
+        for(size_t i64789 = 0; i64789+1 < sizeof(arr64789) / sizeof(char *)+1; i64789++) { \
+            char *s = arr64789[i64789]; \
+            if(!s) continue; \
             Node e64789 = {.title = STR_L(s)}; \
             TRY(nexus_link(nexus, src, &e64789), ERR_NEXUS_LINK); \
         } \
@@ -44,8 +47,16 @@ ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst);
 #define ERR_NEXUS_GET "failed getting nexus node"
 Node *nexus_get(Nexus *nexus, const char *title);
 
+#define ERR_NEXUS_FOLLOW_SUB "failed following current nexus node"
+ErrDecl nexus_follow_sub(Nexus *nexus, Node **current);
+
+void nexus_history_back(Nexus *nexus, Node **current);
+
 #define ERR_NEXUS_BUILD "failed building nexus"
 ErrDecl nexus_build(Nexus *nexus);
+
+#define ERR_NEXUS_BUILD_PHYSICS "failed building physics"
+ErrDecl nexus_build_physics(Nexus *nexus, Node *anchor);
 
 #define NEXUS_H
 #endif
