@@ -15,6 +15,8 @@
 #define DEBUG_DISABLE_ERR_MESSAGES  0
 #endif
 
+#define SIZE_IS_NEG(x)      ((SIZE_MAX / 2 + 1) & (x))
+
 /* use this when declaring function that can error */
 #define ErrDecl             ATTR_NODISCARD int
 #define ErrDeclStatic       ATTR_NODISCARD static inline int

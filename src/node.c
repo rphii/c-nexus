@@ -114,7 +114,7 @@ void node_set_sub(Node *node, size_t *sub_sel, size_t to_set)
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
     size_t max = sO + sI;
-    if((ssize_t)to_set < 0) {
+    if(SIZE_IS_NEG(to_set)) {
         *sub_sel = max ? max - 1 : 0;
     } else if(to_set >= max) {
         *sub_sel = 0;
