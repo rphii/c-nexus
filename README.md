@@ -2,7 +2,7 @@
 
 Small code footprint.
 
-Create notes and link them, however you can think of. Once created you can browse the events.
+Create notes and link them, however you can think of. Once created you can browse the nodes.
 
 - **h** : go back in history
 - **j** : down
