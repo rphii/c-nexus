@@ -5,8 +5,8 @@ CC      := gcc
 CFLAGS  := -Wall -Wextra -Wimplicit \
 		   -Wno-unused-parameter \
 		   -Wconversion \
-		   -fsanitize=address -rdynamic \
 		   ##############\
+		   -fsanitize=address -rdynamic \
 		   -pg -rdynamic \
 		   -rdynamic -Og -ggdb3 \
 		   -O3 -march=native \
@@ -26,8 +26,8 @@ CFLAGS  := -Wall -Wextra -Wimplicit \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   -fsanitize=address -rdynamic \
 		   ##############\
+		   -fsanitize=address -rdynamic \
 		   -rdynamic -ggdb3 \
 		   -pg -rdynamic \
 		   -fsanitize=address \
@@ -83,13 +83,13 @@ $(TRG_DIR):
 
 #### CLEANING ####
 ifeq ($(OS),Windows_NT)
-# Cleaning rules for Windows OS
+# Cleaning rules for Windows OS (no clue if this works)
 clean:
 	@del /q $(OBJ_DIR), $(TRG_DIR)
 	@rmdir $(OBJ_DIR)
 	@rmdir $(TRG_DIR)
 else
-# Cleaning rules for Unix-based OS (no clue if this works)
+# Cleaning rules for Unix-based OS
 clean:
 	@rm -rf $(OBJ_DIR) $(TRG_DIR) $(TARGET)
 endif
