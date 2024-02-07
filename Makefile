@@ -2,11 +2,11 @@
 
 GIT_VERSION := "$(shell git describe --abbrev=4 --dirty --always --tags)"
 CC      := gcc
-CFLAGS  := -Wall -Wextra -Wimplicit \
+CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   -Wno-unused-parameter \
 		   -Wconversion \
-		   ##############\
 		   -fsanitize=address -rdynamic \
+		   ##############\
 		   -pg -rdynamic \
 		   -rdynamic -Og -ggdb3 \
 		   -O3 -march=native \
@@ -26,8 +26,8 @@ CFLAGS  := -Wall -Wextra -Wimplicit \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   ##############\
 		   -fsanitize=address -rdynamic \
+		   ##############\
 		   -rdynamic -ggdb3 \
 		   -pg -rdynamic \
 		   -fsanitize=address \
