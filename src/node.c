@@ -19,12 +19,15 @@ void node_free(Node *node)
     node_zero(node);
 }
 
-int node_print(Node *node, bool show_desc, size_t sub_sel)
+int node_print(Node *node, bool show_desc)
 {
     ASSERT(node, ERR_NULL_ARG);
     int err = 0;
     Str p = {0};
-    TRY(str_fmt(&p, "%s : %.*s\n", icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
+    size_t sO = vrnode_length(&node->outgoing);
+    size_t sI = vrnode_length(&node->incoming);
+    size_t sub_sel = node->sub_index;
+    TRY(str_fmt(&p, "%s " NODE_FMT_LEN_SUB " :: %.*s \n", icon_str(node->icon), sO+sI, STR_F(&node->title)), ERR_STR_FMT);
     if(show_desc) {
         if(str_length(&node->desc)) {
             TRY(str_fmt(&p, "\n%.*s\n\n", STR_F(&node->desc)), ERR_STR_FMT);
@@ -33,19 +36,19 @@ int node_print(Node *node, bool show_desc, size_t sub_sel)
         }
     }
     /* outgoing */
-    size_t sO = vrnode_length(&node->outgoing);
-    size_t sI = vrnode_length(&node->incoming);
     size_t iE = 0;
     Node *sub_info = 0;
     for(size_t i = 0; i < sO; i++, iE++) {
         Node *sub = vrnode_get_at(&node->outgoing, i);
-        TRY(str_fmt(&p, "%s : %s %.*s\n", icon_str(sub->icon), iE == sub_sel ? "-->" : "  >", STR_F(&sub->title)), ERR_STR_FMT);
+        size_t len_io = vrnode_length(&sub->outgoing) + vrnode_length(&sub->incoming);
+        TRY(str_fmt(&p, "%s " NODE_FMT_LEN_SUB " :: %s %.*s \n", icon_str(sub->icon), len_io, iE == sub_sel ? "-->" : "  >", STR_F(&sub->title)), ERR_STR_FMT);
         if(iE == sub_sel) sub_info = sub;
     }
     /* incoming */
     for(size_t i = 0; i < sI; i++, iE++) {
         Node *sub = vrnode_get_at(&node->incoming, i);
-        TRY(str_fmt(&p, "%s : %s %.*s\n", icon_str(sub->icon), iE == sub_sel ? "<--" : "<  ", STR_F(&sub->title)), ERR_STR_FMT);
+        size_t len_io = vrnode_length(&sub->outgoing) + vrnode_length(&sub->incoming);
+        TRY(str_fmt(&p, "%s " NODE_FMT_LEN_SUB " :: %s %.*s \n", icon_str(sub->icon), len_io, iE == sub_sel ? "<--" : "<  ", STR_F(&sub->title)), ERR_STR_FMT);
         if(iE == sub_sel) sub_info = sub;
     }
     if(show_desc && sub_info) {
@@ -104,13 +107,6 @@ error:
     return -1;
 }
 
-void node_set(Node *node, size_t *sub_sel)
-{
-    ASSERT(node, ERR_NULL_ARG);
-    ASSERT(sub_sel, ERR_NULL_ARG);
-    *sub_sel = node->sub_index;
-}
-
 void node_set_sub(Node *node, size_t *sub_sel, size_t to_set)
 {
     ASSERT(node, ERR_NULL_ARG);
@@ -126,6 +122,11 @@ void node_set_sub(Node *node, size_t *sub_sel, size_t to_set)
         *sub_sel = to_set;
     }
     node->sub_index = *sub_sel;
+}
+
+void node_mv_vertical(Node *node, int count)
+{
+    node_set_sub(node, &node->sub_index, node->sub_index + (size_t)count);
 }
 
 
