@@ -17,37 +17,31 @@ int main(void)
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
     TRY(nexus_build(&nexus), ERR_NEXUS_BUILD);
 
-    VrNode stack = {0};
     Node *current = 0;
     TRY(!(current = nexus_get(&nexus, NEXUS_ROOT)), ERR_NEXUS_GET);
 
-    size_t sub_index = 0;
     bool show_desc = true;
     bool quit = false;
 
     while(!quit) {
         platform_clear();
-        TRY(node_print(current, show_desc, sub_index), ERR_NODE_PRINT);
+        TRY(node_print(current, show_desc), ERR_NODE_PRINT);
         int key = platform_getch();
         switch(key) {
             case ' ': {
                 show_desc ^= true;
             } break;
             case 'j': {
-                node_set_sub(current, &sub_index, sub_index + 1);
+                node_mv_vertical(current, 1);
             } break;
             case 'k': {
-                node_set_sub(current, &sub_index, sub_index - 1);
+                node_mv_vertical(current, -1);
             } break;
             case 'l': {
-                TRY(vrnode_push_back(&stack, current), ERR_VEC_PUSH_BACK);
-                TRY(node_follow(&current, &sub_index), ERR_NODE_FOLLOW);
+                TRY(nexus_follow_sub(&nexus, &current), ERR_NEXUS_FOLLOW_SUB);
             } break;
             case 'h': {
-                if(vrnode_length(&stack)) {
-                    vrnode_pop_back(&stack, &current);
-                    node_set(current, &sub_index);
-                }
+                nexus_history_back(&nexus, &current);
             } break;
             case 'Q':
             case 'q': {
@@ -58,7 +52,6 @@ int main(void)
 
 error:
     nexus_free(&nexus);
-    vrnode_free(&stack);
     printf("done.\n");
     return 0;
 }
