@@ -13,6 +13,7 @@ void nexus_free(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     tnode_free(&nexus->nodes);
+    vrnode_free(&nexus->history);
 } //}}}
 
 Node *nexus_get(Nexus *nexus, const char *title) //{{{
@@ -73,18 +74,50 @@ error:
     return -1;
 } //}}}
 
-#define ERR_NEXUS_BUILD_PHYSICS "failed building physics"
-int nexus_build_physics(Nexus *nexus, Node *anchor)
+int nexus_follow_sub(Nexus *nexus, Node **current) //{{{
 {
-    Node base;
-    NEXUS_INSERT(nexus, anchor, &base, ICON_PHYSICS, "Physics", "");
-    NEXUS_INSERT(nexus, &base, 0, ICON_PHYSICS, "Second", "A second is an SI-unit of time.");
-    NEXUS_INSERT(nexus, &base, 0, ICON_PHYSICS, "Meter", "A meter is an SI-unit of length.");
-    NEXUS_INSERT(nexus, &base, 0, ICON_PHYSICS, "Speed of Light", "The speed of light " F("in vacumm", IT) " is\n" F("c = 299'792'458 meters/second", BOLD) "", "Second", "Meter");
+    ASSERT(nexus, ERR_NULL_ARG);
+    ASSERT(current, ERR_NULL_ARG);
+    size_t sO = vrnode_length(&(*current)->outgoing);
+    size_t sI = vrnode_length(&(*current)->incoming);
+    Node *result = (*current);
+    if((*current)->sub_index < sO) {
+        result = vrnode_get_at(&(*current)->outgoing, (*current)->sub_index);
+    } else if((*current)->sub_index - sO < sI) {
+        result = vrnode_get_at(&(*current)->incoming, (*current)->sub_index - sO);
+    } else if(sO+sI) {
+        THROW("sub_index '%zu' too large", (*current)->sub_index);
+    }
+    TRY(vrnode_push_back(&nexus->history, *current), ERR_VEC_PUSH_BACK);
+    *current = result;
+    (*current)->sub_index = result->sub_index;
     return 0;
 error:
     return -1;
-}
+} //}}}
+
+void nexus_history_back(Nexus *nexus, Node **current) //{{{
+{
+    ASSERT(nexus, ERR_NULL_ARG);
+    ASSERT(current, ERR_NULL_ARG);
+    if(vrnode_length(&nexus->history)) {
+        vrnode_pop_back(&nexus->history, current);
+    }
+} //}}}
+
+
+int nexus_build_physics(Nexus *nexus, Node *anchor) //{{{
+{
+    Node base;
+    NEXUS_INSERT(nexus, anchor, &base, ICON_PHYSICS, "Physics", "", NODE_LEAF);
+    NEXUS_INSERT(nexus, &base, NODE_LEAF, ICON_PHYSICS, "Second", "A second is an SI-unit of time.", NODE_LEAF);
+    NEXUS_INSERT(nexus, &base, NODE_LEAF, ICON_PHYSICS, "Meter", "A meter is an SI-unit of length.", NODE_LEAF);
+    NEXUS_INSERT(nexus, &base, NODE_LEAF, ICON_PHYSICS, "Speed of Light", "The speed of light " F("in vacumm", IT) " is\n" F("c = 299'792'458 meters/second", BOLD) "", "Second", "Meter");
+
+    return 0;
+error:
+    return -1;
+} //}}}
 
 int nexus_build(Nexus *nexus) //{{{
 {
