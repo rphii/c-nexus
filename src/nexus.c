@@ -112,7 +112,7 @@ int nexus_build_physics(Nexus *nexus, Node *anchor) //{{{
     NEXUS_INSERT(nexus, anchor, &base, ICON_PHYSICS, "Physics", "", NODE_LEAF);
     NEXUS_INSERT(nexus, &base, NODE_LEAF, ICON_PHYSICS, "Second", "A second is an SI-unit of time.", NODE_LEAF);
     NEXUS_INSERT(nexus, &base, NODE_LEAF, ICON_PHYSICS, "Meter", "A meter is an SI-unit of length.", NODE_LEAF);
-    NEXUS_INSERT(nexus, &base, NODE_LEAF, ICON_PHYSICS, "Speed of Light", "The speed of light " F("in vacumm", IT) " is\n" F("c = 299'792'458 meters/second", BOLD) "", "Second", "Meter");
+    NEXUS_INSERT(nexus, &base, NODE_LEAF, ICON_PHYSICS, "Speed of Light", "The speed of light " F("in vacuum", IT) " is\n" F("c = 299'792'458 meters/second", BOLD) "", "Second", "Meter");
 
     return 0;
 error:
