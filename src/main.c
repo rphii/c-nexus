@@ -147,6 +147,8 @@ int main(void)
                             edit = true;
                         } else if(key == ' ') {
                             show_desc ^= true;
+                        } else if(key == 27) {
+                            quit = true;
                         }
                     }
                 }
