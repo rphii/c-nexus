@@ -58,6 +58,9 @@ void nexus_history_back(Nexus *nexus, Node **current);
 #define ERR_NEXUS_BUILD "failed building nexus"
 ErrDecl nexus_build(Nexus *nexus);
 
+#define ERR_NEXUS_BUILD_MATH "failed building math"
+int nexus_build_math(Nexus *nexus, Node *anchor);
+
 #define ERR_NEXUS_BUILD_PHYSICS "failed building physics"
 ErrDecl nexus_build_physics(Nexus *nexus, Node *anchor);
 

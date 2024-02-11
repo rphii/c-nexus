@@ -35,3 +35,11 @@ There's a handy macro called `NEXUS_INSERT`. See the example(s) provided.
 - no editing of notes while browsing them _(at least not yet)_
 - terminal interface doesn't yet handle the displaying of very long notes
 
+### Notes on Searching
+- it searches with multiple cores, as you type. if you wish to not have multiple cores, or a
+  different amount of threads, you can specify so in the [Makefile](Makefile) by specifying the
+  number for `DPROC_COUNT` (one core searches one entire node, or rather, transforms the node string
+  into a searchable string, creates a grep command and stores the result)
+- if multithreaded searching is enabled, I at the moment do not bother to sort the found results, so
+  that's that
+

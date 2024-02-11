@@ -46,8 +46,7 @@ int platform_getch(void)
     if(tcsetattr(0, TCSADRAIN, &old) < 0) {
         perror("tcsetattr ~ICANON");
     }
-    //printf("[[%i]]\n", buf);getchar();
-    printf("%c", buf);
+    //printf("%c", buf);
     return buf;
 
 #endif
