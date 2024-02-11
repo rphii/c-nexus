@@ -73,7 +73,7 @@ int main(void)
                     str_clear(&p);
                     platform_clear();
                     TRY(nexus_search(&nexus, &search, &findings), ERR_NEXUS_SEARCH);
-                    printf("Found %zu for : %.*s%s\n", vrnode_length(&findings), STR_F(&search), edit ? "_" : "");
+                    printf("Found " F("%zu", FG_YL_B) " for : %.*s%s\n\n", vrnode_length(&findings), STR_F(&search), edit ? "_" : "");
                     
                     if(!edit) {
                         size_t sub_sel_max = vrnode_length(&findings);
@@ -102,10 +102,12 @@ int main(void)
                             //printf("%zu %s : %s %.*s\n", i+1, i==sub_sel ? "-->" : "  >", icon_str(node->icon), STR_F(&node->title));
                         }
                     }
-                    if(!edit && node_desc && str_length(&node_desc->desc)) {
-                        TRY(str_fmt(&p, "\n%.*s\n\n", STR_F(&node_desc->desc)), ERR_STR_FMT);
-                    } else {
-                        TRY(str_fmt(&p, F("\nno description.\n\n", IT)), ERR_STR_FMT);
+                    if(show_desc) {
+                        if(!edit && node_desc && str_length(&node_desc->desc)) {
+                            TRY(str_fmt(&p, "\n%.*s\n\n", STR_F(&node_desc->desc)), ERR_STR_FMT);
+                        } else {
+                            TRY(str_fmt(&p, F("\nno description.\n\n", IT)), ERR_STR_FMT);
+                        }
                     }
                     printf("%.*s", STR_F(&p));
 
@@ -135,6 +137,8 @@ int main(void)
                             quit = true;
                         } else if(key == 'f') {
                             edit = true;
+                        } else if(key == ' ') {
+                            show_desc ^= true;
                         }
                     }
                 }
