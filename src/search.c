@@ -22,7 +22,7 @@ static inline int search_static_remove_escapes(Str *restrict out, Str *restrict 
             } else if(c == '\'') {
                 TRY(str_fmt(out, "%.*s\'\\\'\'", (int)(i - iX), str_iter_at(in, iX)), ERR_STR_FMT);
                 iX = i + 1;
-            } else if(c_last != '\n' && c == '\n') {
+            } else if(!isspace(c_last) && isspace(c)) {
                 TRY(str_fmt(out, "%.*s ", (int)(i - iX), str_iter_at(in, iX)), ERR_STR_FMT);
                 iX = i + 1;
             } else if(isspace(c_last) && isspace(c)) {
