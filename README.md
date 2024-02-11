@@ -14,8 +14,8 @@ Create notes and link them, however you can think of. Once created you can brows
     - ``[type something]`` : search for something, case insensitive
     - ``[enter]`` : switch from editing search string to selecting found nodes; in this mode ..
         - .. `hjkl` behaves as stated above
-        - .. `f` puts you back to editing the search string
-        - .. `[enter]` and `q` goes back to node you've watched before searching; as if nothing was
+        - .. `f` `[enter]` puts you back to editing the search string
+        - .. `[escape]` and `q` goes back to node you've watched before searching; as if nothing was
           selected
 
 ## How to add notes?
