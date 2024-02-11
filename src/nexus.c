@@ -23,7 +23,7 @@ typedef struct NexusThreadSearch {
     size_t human;
     Str cmd;
     Str content;
-    Str search;
+    Str *search;
     pthread_mutex_t *findings_mutex;
     VrNode *findings;
   NexusThreadSearch_ThreadQueue *queue;
@@ -37,7 +37,7 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
     Node *node = arg->tnodes->buckets[arg->i].items[arg->j];
     str_clear(&arg->cmd);
     str_clear(&arg->content);
-    int found = search_fmt_nofree(true, &arg->cmd, &arg->content, &arg->search, "%s %.*s %.*s", icon_str(node->icon), STR_F(&node->title), STR_F(&node->desc));
+    int found = search_fmt_nofree(true, &arg->cmd, &arg->content, arg->search, "%s %.*s %.*s", icon_str(node->icon), STR_F(&node->title), STR_F(&node->desc));
     if(found) {
         pthread_mutex_lock(arg->findings_mutex);
         TRY(vrnode_push_back(arg->findings, node), ERR_VEC_PUSH_BACK);
@@ -122,7 +122,7 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
         thr_search[i].tnodes = tnodes;
         thr_search[i].queue = &thr_queue;
         thr_search[i].human = i;
-        str_copy(&thr_search[i].search, search);
+        thr_search[i].search = search;
         /* add to queue */
         thr_queue.q[i] = &thr_search[i];
         ++thr_queue.len;
@@ -165,7 +165,6 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
             /* free */
             str_free(&thr_search[i].content);
             str_free(&thr_search[i].cmd);
-            str_free(&thr_search[i].search);
         }
     }
 

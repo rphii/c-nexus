@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdarg.h>
-//#include <stdlib.h>
+#include <ctype.h>
 
 #include "search.h"
 
@@ -12,6 +12,7 @@ static inline int search_static_remove_escapes(Str *restrict out, Str *restrict 
     ASSERT(in, ERR_NULL_ARG);
     bool skip = 0;
     size_t iX = 0;
+    char c_last = 0;
     for(size_t i = 0; i < str_length(in); i++) {
         char c = str_get_at(in, i);
         if(!skip) {
@@ -21,7 +22,13 @@ static inline int search_static_remove_escapes(Str *restrict out, Str *restrict 
             } else if(c == '\'') {
                 TRY(str_fmt(out, "%.*s\'\\\'\'", (int)(i - iX), str_iter_at(in, iX)), ERR_STR_FMT);
                 iX = i + 1;
+            } else if(c_last != '\n' && c == '\n') {
+                TRY(str_fmt(out, "%.*s ", (int)(i - iX), str_iter_at(in, iX)), ERR_STR_FMT);
+                iX = i + 1;
+            } else if(isspace(c_last) && isspace(c)) {
+                iX = i + 1;
             }
+            c_last = c;
         } else {
             if(c == 'm') {
                 iX = i + 1;

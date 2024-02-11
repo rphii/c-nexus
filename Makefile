@@ -4,15 +4,15 @@ GIT_VERSION := "$(shell git describe --abbrev=4 --dirty --always --tags)"
 CC      := gcc
 CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   -Wno-unused-parameter \
+		   -O2 -march=native \
+		   ##############\
 		   -Wconversion \
 		   -DPROC_COUNT=$(shell nproc --all) \
-		   -fsanitize=address -rdynamic \
-		   ##############\
-		   -pg -rdynamic \
 		   -rdynamic -Og -ggdb3 \
+		   -fsanitize=address -rdynamic \
+		   -pg -rdynamic \
 		   -O3 -march=native \
 		   -DCOLORPRINT_DISABLE \
-		   -O2 \
 		   -O0 -g \
 		   -rdynamic -Og -ggdb3 \
 		   -DCOLORPRINT_DISABLE \
@@ -27,13 +27,14 @@ CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   -fsanitize=address -rdynamic \
 		   ##############\
+		   -rdynamic -Og -ggdb3 \
 		   -rdynamic -ggdb3 \
+		   -fsanitize=address -rdynamic \
 		   -pg -rdynamic \
 		   -fsanitize=address \
 		   -pg \
-		   -rdynamic -Og -ggdb3
+
 CSUFFIX	:= .c
 HSUFFIX	:= .h
 
