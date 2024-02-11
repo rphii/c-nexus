@@ -27,7 +27,7 @@ int node_print(Node *node, bool show_desc)
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
     size_t sub_sel = node->sub_index;
-    TRY(str_fmt(&p, "%s " NODE_FMT_LEN_SUB " :: %.*s \n", icon_str(node->icon), sO+sI, STR_F(&node->title)), ERR_STR_FMT);
+    TRY(str_fmt(&p, "" NODE_FMT_LEN_SUB " :: %s %.*s \n", sO+sI, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
     if(show_desc) {
         if(str_length(&node->desc)) {
             TRY(str_fmt(&p, "\n%.*s\n\n", STR_F(&node->desc)), ERR_STR_FMT);
@@ -41,14 +41,14 @@ int node_print(Node *node, bool show_desc)
     for(size_t i = 0; i < sO; i++, iE++) {
         Node *sub = vrnode_get_at(&node->outgoing, i);
         size_t len_io = vrnode_length(&sub->outgoing) + vrnode_length(&sub->incoming);
-        TRY(str_fmt(&p, "%s " NODE_FMT_LEN_SUB " :: %s %.*s \n", icon_str(sub->icon), len_io, iE == sub_sel ? "-->" : "  >", STR_F(&sub->title)), ERR_STR_FMT);
+        TRY(str_fmt(&p, "" NODE_FMT_LEN_SUB " :: %s %s %.*s \n", len_io, iE == sub_sel ? "-->" : "  >", icon_str(sub->icon), STR_F(&sub->title)), ERR_STR_FMT);
         if(iE == sub_sel) sub_info = sub;
     }
     /* incoming */
     for(size_t i = 0; i < sI; i++, iE++) {
         Node *sub = vrnode_get_at(&node->incoming, i);
         size_t len_io = vrnode_length(&sub->outgoing) + vrnode_length(&sub->incoming);
-        TRY(str_fmt(&p, "%s " NODE_FMT_LEN_SUB " :: %s %.*s \n", icon_str(sub->icon), len_io, iE == sub_sel ? "<--" : "<  ", STR_F(&sub->title)), ERR_STR_FMT);
+        TRY(str_fmt(&p, "" NODE_FMT_LEN_SUB " :: %s %s %.*s \n", len_io, iE == sub_sel ? "<--" : "<  ", icon_str(sub->icon), STR_F(&sub->title)), ERR_STR_FMT);
         if(iE == sub_sel) sub_info = sub;
     }
     if(show_desc && sub_info) {

@@ -1,5 +1,6 @@
 #ifndef SEARCH_H
 
+#include <stdbool.h>
 #include "str.h"
 #include "err.h"
 

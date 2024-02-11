@@ -68,12 +68,16 @@ int main(void)
                 Str p = {0};
                 VrNode findings = {0};
                 size_t sub_sel = 0;
+                size_t len_prev = SIZE_MAX;
                 while(!quit) {
                     //platform_clear();
                     str_clear(&p);
                     platform_clear();
-                    TRY(nexus_search(&nexus, &search, &findings), ERR_NEXUS_SEARCH);
-                    printf("Found " F("%zu", FG_YL_B) " for : %.*s%s\n\n", vrnode_length(&findings), STR_F(&search), edit ? "_" : "");
+                    if(edit && len_prev != str_length(&search)) {
+                        len_prev = str_length(&search);
+                        TRY(nexus_search(&nexus, &search, &findings), ERR_NEXUS_SEARCH);
+                    }
+                    printf("Found " F("%4zu", FG_YL_B) " for : %.*s%s\n\n", vrnode_length(&findings), STR_F(&search), edit ? "_" : "");
                     
                     if(!edit) {
                         size_t sub_sel_max = vrnode_length(&findings);
@@ -85,22 +89,24 @@ int main(void)
                     }
 
                     Node *node_desc = 0;
-                    for(size_t i = 0; i < vrnode_length(&findings); i++) {
-                        Node *node = vrnode_get_at(&findings, i);
+                    size_t maxpreview = 20;
+                    size_t ioff = sub_sel >= maxpreview ? 1 + sub_sel - maxpreview : 0;
+                    for(size_t i = 0; i < vrnode_length(&findings) && i < maxpreview; i++) {
+                        size_t ireal = i+ioff;
+                        Node *node = vrnode_get_at(&findings, ireal);
                         size_t sO = vrnode_length(&node->outgoing);
                         size_t sI = vrnode_length(&node->incoming);
                         if(edit) {
-                            //printf("%zu : %s %.*s\n", i+1, icon_str(node->icon), STR_F(&node->title));
-                            //printf("%zu : %s %.*s\n", i+1, icon_str(node->icon), STR_F(&node->title));
-                            TRY(str_fmt(&p, "%s " NODE_FMT_LEN_SUB " :: %.*s \n", icon_str(node->icon), sO+sI, STR_F(&node->title)), ERR_STR_FMT);
-                            //node_print(
+                            TRY(str_fmt(&p, "" NODE_FMT_LEN_SUB " :: %s %.*s \n", sO+sI, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
                         } else {
-                            TRY(str_fmt(&p, "%s " NODE_FMT_LEN_SUB " :: %s %.*s \n", icon_str(node->icon), sO+sI, i==sub_sel?"-->":"  >", STR_F(&node->title)), ERR_STR_FMT);
-                            if(i==sub_sel && show_desc) {
+                            TRY(str_fmt(&p, "" NODE_FMT_LEN_SUB " :: %s %s %.*s \n", sO+sI, ireal==sub_sel?"-->":"  >", icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
+                            if(ireal==sub_sel && show_desc) {
                                 node_desc = node;
                             }
-                            //printf("%zu %s : %s %.*s\n", i+1, i==sub_sel ? "-->" : "  >", icon_str(node->icon), STR_F(&node->title));
                         }
+                    }
+                    if(vrnode_length(&findings) > maxpreview) {
+                        TRY(str_fmt(&p, F("... (%zu more)\n", IT), vrnode_length(&findings) - maxpreview), ERR_STR_FMT);
                     }
                     if(show_desc) {
                         if(!edit && node_desc && str_length(&node_desc->desc)) {

@@ -1,6 +1,64 @@
 #include "nexus.h"
 #include "search.h"
 
+#if PROC_COUNT /* local threading {{{*/
+#include <pthread.h>
+
+#define ThreadQueue(X)      \
+    typedef struct X##_ThreadQueue { \
+        pthread_t id; \
+        pthread_mutex_t mutex; \
+        size_t i0; \
+        size_t len; \
+        struct X *q[PROC_COUNT]; \
+    } X##_ThreadQueue;
+
+
+/* local thread: search {{{ */
+
+ThreadQueue(NexusThreadSearch) /* {{{ */
+typedef struct NexusThreadSearch {
+    TNode *tnodes;
+    size_t i;
+    size_t j;
+    size_t human;
+    Str cmd;
+    Str content;
+    Str search;
+    VrNode findings;
+  NexusThreadSearch_ThreadQueue *queue;
+} NexusThreadSearch; /* }}} */
+
+static void *nexus_static_thread_search(void *args) /* {{{ */
+{
+    NexusThreadSearch *arg = args;
+
+    /* thread processing / search */
+    Node *node = arg->tnodes->buckets[arg->i].items[arg->j];
+    str_clear(&arg->cmd);
+    str_clear(&arg->content);
+    int found = search_fmt_nofree(true, &arg->cmd, &arg->content, &arg->search, "%s %.*s %.*s", icon_str(node->icon), STR_F(&node->title), STR_F(&node->desc));
+    if(found) {
+        TRY(vrnode_push_back(&arg->findings, node), ERR_VEC_PUSH_BACK);
+    }
+
+    /* finished this thread .. make space for next thread */
+    NexusThreadSearch_ThreadQueue *queue = arg->queue;
+    pthread_mutex_lock(&queue->mutex);
+    queue->q[(queue->i0 + queue->len) % PROC_COUNT] = arg;
+    ++queue->len;
+    pthread_mutex_unlock(&queue->mutex);
+
+clean:
+    return 0;
+error:
+    goto clean;
+} /* }}} */
+
+/* }}} */
+
+#endif /*}}}*/
+
 int nexus_init(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
@@ -45,6 +103,75 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
 
 #if PROC_COUNT
 
+    /* declarations */
+    TNode *tnodes = &nexus->nodes;
+    NexusThreadSearch thr_search[PROC_COUNT] = {0};
+    NexusThreadSearch_ThreadQueue thr_queue = {0};
+
+    /* set up */
+    pthread_mutex_init(&thr_queue.mutex, 0);
+    for(size_t i = 0; i < PROC_COUNT; ++i) {
+        thr_search[i].tnodes = tnodes;
+        thr_search[i].queue = &thr_queue;
+        thr_search[i].human = i;
+        str_copy(&thr_search[i].search, search);
+        /* add to queue */
+        thr_queue.q[i] = &thr_search[i];
+        ++thr_queue.len;
+    }
+    assert(thr_queue.len <= PROC_COUNT);
+
+    /* search */
+    for(size_t i = 0; i < (1ULL << (tnodes->width - 1)); ++i) {
+        size_t len = tnodes->buckets[i].len;
+        for(size_t j = 0; j < len; ++j) {
+            pthread_mutex_lock(&thr_queue.mutex);
+            if(thr_queue.len) {
+                NexusThreadSearch *thr = thr_queue.q[thr_queue.i0];
+                thr->i = i;
+                thr->j = j;
+                pthread_create(&thr->queue->id, 0, nexus_static_thread_search, thr);
+                thr_queue.i0 = (thr_queue.i0 + 1) % PROC_COUNT;
+                --thr_queue.len;
+            } else {
+                --j;
+            }
+            pthread_mutex_unlock(&thr_queue.mutex);
+        }
+    }
+
+    /* wait until all threads finished */
+    for(;;) {
+        pthread_mutex_lock(&thr_queue.mutex);
+        if(thr_queue.len == PROC_COUNT) {
+            pthread_mutex_unlock(&thr_queue.mutex);
+            break;
+        }
+        pthread_mutex_unlock(&thr_queue.mutex);
+    }
+    /* now join threads and add results; since we *know* all threads finished, we can ignore usage of the lock */
+    vrnode_clear(findings);
+    for(size_t i = 0; i < PROC_COUNT; ++i) {
+        if(thr_search[i].queue->id) {
+            /* join */
+            pthread_join(thr_search[i].queue->id, 0);
+            /* add results */
+            for(size_t j = 0; j < vrnode_length(&thr_search[i].findings); ++j) {
+                TRY(vrnode_push_back(findings, vrnode_get_at(&thr_search[i].findings, j)), ERR_VEC_PUSH_BACK);
+            }
+            /* free */
+            vrnode_free(&thr_search[i].findings);
+            str_free(&thr_search[i].content);
+            str_free(&thr_search[i].cmd);
+            str_free(&thr_search[i].search);
+        }
+    }
+
+clean:
+    return err;
+error:
+    ERR_CLEAN;
+
 #else
 
     vrnode_clear(findings);
@@ -65,12 +192,12 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
 clean:
     str_free(&cmd);
     str_free(&content);
-
-#endif
-
     return err;
 error:
     ERR_CLEAN;
+
+#endif
+
 } //}}}
 
 int nexus_insert_node(Nexus *nexus, Node *node) //{{{
@@ -142,7 +269,6 @@ void nexus_history_back(Nexus *nexus, Node **current) //{{{
         vrnode_pop_back(&nexus->history, current);
     }
 } //}}}
-
 
 int nexus_build_physics(Nexus *nexus, Node *anchor) //{{{
 {

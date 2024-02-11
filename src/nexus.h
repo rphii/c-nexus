@@ -20,9 +20,9 @@ void nexus_free(Nexus *nexus);
 #define ERR_NEXUS_INSERT_NODE "failed insertion of node into nexus"
 ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
 
-#define NEXUS_INSERT(nexus, root, ref, icon, title, description, ...)  do { \
+#define NEXUS_INSERT(nexus, root, ref, time, title, description, ...)  do { \
         Node temp, unused; \
-        TRY(node_create(&temp, title, description, icon), ERR_NODE_CREATE); \
+        TRY(node_create(&temp, title, description, time), ERR_NODE_CREATE); \
         TRY(nexus_insert_node(nexus, &temp), ERR_NEXUS_INSERT_NODE); \
         TRY(nexus_link(nexus, root, &temp), ERR_NEXUS_LINK); \
         NEXUS_LINKS_EV_STR(nexus, &temp, __VA_ARGS__); \
