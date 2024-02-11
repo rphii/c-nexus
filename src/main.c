@@ -127,6 +127,8 @@ int main(void)
                             str_pop_back_word(&search);
                         } else if(key == '\n') {
                             edit = false;
+                        } else if(key == 27) {
+                            quit = true;
                         }
                     } else {
                         if(key == 'j') {
