@@ -44,6 +44,8 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
         pthread_mutex_unlock(arg->findings_mutex);
     }
 
+clean:
+
     /* finished this thread .. make space for next thread */
     NexusThreadSearch_ThreadQueue *queue = arg->queue;
     pthread_mutex_lock(&queue->mutex);
@@ -51,7 +53,6 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
     ++queue->len;
     pthread_mutex_unlock(&queue->mutex);
 
-clean:
     return 0;
 error:
     goto clean;
@@ -109,6 +110,7 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
     TNode *tnodes = &nexus->nodes;
     NexusThreadSearch thr_search[PROC_COUNT] = {0};
     NexusThreadSearch_ThreadQueue thr_queue = {0};
+    pthread_attr_t thr_attr;
     pthread_mutex_t findings_mutex;
 
     /* set up */
@@ -126,6 +128,8 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
         thr_queue.q[i] = &thr_search[i];
         ++thr_queue.len;
     }
+    pthread_attr_init(&thr_attr);
+    pthread_attr_setdetachstate(&thr_attr, PTHREAD_CREATE_DETACHED);
     assert(thr_queue.len <= PROC_COUNT);
 
     /* search */
@@ -137,7 +141,7 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
                 NexusThreadSearch *thr = thr_queue.q[thr_queue.i0];
                 thr->i = i;
                 thr->j = j;
-                pthread_create(&thr->queue->id, 0, nexus_static_thread_search, thr);
+                pthread_create(&thr->queue->id, &thr_attr, nexus_static_thread_search, thr);
                 thr_queue.i0 = (thr_queue.i0 + 1) % PROC_COUNT;
                 --thr_queue.len;
             } else {
@@ -156,11 +160,9 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
         }
         pthread_mutex_unlock(&thr_queue.mutex);
     }
-    /* now join threads and free since we *know* all threads finished, we can ignore usage of the lock */
+    /* now free since we *know* all threads finished, we can ignore usage of the lock */
     for(size_t i = 0; i < PROC_COUNT; ++i) {
         if(thr_search[i].queue->id) {
-            /* join */
-            pthread_join(thr_search[i].queue->id, 0);
             /* free */
             str_free(&thr_search[i].content);
             str_free(&thr_search[i].cmd);
