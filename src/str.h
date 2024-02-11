@@ -3,6 +3,8 @@
 #define STR_DEFAULT_SIZE 32
 
 #include <stdarg.h>
+#include <stdbool.h>
+
 #include "err.h"
 
 /* configuration, inclusion and de-configuration of vector */
@@ -33,6 +35,8 @@ ErrDecl str_fmt_va(Str *str, char *format, va_list argp);
 ErrDecl str_fmt(Str *str, char *format, ...);
 
 int str_cmp(Str *a, Str *b);
+size_t str_count_overlap(Str *a, Str *b, bool ignorecase);
+size_t str_find_substring(Str *str, Str *sub);
 size_t str_hash(Str *a);
 
 #define STR_H

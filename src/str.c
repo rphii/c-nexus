@@ -77,6 +77,52 @@ int str_cmp(Str *a, Str *b)
     return result;
 }
 
+inline size_t str_count_overlap(Str *restrict a, Str *restrict b, bool ignorecase)
+{
+    size_t overlap = 0;
+    size_t len = str_length(a) > str_length(b) ? str_length(b) : str_length(a);
+    if(!ignorecase) {
+        for(size_t i = 0; i < len; ++i) {
+            char ca = str_get_at(a, i);
+            char cb = str_get_at(b, i);
+            if(ca == cb) ++overlap;
+            else break;
+        }
+    } else {
+        for(size_t i = 0; i < len; ++i) {
+            int ca = tolower(str_get_at(a, i));
+            int cb = tolower(str_get_at(b, i));
+            if(ca == cb) ++overlap;
+            else break;
+        }
+    }
+    return overlap;
+}
+
+inline size_t str_find_substring(Str *restrict str, Str *restrict sub)
+{
+    /* basic checks */
+    if(!str_length(sub)) return 1;
+    if(str_length(sub) > str_length(str)) {
+        return 0;
+    }
+    /* store original indices */
+    Str ref = *str;
+    /* check for substring */
+    size_t i = 0;
+    while(str_length(sub) <= str_length(&ref)) {
+        size_t overlap = str_count_overlap(&ref, sub, true);
+        if(overlap == str_length(sub)) {
+            return i + 1;
+        } else {
+            i += overlap + 1;
+            ref.first += overlap + 1;
+        }
+    }
+    /* restore original */
+    return 0;
+}
+
 size_t str_hash(Str *a)
 {
     size_t hash = 5381;

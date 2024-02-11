@@ -51,19 +51,24 @@ int search_fmt_nofree(bool ignorecase, Str *nofree_cmd, Str *nofree_content, Str
     return (found && !result);
 }
 
-int search_nofree(bool ignorecase, Str *cmd, Str *find, Str *nofree_content)
+int search_nofree(bool ignorecase, Str *nofree_cleaned, Str *find, Str *nofree_content)
 {
-    ASSERT(cmd, ERR_NULL_ARG);
+    ASSERT(nofree_cleaned, ERR_NULL_ARG);
     ASSERT(nofree_content, ERR_NULL_ARG);
     ASSERT(find, ERR_NULL_ARG);
     int found = 0;
-    TRY(str_fmt(cmd, "if echo '"), ERR_STR_FMT);
-    TRY(search_static_remove_escapes(cmd, nofree_content), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
-    TRY(str_fmt(cmd, "' | grep -F %s -q '", ignorecase ? "-i" : ""), ERR_STR_FMT);
-    TRY(search_static_remove_escapes(cmd, find), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
-    TRY(str_fmt(cmd, "' 2>/dev/null; then exit 0; else exit 1; fi"), ERR_STR_FMT);
-    //printf("CMD:%.*s\n", STR_F(cmd));
-    found = !system(cmd->s);
+#if 1
+    TRY(search_static_remove_escapes(nofree_cleaned, nofree_content), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
+    found = str_find_substring(nofree_cleaned, find);
+#else
+    TRY(str_fmt(nofree_cleaned, "if echo '"), ERR_STR_FMT);
+    TRY(search_static_remove_escapes(nofree_cleaned, nofree_content), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
+    TRY(str_fmt(nofree_cleaned, "' | grep -F %s -q '", ignorecase ? "-i" : ""), ERR_STR_FMT);
+    TRY(search_static_remove_escapes(nofree_cleaned, find), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
+    TRY(str_fmt(nofree_cleaned, "' 2>/dev/null; then exit 0; else exit 1; fi"), ERR_STR_FMT);
+    //printf("CMD:%.*s\n", STR_F(nofree_cleaned));
+    found = !system(nofree_cleaned->s);
+#endif
     return found;
 error:
     return 0;
