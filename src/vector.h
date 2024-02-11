@@ -20,9 +20,9 @@ VEC_INCLUDE(Vu32, vu32, uint32_t, BY_VAL);
 VEC_INCLUDE(Vu64, vu64, uint64_t, BY_VAL);
 
 /* other types of vectors */
-typedef struct Node Node;
-VEC_INCLUDE(VNode, vnode, Node, BY_REF);
-VEC_INCLUDE(VrNode, vrnode, Node *, BY_VAL);
+struct Node;
+VEC_INCLUDE(VNode, vnode, struct Node, BY_REF);
+VEC_INCLUDE(VrNode, vrnode, struct Node *, BY_VAL);
 
 #define VECTOR_H
 #endif

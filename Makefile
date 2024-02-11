@@ -1,12 +1,12 @@
 #### Start of system configuration section. ####
 
 GIT_VERSION := "$(shell git describe --abbrev=4 --dirty --always --tags)"
-CC      := tcc
+CC      := gcc
 CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   -Wno-unused-parameter \
 		   -Wconversion \
-		   -fsanitize=address -rdynamic \
 		   -DPROC_COUNT=$(shell nproc --all) \
+		   -fsanitize=address -rdynamic \
 		   ##############\
 		   -pg -rdynamic \
 		   -rdynamic -Og -ggdb3 \
