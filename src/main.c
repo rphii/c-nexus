@@ -86,6 +86,11 @@ int main(void)
                         } else if(sub_sel >= sub_sel_max) {
                             sub_sel = 0;
                         }
+                    } else {
+                        size_t sub_sel_max = vrnode_length(&findings);
+                        if(sub_sel >= sub_sel_max) {
+                            sub_sel = sub_sel_max ? sub_sel_max - 1 : 0;
+                        }
                     }
 
                     Node *node_desc = 0;
@@ -108,8 +113,8 @@ int main(void)
                     if(vrnode_length(&findings) > maxpreview) {
                         TRY(str_fmt(&p, F("... (%zu more)\n", IT), vrnode_length(&findings) - maxpreview), ERR_STR_FMT);
                     }
-                    if(show_desc) {
-                        if(!edit && node_desc && str_length(&node_desc->desc)) {
+                    if(show_desc && !edit) {
+                        if(node_desc && str_length(&node_desc->desc)) {
                             TRY(str_fmt(&p, "\n%.*s\n\n", STR_F(&node_desc->desc)), ERR_STR_FMT);
                         } else {
                             TRY(str_fmt(&p, F("\nno description.\n\n", IT)), ERR_STR_FMT);
@@ -141,9 +146,9 @@ int main(void)
                             //current = nexus_get(&nexus, node->title));
                             TRY(!(current = nexus_get(&nexus, node->title.s)), ERR_NEXUS_GET);
                             quit = true;
-                        } else if(key == '\n' || key == 'q' || key == 'h') {
+                        } else if(key == 'q' || key == 'h') {
                             quit = true;
-                        } else if(key == 'f') {
+                        } else if(key == 'f' || key == '\n') {
                             edit = true;
                         } else if(key == ' ') {
                             show_desc ^= true;

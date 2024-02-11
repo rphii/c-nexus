@@ -59,7 +59,7 @@ int search_nofree(bool ignorecase, Str *nofree_cleaned, Str *find, Str *nofree_c
     int found = 0;
 #if 1
     TRY(search_static_remove_escapes(nofree_cleaned, nofree_content), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
-    found = str_find_substring(nofree_cleaned, find);
+    found = (int)((str_find_substring(nofree_cleaned, find)));
 #else
     TRY(str_fmt(nofree_cleaned, "if echo '"), ERR_STR_FMT);
     TRY(search_static_remove_escapes(nofree_cleaned, nofree_content), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
