@@ -47,11 +47,10 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
 clean:
 
     /* finished this thread .. make space for next thread */
-    NexusThreadSearch_ThreadQueue *queue = arg->queue;
-    pthread_mutex_lock(&queue->mutex);
-    queue->q[(queue->i0 + queue->len) % PROC_COUNT] = arg;
-    ++queue->len;
-    pthread_mutex_unlock(&queue->mutex);
+    pthread_mutex_lock(&arg->queue->mutex);
+    arg->queue->q[(arg->queue->i0 + arg->queue->len) % PROC_COUNT] = arg;
+    ++arg->queue->len;
+    pthread_mutex_unlock(&arg->queue->mutex);
 
     return 0;
 error:
