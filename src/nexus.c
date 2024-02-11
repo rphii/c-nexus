@@ -13,7 +13,6 @@
         struct X *q[PROC_COUNT]; \
     } X##_ThreadQueue;
 
-
 /* local thread: search {{{ */
 
 ThreadQueue(NexusThreadSearch) /* {{{ */
@@ -25,7 +24,8 @@ typedef struct NexusThreadSearch {
     Str cmd;
     Str content;
     Str search;
-    VrNode findings;
+    pthread_mutex_t *findings_mutex;
+    VrNode *findings;
   NexusThreadSearch_ThreadQueue *queue;
 } NexusThreadSearch; /* }}} */
 
@@ -39,7 +39,9 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
     str_clear(&arg->content);
     int found = search_fmt_nofree(true, &arg->cmd, &arg->content, &arg->search, "%s %.*s %.*s", icon_str(node->icon), STR_F(&node->title), STR_F(&node->desc));
     if(found) {
-        TRY(vrnode_push_back(&arg->findings, node), ERR_VEC_PUSH_BACK);
+        pthread_mutex_lock(arg->findings_mutex);
+        TRY(vrnode_push_back(arg->findings, node), ERR_VEC_PUSH_BACK);
+        pthread_mutex_unlock(arg->findings_mutex);
     }
 
     /* finished this thread .. make space for next thread */
@@ -107,10 +109,15 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
     TNode *tnodes = &nexus->nodes;
     NexusThreadSearch thr_search[PROC_COUNT] = {0};
     NexusThreadSearch_ThreadQueue thr_queue = {0};
+    pthread_mutex_t findings_mutex;
 
     /* set up */
+    vrnode_clear(findings);
     pthread_mutex_init(&thr_queue.mutex, 0);
+    pthread_mutex_init(&findings_mutex, 0);
     for(size_t i = 0; i < PROC_COUNT; ++i) {
+        thr_search[i].findings = findings;
+        thr_search[i].findings_mutex = &findings_mutex;
         thr_search[i].tnodes = tnodes;
         thr_search[i].queue = &thr_queue;
         thr_search[i].human = i;
@@ -149,28 +156,19 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
         }
         pthread_mutex_unlock(&thr_queue.mutex);
     }
-    /* now join threads and add results; since we *know* all threads finished, we can ignore usage of the lock */
-    vrnode_clear(findings);
+    /* now join threads and free since we *know* all threads finished, we can ignore usage of the lock */
     for(size_t i = 0; i < PROC_COUNT; ++i) {
         if(thr_search[i].queue->id) {
             /* join */
             pthread_join(thr_search[i].queue->id, 0);
-            /* add results */
-            for(size_t j = 0; j < vrnode_length(&thr_search[i].findings); ++j) {
-                TRY(vrnode_push_back(findings, vrnode_get_at(&thr_search[i].findings, j)), ERR_VEC_PUSH_BACK);
-            }
             /* free */
-            vrnode_free(&thr_search[i].findings);
             str_free(&thr_search[i].content);
             str_free(&thr_search[i].cmd);
             str_free(&thr_search[i].search);
         }
     }
 
-clean:
     return err;
-error:
-    ERR_CLEAN;
 
 #else
 
