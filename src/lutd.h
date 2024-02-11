@@ -283,6 +283,7 @@ typedef enum {
             T *item = LUTD_REF(M) l->buckets[hash].items[exist_index];\
             memcpy(item, LUTD_REF(M) v, sizeof(T)); \
             l->buckets[hash].len++; \
+            printf("[[hash %zu len = %zu]]\n", hash, l->buckets[hash].len); \
         } \
         l->buckets[hash].count[exist_index] += count; \
         return 0; \

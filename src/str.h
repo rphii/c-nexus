@@ -2,6 +2,9 @@
 
 #define STR_DEFAULT_SIZE 32
 
+#include <stdarg.h>
+#include "err.h"
+
 /* configuration, inclusion and de-configuration of vector */
 
 #define VEC_SETTINGS_DEFAULT_SIZE STR_DEFAULT_SIZE
@@ -24,7 +27,10 @@ VEC_INCLUDE(Str, str, char, BY_VAL);
 
 /* other functions */
 
-int str_fmt(Str *str, char *format, ...);
+void str_pop_back_word(Str *str);
+
+ErrDecl str_fmt_va(Str *str, char *format, va_list argp);
+ErrDecl str_fmt(Str *str, char *format, ...);
 
 int str_cmp(Str *a, Str *b);
 size_t str_hash(Str *a);

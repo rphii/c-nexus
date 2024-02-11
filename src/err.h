@@ -37,6 +37,8 @@
 #define ERR_UNREACHABLE     "unreachable error"
 #define ERR_UNIMPLEMENTED   "unimplemented"
 #define ERR_NULL_ARG        "unexpected null pointer argument received"
+#define ERR_SYSTEM          "failed executing system command"
+#define ERR_POPEN           ERR_SYSTEM
 
 
 #define ERR_FILE_STREAM     stderr

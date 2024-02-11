@@ -16,7 +16,7 @@
 
 int platform_getch(void)
 {
-    printf(F("[press any key] ", IT FG_CY_B));
+    //printf(F("[press any key] ", IT FG_CY_B));
     fflush(stdout);
 
 #if defined(PLATFORM_WINDOWS)
@@ -46,7 +46,8 @@ int platform_getch(void)
     if(tcsetattr(0, TCSADRAIN, &old) < 0) {
         perror("tcsetattr ~ICANON");
     }
-    printf("%c\n", buf);
+    //printf("[[%i]]\n", buf);getchar();
+    printf("%c", buf);
     return buf;
 
 #endif
@@ -58,7 +59,7 @@ int platform_getch(void)
 
 void platform_clear(void)
 {
-    printf("\033[H\033[J");
+    printf("\033[H\033[J""\033[H\033[J");
 }
 
 

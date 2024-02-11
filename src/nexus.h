@@ -47,6 +47,9 @@ ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst);
 #define ERR_NEXUS_GET "failed getting nexus node"
 Node *nexus_get(Nexus *nexus, const char *title);
 
+#define ERR_NEXUS_SEARCH "failed searching nexus"
+ErrDecl nexus_search(Nexus *nexus, Str *search, VrNode *findings);
+
 #define ERR_NEXUS_FOLLOW_SUB "failed following current nexus node"
 ErrDecl nexus_follow_sub(Nexus *nexus, Node **current);
 

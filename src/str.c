@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdarg.h>
+#include <ctype.h>
 
 /* inclusion and configuration of vector */
 #include "str.h"
@@ -14,27 +14,37 @@ VEC_IMPLEMENT(Str, str, char, BY_VAL, 0);
 /* other functions */
 
 #if 1
-int str_fmt(Str *str, char *format, ...)
+
+void str_pop_back_word(Str *str)
 {
-    if(!str) return -1;
-    if(!format) return -1;
-    // calculate length of append string
-    va_list argp;
-    va_start(argp, format);
+    size_t len = str_length(str);
+    if(len) {
+        int ws = isspace(str_get_at(str, --len));
+        while(len) {
+            char c = str_get_at(str, --len);
+            int wsI = isspace(c);
+            if(ws && !wsI) { ++len; break; }
+            if(!ws && wsI) { ++len; break; }
+        }
+    }
+    str->last = str->first + len;
+}
+
+inline int str_fmt_va(Str *str, char *format, va_list argp)
+{
+    va_list argp2;
+    va_copy(argp2, argp);
     size_t len_app = (size_t)vsnprintf(0, 0, format, argp);
     if((int)len_app < 0) {
         return -1;
     }
-    va_end(argp);
     // calculate required memory
     size_t len_new = str->last + len_app;
     if(str_reserve(str, len_new)) {
         return -1;
     }
     // actual append
-    va_start(argp, format);
-    int len_chng = vsnprintf(&(str->s)[str->last], len_app + 1, format, argp);
-    va_end(argp);
+    int len_chng = vsnprintf(&(str->s)[str->last], len_app + 1, format, argp2);
     // check for success
     if(len_chng >= 0 && (size_t)len_chng <= len_app) {
         str->last += (size_t)len_chng; // successful, change length
@@ -42,6 +52,18 @@ int str_fmt(Str *str, char *format, ...)
         return -1;
     }
     return 0;
+}
+
+int str_fmt(Str *str, char *format, ...)
+{
+    if(!str) return -1;
+    if(!format) return -1;
+    // calculate length of append string
+    va_list argp;
+    va_start(argp, format);
+    int result = str_fmt_va(str, format, argp);
+    va_end(argp);
+    return result;
 }
 #endif
 

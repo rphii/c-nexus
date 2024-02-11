@@ -4,13 +4,19 @@ Small code footprint.
 
 Create notes and link them, however you can think of. Once created you can browse the nodes.
 
-- **h** : go back in history
-- **j** : down
-- **k** : up
-- **l** : follow the arrow
-- **q** : quit
-- **[space]** : fold/unfold descriptions
-- searching is not a feature yet :)
+- ``h`` : go back in history
+- ``j`` : down
+- ``k`` : up
+- ``l`` : follow the arrow
+- ``q`` : quit
+- ``[space]`` : fold/unfold descriptions
+- ``f`` : enter search mode (hopes for the user to have `grep` installed)
+    - ``[type something]`` : search for something, case insensitive
+    - ``[enter]`` : switch from editing search string to selecting found nodes; in this mode ..
+        - .. `hjkl` behaves as stated above
+        - .. `f` puts you back to editing the search string
+        - .. `[enter]` and `q` goes back to node you've watched before searching; as if nothing was
+          selected
 
 ## How to add notes?
 

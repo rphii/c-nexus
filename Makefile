@@ -7,6 +7,7 @@ CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   -Wconversion \
 		   -fsanitize=address -rdynamic \
 		   ##############\
+		   -D PROC_COUNT$(grep -c ^processor /proc/cpuinfo) \
 		   -pg -rdynamic \
 		   -rdynamic -Og -ggdb3 \
 		   -O3 -march=native \

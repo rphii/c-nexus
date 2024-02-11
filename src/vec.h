@@ -159,6 +159,7 @@ typedef enum
     /* TODO */ void A##_reverse_slice(N *vec, size_t from, size_t n); \
     VEC_ITEM(T, M)*A##_iter_begin(N *vec); \
     VEC_ITEM(T, M)*A##_iter_end(N *vec); \
+    VEC_ITEM(T, M)*A##_iter_at(N *vec, size_t index); \
     /* split implementation */ \
     void A##_free(N *vec); \
     void A##_zero(N *vec); \
@@ -192,6 +193,7 @@ typedef enum
     VEC_IMPLEMENT_COMMON_SHRINK(N, A, T, F);            \
     VEC_IMPLEMENT_COMMON_ITER_BEGIN(N, A, T, F, M);     \
     VEC_IMPLEMENT_COMMON_ITER_END(N, A, T, F, M);       \
+    VEC_IMPLEMENT_COMMON_ITER_AT(N, A, T, F, M);        \
     VEC_IMPLEMENT_COMMON_POP_FRONT(N, A, T, F, M);      \
     VEC_IMPLEMENT_COMMON_POP_BACK(N, A, T, F, M);       \
     VEC_IMPLEMENT_COMMON_POP_AT(N, A, T, F, M);         \
@@ -493,6 +495,19 @@ typedef enum
         assert(vec); \
         assert(vec->first <= vec->last); \
         return vec->VEC_STRUCT_ITEMS + vec->last; \
+    }
+
+/**
+ * @brief A##_iter_at [COMMON] - get pointer to certain item
+ * @param vec - the vector
+ * @return pointer to one past last item
+ */
+#define VEC_IMPLEMENT_COMMON_ITER_AT(N, A, T, F, M) \
+    inline VEC_ITEM(T, M)*A##_iter_at(N *vec, size_t index) \
+    { \
+        assert(vec); \
+        assert(vec->first + index <= vec->last); \
+        return vec->VEC_STRUCT_ITEMS + vec->first + index; \
     }
 
 /**

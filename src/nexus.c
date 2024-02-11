@@ -1,9 +1,10 @@
 #include "nexus.h"
+#include "search.h"
 
 int nexus_init(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
-    TRY(tnode_init(&nexus->nodes, 12), ERR_LUTD_INIT);
+    TRY(tnode_init(&nexus->nodes, 4), ERR_LUTD_INIT);
     return 0;
 error:
     return -1;
@@ -33,6 +34,43 @@ clean:
     return result;
 error:
     goto clean;
+} //}}}
+
+int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
+{
+    ASSERT(nexus, ERR_NULL_ARG);
+    ASSERT(search, ERR_NULL_ARG);
+    ASSERT(findings, ERR_NULL_ARG);
+    int err = 0;
+
+#if PROC_COUNT
+
+#else
+
+    vrnode_clear(findings);
+    TNode *tnodes = &nexus->nodes;
+    Str cmd = {0}, content = {0};
+    for(size_t i = 0; i < (1ULL << tnodes->width); i++) {
+        size_t len = tnodes->buckets[i].len;
+        for(size_t j = 0; j < len; j++) {
+            Node *node = tnodes->buckets[i].items[j];
+            str_clear(&cmd);
+            str_clear(&content);
+            int found = search_fmt_nofree(true, &cmd, &content, search, "%s %.*s %.*s", icon_str(node->icon), STR_F(&node->title), STR_F(&node->desc));
+            if(found) {
+                TRY(vrnode_push_back(findings, node), ERR_VEC_PUSH_BACK);
+            }
+        }
+    }
+clean:
+    str_free(&cmd);
+    str_free(&content);
+
+#endif
+
+    return err;
+error:
+    ERR_CLEAN;
 } //}}}
 
 int nexus_insert_node(Nexus *nexus, Node *node) //{{{
