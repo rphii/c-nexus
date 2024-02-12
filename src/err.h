@@ -52,14 +52,14 @@
 /* macros */
 
 #define THROW(fmt, ...)      do { \
-    ERR_PRINTF(F("[ERROR]", BOLD FG_RD_B)" "F("%s:%d:%s", FG_WT_B)" "fmt"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
+    ERR_PRINTF(F("[ERROR]", BOLD FG_RD_B) " " F("%s:%d:%s", FG_WT_B) " " fmt "\n" , __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
     goto error; } while(0)
 
 #define ABORT(fmt, ...)      do { \
-    ERR_PRINTF(F("[ABORT]", BOLD FG_BK BG_RD_B)" "F("%s:%d:%s (end of trace)", FG_WT_B)" "fmt"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); exit(-1); } while(0)
+    platform_trace(); ERR_PRINTF(F("[ABORT]", BOLD FG_BK BG_RD_B) " " F("%s:%d:%s (end of trace)", FG_WT_B) " " fmt "\n" , __FILE__, __LINE__, __func__, ##__VA_ARGS__); exit(-1); } while(0)
 
 #define INFO(fmt, ...)       do { if(DEBUG) \
-    ERR_PRINTF(F("[INFO]", BOLD FG_YL_B)" "F("%s:%d:%s", FG_WT_B)" "fmt"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
+    ERR_PRINTF(F("[INFO]", BOLD FG_YL_B) " " F("%s:%d:%s", FG_WT_B) " " fmt"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
 } while(0)
 
 #define TRY(stmt, fmt, ...)  if (stmt) { THROW(fmt, ##__VA_ARGS__); }
