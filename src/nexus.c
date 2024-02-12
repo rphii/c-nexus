@@ -68,6 +68,7 @@ int nexus_init(Nexus *nexus) //{{{
     TRY(nexus_build(nexus), ERR_NEXUS_BUILD);
     /* configure settings */
     nexus->show_desc = true;
+    nexus->show_preview = false;
     nexus->max_preview = 20;
     /* set up view */
     View *view = &nexus->view;
@@ -107,6 +108,9 @@ int nexus_userinput(Nexus *nexus, int key)
                 case ' ': {
                     nexus->show_desc ^= true;
                 } break;
+                case 'i': {
+                    nexus->show_preview ^= true;
+                } break;
                 case 'j': {
                     node_set_sub(view->current, &view->sub_sel, view->sub_sel + 1);
                 } break;
@@ -119,6 +123,11 @@ int nexus_userinput(Nexus *nexus, int key)
                 } break;
                 case 'h': {
                     TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
+                } break;
+                case 'H': {
+                    do {
+                        TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
+                    } while(view->id != VIEW_SEARCH && vview_length(&nexus->views));
                 } break;
                 case 'Q':
                 case 'q': {
@@ -179,6 +188,7 @@ int nexus_userinput(Nexus *nexus, int key)
                     case 'F': {
                         str_clear(&view->search);
                         view->edit = true;
+                        view->sub_sel = 0;
                     } break;
                     case 'Q':
                     case 'q': {
@@ -187,6 +197,11 @@ int nexus_userinput(Nexus *nexus, int key)
                     case 'h':
                     case 27: {
                         TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
+                    } break;
+                    case 'H': {
+                        do {
+                            TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
+                        } while(view->id != VIEW_SEARCH && vview_length(&nexus->views));
                     } break;
                     default: break;
                 }
@@ -376,6 +391,7 @@ int nexus_follow_sub(Nexus *nexus, View *view) //{{{
         THROW("sub_index '%zu' too large", view->sub_sel);
     }
     view->current = result;
+    view->sub_sel = 0;
     return 0;
 error:
     return -1;
@@ -393,15 +409,16 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id)
     TRY(vview_push_back(&nexus->views, ref), ERR_VEC_PUSH_BACK);
     /* check history if we maybe have one item to use */
     ViewList id_post = VIEW_NONE;
-    Node *current = view->current; /* we always want to keep that anyways */
     /* init view to be changed into */
     view_free(view);
     memset(view, 0, sizeof(*view));
-    view->current = current;
+    view->current = ref.current;
+    view->sub_sel = ref.sub_sel;
     view->id = id;
     /* init the different views */
     switch(id) {
         case VIEW_NORMAL: {
+            if(ref.id == VIEW_SEARCH) view->sub_sel = 0;
             view->edit = false;
         } break;
         case VIEW_SEARCH: {
@@ -493,14 +510,67 @@ error:
     return -1;
 } //}}}
 
+int nexus_build_controls(Nexus *nexus, Node *anchor)
+{
+    Node base, sub;
+    NEXUS_INSERT(nexus, anchor, &base, ICON_WIKI, "Controls", "Guide to all the various controls in c-nexus." , NODE_LEAF);
+
+    /* normal view {{{ */
+    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, "Normal View", "In this mode you can browse the notes.\n"
+            "\n" F("basic controls", UL) "\n"
+            "  for the normal mode are listed in the root, so I'm not going to list them again.\n"
+            "\n" F("other controls", UL) "\n"
+            "  H                : go back to most recent search\n"
+            "  f                : enter " F("search mode", FG_YL_B) "\n"
+            "  q                : quit and return to the terminal\n"
+            "  Q                : same as above\n"
+            "  SPACE            : toggle showing note descriptions on/off\n"
+            "  i                : toggle previewing note descriptions on/off", NODE_LEAF);
+    /* }}} */
+
+    /* search view {{{ */
+    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, "Search View", "In this mode you can search notes for substrings.\n"
+            "\n" F("what gets searched?", UL) "\n"
+            "  the exact pattern of each note you can search are (in this order): " F("ICON title description", FG_GN) " (e.g. search for: 'wiki normal' -> you will find normal view note)\n"
+            "  searches are case insensitive. any newlines are removed. whitepspaces are condensed into one space (e.g. XYZ    ABC -> XYZ ABC)\n"
+            "\n" F("controls while editing search string", UL) "\n"
+            "  ENTER            : choose from found notes\n"
+            "  f                : same as above\n"
+            "  F                : clear search string and edit it\n"
+            "  ESC              : abort search and go back to " F("normal view", FG_YL_B) "\n"
+            "  [type anything]  : search notes for substring\n"
+            "  CTRL+BACK        : erase a word/until word\n"
+            "\n" F("controls while browsing found notes", UL) "\n"
+            "  ENTER            : edit search string\n"
+            "  ESC              : abort search and go back to " F("normal view", FG_YL_B) "\n"
+            "  hjkl             : same as the basic controls\n"
+            "  H                : go back to most recent search\n"
+            "  q                : quit and return to the terminal\n"
+            "  Q                : same as above\n"
+            "  SPACE            : toggle showing note descriptions on/off\n"
+            , "Normal View");
+    /* }}} */
+
+    return 0;
+error:
+    return -1;
+}
+
 int nexus_build(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
 
     Node root;
-    TRY(node_create(&root, NEXUS_ROOT, "", ICON_NONE), ERR_NODE_CREATE);
+    TRY(node_create(&root, NEXUS_ROOT, "Welcome to " F("c-nexus", BOLD) "\n\n"
+                F("basic controls", UL) "\n"
+                "  h : back in history\n"
+                "  j : move arrow down\n"
+                "  k : move arrow up\n"
+                "  l : follow the arrow\n\n"
+                "more can be found in the " F("controls wiki", UL) "", ICON_NONE), ERR_NODE_CREATE);
     TRY(nexus_insert_node(nexus, &root), ERR_NEXUS_INSERT_NODE);
 
+    TRY(nexus_build_controls(nexus, &root), ERR_NEXUS_BUILD_CONTROLS);
     TRY(nexus_build_physics(nexus, &root), ERR_NEXUS_BUILD_PHYSICS);
     TRY(nexus_build_math(nexus, &root), ERR_NEXUS_BUILD_MATH);
 
