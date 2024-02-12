@@ -809,10 +809,12 @@ typedef enum
         assert(src); \
         assert(dst != src); \
         A##_clear(dst); \
-        int result = A##_reserve(dst, A##_length(src)); \
-        if(result) return result; \
-        vec_memcpy(dst->VEC_STRUCT_ITEMS, src->VEC_STRUCT_ITEMS, sizeof(*dst->VEC_STRUCT_ITEMS) * A##_length(src)); \
-        dst->last = A##_length(src); \
+        if(!A##_length(src)) { \
+            int result = A##_reserve(dst, A##_length(src)); \
+            if(result) return result; \
+            vec_memcpy(dst->VEC_STRUCT_ITEMS, src->VEC_STRUCT_ITEMS, sizeof(*dst->VEC_STRUCT_ITEMS) * A##_length(src)); \
+            dst->last = A##_length(src); \
+        } \
         return VEC_ERROR_NONE; \
     }
 
