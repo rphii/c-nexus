@@ -26,6 +26,7 @@ VEC_INCLUDE(Str, str, char, BY_VAL);
 
 #define ERR_STR_CAT_BACK    "failed appending string to other string"
 #define ERR_STR_FMT         "failed string formatting"
+#define ERR_STR_COPY        "failed copying string"
 
 /* other functions */
 
