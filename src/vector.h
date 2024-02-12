@@ -14,15 +14,20 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
+#if 0
 VEC_INCLUDE(Vu8,  vu8,  uint8_t,  BY_VAL);
 VEC_INCLUDE(Vu16, vu16, uint16_t, BY_VAL);
 VEC_INCLUDE(Vu32, vu32, uint32_t, BY_VAL);
 VEC_INCLUDE(Vu64, vu64, uint64_t, BY_VAL);
+#endif
 
 /* other types of vectors */
 struct Node;
 VEC_INCLUDE(VNode, vnode, struct Node, BY_REF);
 VEC_INCLUDE(VrNode, vrnode, struct Node *, BY_VAL);
+
+struct View;
+VEC_INCLUDE(VView, vview, struct View, BY_VAL);
 
 #define VECTOR_H
 #endif
