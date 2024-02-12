@@ -34,7 +34,9 @@ inline int str_fmt_va(Str *str, char *format, va_list argp)
 {
     va_list argp2;
     va_copy(argp2, argp);
-    size_t len_app = (size_t)vsnprintf(0, 0, format, argp);
+    size_t len_app = (size_t)vsnprintf(0, 0, format, argp2);
+    va_end(argp2);
+
     if((int)len_app < 0) {
         return -1;
     }
@@ -44,7 +46,7 @@ inline int str_fmt_va(Str *str, char *format, va_list argp)
         return -1;
     }
     // actual append
-    int len_chng = vsnprintf(&(str->s)[str->last], len_app + 1, format, argp2);
+    int len_chng = vsnprintf(&(str->s)[str->last], len_app + 1, format, argp);
     // check for success
     if(len_chng >= 0 && (size_t)len_chng <= len_app) {
         str->last += (size_t)len_chng; // successful, change length
