@@ -60,6 +60,7 @@
 
 int platform_getch(void);
 void platform_clear(void);
+void platform_trace(void);
 
 #define PLATFORM_H
 #endif
