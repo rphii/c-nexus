@@ -93,7 +93,7 @@ void nexus_free(Nexus *nexus) //{{{
     tnode_free(&nexus->nodes);
     vview_free(&nexus->views);
     vrnode_free(&nexus->findings);
-    //view_free(nexus->view);
+    view_free(&nexus->view);
 } //}}}
 
 int nexus_userinput(Nexus *nexus, char key)
@@ -383,7 +383,9 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id)
 {
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(view, ERR_NULL_ARG);
-    if(nexus->views.cap > nexus->views.last) view_free(&nexus->views.items[nexus->views.last]);
+    if(nexus->views.cap > nexus->views.last) {
+        view_free(&nexus->views.items[nexus->views.last]);
+    }
     View ref;
     TRY(view_copy(&ref, view), ERR_VIEW_COPY);
     TRY(vview_push_back(&nexus->views, ref), ERR_VEC_PUSH_BACK);
@@ -391,6 +393,7 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id)
     ViewList id_post = VIEW_NONE;
     Node *current = view->current; /* we always want to keep that anyways */
     /* init view to be changed into */
+    view_free(view);
     memset(view, 0, sizeof(*view));
     view->current = current;
     view->id = id;
@@ -419,11 +422,8 @@ int nexus_history_back(Nexus *nexus, View *view) //{{{
     ASSERT(view, ERR_NULL_ARG);
     if(vview_length(&nexus->views)) {
         view_free(view);
-        //if(nexus->views.cap > nexus->views.last) nexus->views.items[nexus->views.last] = *view;
-        //vview_set_at(&nexus->views, vview_length(&nexus->views) - 1, *view);
         View ref;
         vview_pop_back(&nexus->views, &ref);
-        view_free(view);
         TRY(view_copy(view, &ref), ERR_VIEW_COPY);
     }
     return 0;
