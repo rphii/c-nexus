@@ -912,10 +912,13 @@ typedef enum
         assert(src); \
         assert(dst != src); \
         A##_clear(dst); \
-        int result = A##_reserve(dst, A##_length(src)); \
-        if(result) return result; \
-        for(size_t i = 0; i < A##_length(src); i++) { \
-            result |= result ?: A##_push_back(dst, A##_get_at(src, i)); \
+        int result = 0; \
+        if(A##_length(src)) { \
+            result = A##_reserve(dst, A##_length(src)); \
+            if(result) return result; \
+            for(size_t i = 0; i < A##_length(src); i++) { \
+                result |= result ?: A##_push_back(dst, A##_get_at(src, i)); \
+            } \
         } \
         return result; \
     }
