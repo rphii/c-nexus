@@ -57,11 +57,10 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
 
 clean:
     /* finished this thread .. make space for next thread */
-    NexusThreadSearch_ThreadQueue *queue = arg->queue;
-    pthread_mutex_lock(&queue->mutex);
-    queue->q[(queue->i0 + queue->len) % PROC_COUNT] = arg;
-    ++queue->len;
-    pthread_mutex_unlock(&queue->mutex);
+    pthread_mutex_lock(&arg->queue->mutex);
+    arg->queue->q[(arg->queue->i0 + arg->queue->len) % PROC_COUNT] = arg;
+    ++arg->queue->len;
+    pthread_mutex_unlock(&arg->queue->mutex);
 
     return 0;
 error:
@@ -152,8 +151,8 @@ int nexus_userinput(Nexus *nexus, int key)
             }
         } break;
         case VIEW_SEARCH: {
+            size_t len_search = str_length(&view->search);
             if(view->edit) {
-                size_t len_search = str_length(&view->search);
                 if(key >= 0x20 && key != 127) {
                     TRY(str_fmt(&view->search, "%c", key), ERR_STR_FMT);
                 } else if(key == 127) {
@@ -165,11 +164,6 @@ int nexus_userinput(Nexus *nexus, int key)
                 } else if(key == 27) {
                     TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
                 }
-                /* post processing */
-                if(len_search != str_length(&view->search)) {
-                    nexus->findings_updated = false;
-                }
-
             } else {
                 size_t len = vrnode_length(&nexus->findings);
                 switch(key) {
@@ -224,6 +218,11 @@ int nexus_userinput(Nexus *nexus, int key)
                     default: break;
                 }
             }
+            /* post processing */
+            if(len_search != str_length(&view->search)) {
+                nexus->findings_updated = false;
+            }
+
         } break;
         default: THROW("unknown view id: %u", view->id);
     }
@@ -290,9 +289,13 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
 
     /* search */
     size_t len_t = (1UL << (tnodes->width - 1));
+    size_t last_t = 0;
+    for(size_t i = 0; i < len_t; i++) {
+        if(tnodes->buckets[i].len) last_t = i;
+    }
     for(size_t i = 0; i < len_t; ++i) {
         size_t len = tnodes->buckets[i].len;
-        for(size_t j = 0; j < len; ++j) {
+        for(size_t j = 0; j < len || job_counter == SEARCH_THREAD_BATCH; ++j) {
             if(job_counter < SEARCH_THREAD_BATCH) {
                 /* set ub jobs */
                 if(job_counter == 0) {
@@ -303,7 +306,7 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
                     job[job_counter].j = j;
                     ++job_counter;
                 }
-                if(j + 1 == len && i + 1 == len_t) {
+                if(j + 1 == len && i == last_t) {
                     job_counter = SEARCH_THREAD_BATCH;
                 }
             } else {
