@@ -9,7 +9,6 @@
 
 typedef struct Nexus {
     TNode nodes;
-    //VrNode history;
     VView views;
     View view;
     bool show_desc;
@@ -52,7 +51,7 @@ ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst);
     } while(0)
 
 #define ERR_NEXUS_USERINPUT "failed processing user input"
-ErrDecl nexus_userinput(Nexus *nexus, char key);
+ErrDecl nexus_userinput(Nexus *nexus, int key);
 
 #define ERR_NEXUS_GET "failed getting nexus node"
 Node *nexus_get(Nexus *nexus, const char *title);
