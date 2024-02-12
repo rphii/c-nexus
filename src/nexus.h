@@ -5,10 +5,17 @@
 #include "node.h"
 #include "vector.h"
 #include "lookup.h"
+#include "view.h"
 
 typedef struct Nexus {
     TNode nodes;
-    VrNode history;
+    //VrNode history;
+    VView views;
+    View view;
+    bool show_desc;
+    bool quit;
+    size_t max_preview;
+    VrNode findings;
 } Nexus;
 
 #define ERR_NEXUS_INIT "failed initialization of nexus"
@@ -44,6 +51,9 @@ ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst);
         } \
     } while(0)
 
+#define ERR_NEXUS_USERINPUT "failed processing user input"
+ErrDecl nexus_userinput(Nexus *nexus, char key);
+
 #define ERR_NEXUS_GET "failed getting nexus node"
 Node *nexus_get(Nexus *nexus, const char *title);
 
@@ -51,9 +61,13 @@ Node *nexus_get(Nexus *nexus, const char *title);
 ErrDecl nexus_search(Nexus *nexus, Str *search, VrNode *findings);
 
 #define ERR_NEXUS_FOLLOW_SUB "failed following current nexus node"
-ErrDecl nexus_follow_sub(Nexus *nexus, Node **current);
+ErrDecl nexus_follow_sub(Nexus *nexus, View *view);
 
-void nexus_history_back(Nexus *nexus, Node **current);
+#define ERR_NEXUS_CHANGE_VIEW "failed changing view"
+ErrDecl nexus_change_view(Nexus *nexus, View *view, ViewList id);
+
+#define ERR_NEXUS_HISTORY_BACK "failed going back in history"
+ErrDecl nexus_history_back(Nexus *nexus, View *view);
 
 #define ERR_NEXUS_BUILD "failed building nexus"
 ErrDecl nexus_build(Nexus *nexus);

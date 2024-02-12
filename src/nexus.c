@@ -65,6 +65,21 @@ int nexus_init(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     TRY(tnode_init(&nexus->nodes, 12), ERR_LUTD_INIT);
+    TRY(nexus_build(nexus), ERR_NEXUS_BUILD);
+    /* configure settings */
+    nexus->show_desc = true;
+    nexus->max_preview = 20;
+    /* set up view */
+    nexus->view.id = VIEW_NORMAL;
+    switch(nexus->view.id) {
+        case VIEW_NORMAL: {
+            TRY(!(nexus->view.current = nexus_get(nexus, NEXUS_ROOT)), ERR_NEXUS_GET);
+        } break;
+        case VIEW_SEARCH: {
+            ASSERT(0, "implementation missing");
+        } break;
+        default: THROW("unknown view id: %u", nexus->view.id);
+    }
     return 0;
 error:
     return -1;
@@ -74,8 +89,109 @@ void nexus_free(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     tnode_free(&nexus->nodes);
-    vrnode_free(&nexus->history);
+    vview_free(&nexus->views);
+    vrnode_free(&nexus->findings);
+    //view_free(nexus->view);
 } //}}}
+
+int nexus_userinput(Nexus *nexus, char key)
+{
+    ASSERT(nexus, ERR_NULL_ARG);
+    View *view = &nexus->view;
+    ASSERT(view, "view is 0!\n");
+    switch(view->id) {
+        case VIEW_NORMAL: {
+            switch(key) {
+                case ' ': {
+                    nexus->show_desc ^= true;
+                } break;
+                case 'j': {
+                    node_set_sub(view->current, &view->sub_sel, view->sub_sel + 1);
+                } break;
+                case 'k': {
+                    node_set_sub(view->current, &view->sub_sel, view->sub_sel - 1);
+                } break;
+                case 'l': {
+                    TRY(nexus_change_view(nexus, view, VIEW_NORMAL), ERR_NEXUS_CHANGE_VIEW);
+                    TRY(nexus_follow_sub(nexus, view), ERR_NEXUS_FOLLOW_SUB);
+                } break;
+                case 'h': {
+                    TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
+                } break;
+                case 'Q':
+                case 'q': {
+                    nexus->quit = true;
+                } break;
+                case 'f': {
+                    TRY(nexus_change_view(nexus, view, VIEW_SEARCH), ERR_NEXUS_CHANGE_VIEW);
+                } break;
+                default: break;
+            }
+        } break;
+        case VIEW_SEARCH: {
+            if(view->edit) {
+                if(key >= 0x20 && key != 127) {
+                    TRY(str_fmt(&view->search, "%c", key), ERR_STR_FMT);
+                } else if(key == 127) {
+                    if(str_length(&view->search)) str_pop_back(&view->search, 0);
+                } else if(key == 8) {
+                    str_pop_back_word(&view->search);
+                } else if(key == '\n') {
+                    view->edit = false;
+                } else if(key == 27) {
+                    TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
+                }
+            } else {
+                size_t len = vrnode_length(&nexus->findings);
+                switch(key) {
+                    case ' ': {
+                        nexus->show_desc ^= true;
+                    } break;
+                    case 'j': {
+                        if(SIZE_IS_NEG(view->sub_sel)) view->sub_sel = 0;
+                        ++view->sub_sel;
+                        if(view->sub_sel >= len) {
+                            view->sub_sel = 0;
+                        }
+                    } break;
+                    case 'k': {
+                        if(view->sub_sel > len) view->sub_sel = len ? len - 1 : 0;
+                        --view->sub_sel;
+                        if(SIZE_IS_NEG(view->sub_sel)) {
+                            view->sub_sel = len ? len - 1 : 0;
+                        }
+                    } break;
+                    case 'l': {
+                        if(view->sub_sel < vrnode_length(&nexus->findings)) {
+                            Node *target = vrnode_get_at(&nexus->findings, view->sub_sel);
+                            TRY(nexus_change_view(nexus, view, VIEW_NORMAL), ERR_NEXUS_CHANGE_VIEW);
+                            TRY(!(view->current = nexus_get(nexus, target->title.s)), ERR_NEXUS_GET); /* risky */
+                        }
+                    } break;
+                    case '\n':
+                    case 'f': {
+                        view->edit = true;
+                    } break;
+                    case 'F': {
+                        str_clear(&view->search);
+                        view->edit = true;
+                    } break;
+                    case 'h':
+                    case 'q':
+                    case 'Q':
+                    case 27: {
+                        TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
+                    } break;
+                    default: break;
+                }
+            }
+        } break;
+        default: THROW("unknown view id: %u", view->id);
+    }
+    return 0;
+error:
+    return -1;
+}
 
 Node *nexus_get(Nexus *nexus, const char *title) //{{{
 {
@@ -237,35 +353,78 @@ error:
     return -1;
 } //}}}
 
-int nexus_follow_sub(Nexus *nexus, Node **current) //{{{
+int nexus_follow_sub(Nexus *nexus, View *view) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
+    ASSERT(view, ERR_NULL_ARG);
+    Node *current = view->current;
     ASSERT(current, ERR_NULL_ARG);
-    size_t sO = vrnode_length(&(*current)->outgoing);
-    size_t sI = vrnode_length(&(*current)->incoming);
-    Node *result = (*current);
-    if((*current)->sub_index < sO) {
-        result = vrnode_get_at(&(*current)->outgoing, (*current)->sub_index);
-    } else if((*current)->sub_index - sO < sI) {
-        result = vrnode_get_at(&(*current)->incoming, (*current)->sub_index - sO);
+    size_t sO = vrnode_length(&current->outgoing);
+    size_t sI = vrnode_length(&current->incoming);
+    Node *result = current;
+    if(view->sub_sel < sO) {
+        result = vrnode_get_at(&current->outgoing, view->sub_sel);
+    } else if(view->sub_sel - sO < sI) {
+        result = vrnode_get_at(&current->incoming, view->sub_sel - sO);
     } else if(sO+sI) {
-        THROW("sub_index '%zu' too large", (*current)->sub_index);
+        THROW("sub_index '%zu' too large", view->sub_sel);
     }
-    TRY(vrnode_push_back(&nexus->history, *current), ERR_VEC_PUSH_BACK);
-    *current = result;
-    (*current)->sub_index = result->sub_index;
+    view->current = result;
     return 0;
 error:
     return -1;
 } //}}}
 
-void nexus_history_back(Nexus *nexus, Node **current) //{{{
+int nexus_change_view(Nexus *nexus, View *view, ViewList id)
 {
     ASSERT(nexus, ERR_NULL_ARG);
-    ASSERT(current, ERR_NULL_ARG);
-    if(vrnode_length(&nexus->history)) {
-        vrnode_pop_back(&nexus->history, current);
+    ASSERT(view, ERR_NULL_ARG);
+    if(nexus->views.cap > nexus->views.last) view_free(&nexus->views.items[nexus->views.last]);
+    View ref;
+    TRY(view_copy(&ref, view), ERR_VIEW_COPY);
+    TRY(vview_push_back(&nexus->views, ref), ERR_VEC_PUSH_BACK);
+    /* check history if we maybe have one item to use */
+    ViewList id_post = VIEW_NONE;
+    Node *current = view->current; /* we always want to keep that anyways */
+    /* init view to be changed into */
+    memset(view, 0, sizeof(*view));
+    view->current = current;
+    view->id = id;
+    /* init the different views */
+    switch(id) {
+        case VIEW_NORMAL: {
+            view->edit = false;
+        } break;
+        case VIEW_SEARCH: {
+            if(id_post != VIEW_SEARCH) {
+                str_clear(&view->search);
+                view->edit = true;
+            }
+        } break;
+        case VIEW_NONE: THROW("view id should not be NONE");
+        default: THROW("unknown view id: %u", id);
     }
+    return 0;
+error:
+    return -1;
+}
+
+int nexus_history_back(Nexus *nexus, View *view) //{{{
+{
+    ASSERT(nexus, ERR_NULL_ARG);
+    ASSERT(view, ERR_NULL_ARG);
+    if(vview_length(&nexus->views)) {
+        view_free(view);
+        //if(nexus->views.cap > nexus->views.last) nexus->views.items[nexus->views.last] = *view;
+        //vview_set_at(&nexus->views, vview_length(&nexus->views) - 1, *view);
+        View ref;
+        vview_pop_back(&nexus->views, &ref);
+        view_free(view);
+        TRY(view_copy(view, &ref), ERR_VIEW_COPY);
+    }
+    return 0;
+error:
+    return -1;
 } //}}}
 
 int nexus_build_math(Nexus *nexus, Node *anchor) /*{{{*/
