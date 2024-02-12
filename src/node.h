@@ -13,7 +13,7 @@ typedef struct Node {
     Str desc;
     VrNode outgoing;
     VrNode incoming;
-    size_t sub_index;
+    //size_t sub_index;
     //VNode nodes;
     //Node *prev;
     //Node *rejoin;
@@ -26,14 +26,20 @@ typedef struct Node {
 void node_zero(Node *node);
 void node_free(Node *node);
 
-#define ERR_NODE_PRINT "failed printing node"
-ErrDecl node_print(Node *node, bool show_desc);
-
 #define ERR_NODE_CREATE "failed creating node"
 ErrDecl node_create(Node *node, const char *title, const char *desc, Icon icon);
 
 #define ERR_NODE_FOLLOW "failed following node"
 ErrDecl node_follow(Node **node, size_t *sub_sel);
+
+#define ERR_NODE_FMT_DESC "failed formatting node description"
+ErrDecl node_fmt_desc(Str *out, Node *node);
+
+#define ERR_NODE_FMT_SUB "failed formatting sub nodes"
+ErrDecl node_fmt_sub(Str *out, Node *node, bool show_desc, size_t sub_sel);
+
+#define ERR_NODE_FMT "failed formatting node"
+int node_fmt(Str *out, Node *node, bool show_desc, const char *select);
 
 void node_set_sub(Node *node, size_t *sub_sel, size_t to_set);
 

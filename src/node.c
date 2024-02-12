@@ -19,57 +19,61 @@ void node_free(Node *node)
     node_zero(node);
 }
 
-int node_print(Node *node, bool show_desc)
+int node_fmt_desc(Str *out, Node *node)
 {
+    ASSERT(out, ERR_NULL_ARG);
     ASSERT(node, ERR_NULL_ARG);
-    int err = 0;
-    Str p = {0};
+    if(str_length(&node->desc)) {
+        TRY(str_fmt(out, "\n%.*s\n\n", STR_F(&node->desc)), ERR_STR_FMT);
+    } else {
+        TRY(str_fmt(out, F("\nno description.\n\n", IT)), ERR_STR_FMT);
+    }
+    return 0;
+error:
+    return -1;
+}
+
+int node_fmt(Str *out, Node *node, bool show_desc, const char *select)
+{
+    ASSERT(out, ERR_NULL_ARG);
+    ASSERT(node, ERR_NULL_ARG);
+    ASSERT(select, ERR_NULL_ARG);
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
-    size_t sub_sel = node->sub_index;
-    TRY(str_fmt(&p, "" NODE_FMT_LEN_SUB " :: %s %.*s \n", sO+sI, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
+    TRY(str_fmt(out, "" NODE_FMT_LEN_SUB " :: %s%s %.*s \n", sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
     if(show_desc) {
-        if(str_length(&node->desc)) {
-            TRY(str_fmt(&p, "\n%.*s\n\n", STR_F(&node->desc)), ERR_STR_FMT);
-        } else {
-            TRY(str_fmt(&p, F("\nno description.\n\n", IT)), ERR_STR_FMT);
-        }
+        TRY(node_fmt_desc(out, node), ERR_NODE_FMT_DESC);
     }
-    /* outgoing */
+    return 0;
+error:
+    return -1;
+}
+
+int node_fmt_sub(Str *out, Node *node, bool show_desc, size_t sub_sel)
+{
+    ASSERT(out, ERR_NULL_ARG);
+    ASSERT(node, ERR_NULL_ARG);
+    size_t sO = vrnode_length(&node->outgoing);
+    size_t sI = vrnode_length(&node->incoming);
     size_t iE = 0;
     Node *sub_info = 0;
     for(size_t i = 0; i < sO; i++, iE++) {
         Node *sub = vrnode_get_at(&node->outgoing, i);
-        size_t len_io = vrnode_length(&sub->outgoing) + vrnode_length(&sub->incoming);
-        TRY(str_fmt(&p, "" NODE_FMT_LEN_SUB " :: %s %s %.*s \n", len_io, iE == sub_sel ? "-->" : "  >", icon_str(sub->icon), STR_F(&sub->title)), ERR_STR_FMT);
+        TRY(node_fmt(out, sub, false, iE == sub_sel ? "--> " : "  > "), ERR_NODE_FMT);
         if(iE == sub_sel) sub_info = sub;
     }
     /* incoming */
     for(size_t i = 0; i < sI; i++, iE++) {
         Node *sub = vrnode_get_at(&node->incoming, i);
-        size_t len_io = vrnode_length(&sub->outgoing) + vrnode_length(&sub->incoming);
-        TRY(str_fmt(&p, "" NODE_FMT_LEN_SUB " :: %s %s %.*s \n", len_io, iE == sub_sel ? "<--" : "<  ", icon_str(sub->icon), STR_F(&sub->title)), ERR_STR_FMT);
+        TRY(node_fmt(out, sub, false, iE == sub_sel ? "<-- " : "<   "), ERR_NODE_FMT);
         if(iE == sub_sel) sub_info = sub;
     }
     if(show_desc && sub_info) {
-        if(str_length(&sub_info->desc)) {
-            TRY(str_fmt(&p, "\n%.*s\n\n", STR_F(&sub_info->desc)), ERR_STR_FMT);
-        } else {
-            TRY(str_fmt(&p, F("\nno description.\n\n", IT)), ERR_STR_FMT);
-        }
+        TRY(node_fmt_desc(out, sub_info), ERR_NODE_FMT_DESC);
     }
-    printf("%.*s", STR_F(&p));
-clean:
-    str_free(&p);
-    return err;
+    return 0;
 error:
-    ERR_CLEAN;
-#if 0
-    for(size_t i = 0; i < vnode_length(&node->nodes); i++) {
-        Node *sub = vnode_get_at(&node->nodes, i);
-        printf("%s %.*s\n", i == sub_sel ? ">" : " ", (int)str_length(&sub->title), sub->title.s);
-    }
-#endif
+    return -1;
 }
 
 int node_create(Node *node, const char *title, const char *desc, Icon icon)
@@ -101,7 +105,7 @@ int node_follow(Node **node, size_t *sub_sel)
         THROW("sub_sel '%zu' too large", *sub_sel);
     }
     *node = result;
-    *sub_sel = result->sub_index;
+    *sub_sel = 0; //result->sub_index;
     return 0;
 error:
     return -1;
@@ -121,13 +125,15 @@ void node_set_sub(Node *node, size_t *sub_sel, size_t to_set)
     } else {
         *sub_sel = to_set;
     }
-    node->sub_index = *sub_sel;
+    //node->sub_index = *sub_sel;
 }
 
+#if 0
 void node_mv_vertical(Node *node, int count)
 {
     node_set_sub(node, &node->sub_index, node->sub_index + (size_t)count);
 }
+#endif
 
 
 
