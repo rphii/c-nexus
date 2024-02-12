@@ -40,7 +40,6 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
     NexusThreadSearch *arg = args;
 
     /* thread processing / search */
-    Str timefmt = {0};
     for(size_t ib = 0; ib < SEARCH_THREAD_BATCH; ib++) {
         size_t i = arg->job[ib].i;
         size_t j = arg->job[ib].j;
@@ -48,8 +47,7 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
         Node *node = arg->tnodes->buckets[i].items[j];
         str_clear(&arg->cmd);
         str_clear(&arg->content);
-        TRY(time_fmt(&timefmt, node->date, 0), ERR_TIME_FMT);
-        int found = search_fmt_nofree(true, &arg->cmd, &arg->content, arg->search, "%.*s %.*s %.*s", STR_F(&timefmt), STR_F(&node->title), STR_F(&node->desc));
+        int found = search_fmt_nofree(true, &arg->cmd, &arg->content, arg->search, "%s %.*s %.*s", icon_str(node->icon), STR_F(&node->title), STR_F(&node->desc));
         if(found) {
             pthread_mutex_lock(arg->findings_mutex);
             TRY(vrnode_push_back(arg->findings, node), ERR_VEC_PUSH_BACK);
@@ -58,8 +56,6 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
     }
 
 clean:
-    str_free(&timefmt);
-
     /* finished this thread .. make space for next thread */
     NexusThreadSearch_ThreadQueue *queue = arg->queue;
     pthread_mutex_lock(&queue->mutex);
