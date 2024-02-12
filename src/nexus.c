@@ -15,17 +15,23 @@
 
 /* local thread: search {{{ */
 
+#define SEARCH_THREAD_BATCH     16
+
+typedef struct NexusThreadSearchJob {
+    size_t i;
+    size_t j;
+} NexusThreadSearchJob;
+
 ThreadQueue(NexusThreadSearch) /* {{{ */
 typedef struct NexusThreadSearch {
     TNode *tnodes;
-    size_t i;
-    size_t j;
     size_t human;
     Str cmd;
     Str content;
     Str *search;
     pthread_mutex_t *findings_mutex;
     VrNode *findings;
+  NexusThreadSearchJob job[SEARCH_THREAD_BATCH];
   NexusThreadSearch_ThreadQueue *queue;
 } NexusThreadSearch; /* }}} */
 
@@ -34,28 +40,38 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
     NexusThreadSearch *arg = args;
 
     /* thread processing / search */
-    Node *node = arg->tnodes->buckets[arg->i].items[arg->j];
-    str_clear(&arg->cmd);
-    str_clear(&arg->content);
-    int found = search_fmt_nofree(true, &arg->cmd, &arg->content, arg->search, "%s %.*s %.*s", icon_str(node->icon), STR_F(&node->title), STR_F(&node->desc));
-    if(found) {
-        pthread_mutex_lock(arg->findings_mutex);
-        TRY(vrnode_push_back(arg->findings, node), ERR_VEC_PUSH_BACK);
-        pthread_mutex_unlock(arg->findings_mutex);
+    Str timefmt = {0};
+    for(size_t ib = 0; ib < SEARCH_THREAD_BATCH; ib++) {
+        size_t i = arg->job[ib].i;
+        size_t j = arg->job[ib].j;
+        if(SIZE_IS_NEG(i) || SIZE_IS_NEG(j)) continue;
+        Node *node = arg->tnodes->buckets[i].items[j];
+        str_clear(&arg->cmd);
+        str_clear(&arg->content);
+        TRY(time_fmt(&timefmt, node->date, 0), ERR_TIME_FMT);
+        int found = search_fmt_nofree(true, &arg->cmd, &arg->content, arg->search, "%.*s %.*s %.*s", STR_F(&timefmt), STR_F(&node->title), STR_F(&node->desc));
+        if(found) {
+            pthread_mutex_lock(arg->findings_mutex);
+            TRY(vrnode_push_back(arg->findings, node), ERR_VEC_PUSH_BACK);
+            pthread_mutex_unlock(arg->findings_mutex);
+        }
     }
 
 clean:
+    str_free(&timefmt);
 
     /* finished this thread .. make space for next thread */
-    pthread_mutex_lock(&arg->queue->mutex);
-    arg->queue->q[(arg->queue->i0 + arg->queue->len) % PROC_COUNT] = arg;
-    ++arg->queue->len;
-    pthread_mutex_unlock(&arg->queue->mutex);
+    NexusThreadSearch_ThreadQueue *queue = arg->queue;
+    pthread_mutex_lock(&queue->mutex);
+    queue->q[(queue->i0 + queue->len) % PROC_COUNT] = arg;
+    ++queue->len;
+    pthread_mutex_unlock(&queue->mutex);
 
     return 0;
 error:
     goto clean;
 } /* }}} */
+
 
 /* }}} */
 
@@ -141,10 +157,11 @@ int nexus_userinput(Nexus *nexus, int key)
         } break;
         case VIEW_SEARCH: {
             if(view->edit) {
+                size_t len_search = str_length(&view->search);
                 if(key >= 0x20 && key != 127) {
                     TRY(str_fmt(&view->search, "%c", key), ERR_STR_FMT);
                 } else if(key == 127) {
-                    if(str_length(&view->search)) str_pop_back(&view->search, 0);
+                    if(len_search) str_pop_back(&view->search, 0);
                 } else if(key == 8) {
                     str_pop_back_word(&view->search);
                 } else if(key == '\n') {
@@ -152,6 +169,11 @@ int nexus_userinput(Nexus *nexus, int key)
                 } else if(key == 27) {
                     TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
                 }
+                /* post processing */
+                if(len_search != str_length(&view->search)) {
+                    nexus->findings_updated = false;
+                }
+
             } else {
                 size_t len = vrnode_length(&nexus->findings);
                 switch(key) {
@@ -246,6 +268,8 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
     TNode *tnodes = &nexus->nodes;
     NexusThreadSearch thr_search[PROC_COUNT] = {0};
     NexusThreadSearch_ThreadQueue thr_queue = {0};
+    NexusThreadSearchJob job[SEARCH_THREAD_BATCH] = {0};
+    size_t job_counter = 0;
     pthread_attr_t thr_attr;
     pthread_mutex_t findings_mutex;
 
@@ -269,21 +293,41 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
     assert(thr_queue.len <= PROC_COUNT);
 
     /* search */
-    for(size_t i = 0; i < (1ULL << (tnodes->width - 1)); ++i) {
+    size_t len_t = (1UL << (tnodes->width - 1));
+    for(size_t i = 0; i < len_t; ++i) {
         size_t len = tnodes->buckets[i].len;
         for(size_t j = 0; j < len; ++j) {
-            pthread_mutex_lock(&thr_queue.mutex);
-            if(thr_queue.len) {
-                NexusThreadSearch *thr = thr_queue.q[thr_queue.i0];
-                thr->i = i;
-                thr->j = j;
-                pthread_create(&thr->queue->id, &thr_attr, nexus_static_thread_search, thr);
-                thr_queue.i0 = (thr_queue.i0 + 1) % PROC_COUNT;
-                --thr_queue.len;
+            if(job_counter < SEARCH_THREAD_BATCH) {
+                /* set ub jobs */
+                if(job_counter == 0) {
+                    memset(&job, 0xFF, sizeof(job));
+                }
+                if(job_counter < SEARCH_THREAD_BATCH) {
+                    job[job_counter].i = i;
+                    job[job_counter].j = j;
+                    ++job_counter;
+                }
+                if(j + 1 == len && i + 1 == len_t) {
+                    job_counter = SEARCH_THREAD_BATCH;
+                }
             } else {
-                --j;
+                /* this section is responsible for starting the thread */
+                pthread_mutex_lock(&thr_queue.mutex);
+                if(thr_queue.len) {
+                    NexusThreadSearch *thr = thr_queue.q[thr_queue.i0];
+                    /* load job */
+                    memcpy(thr->job, &job, sizeof(job));
+                    job_counter = 0;
+                    /* create thread */
+                    pthread_create(&thr->queue->id, &thr_attr, nexus_static_thread_search, thr);
+                    thr_queue.i0 = (thr_queue.i0 + 1) % PROC_COUNT;
+                    --thr_queue.len;
+                } else {
+                    --j;
+                }
+                pthread_mutex_unlock(&thr_queue.mutex);
             }
-            pthread_mutex_unlock(&thr_queue.mutex);
+
         }
     }
 

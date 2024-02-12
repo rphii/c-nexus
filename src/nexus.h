@@ -16,6 +16,7 @@ typedef struct Nexus {
     bool quit;
     size_t max_preview;
     VrNode findings;
+    bool findings_updated;
 } Nexus;
 
 #define ERR_NEXUS_INIT "failed initialization of nexus"
