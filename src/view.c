@@ -23,7 +23,10 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             /* first perform the search */
             Str *search = &view->search;
             VrNode *findings = &nexus->findings;
-            TRY(nexus_search(nexus, search, findings), ERR_NEXUS_SEARCH);
+            if(!nexus->findings_updated) {
+                TRY(nexus_search(nexus, search, findings), ERR_NEXUS_SEARCH);
+                nexus->findings_updated = true;
+            }
             /* check that sub selection is in bounds */
             size_t sub_sel = view->sub_sel;
             size_t sub_max = vrnode_length(findings);
