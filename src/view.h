@@ -24,6 +24,8 @@ typedef struct View {
 
 void view_free(View *view);
 
+void view_init(View *view, ViewList id);
+
 #define ERR_VIEW_FMT "failed formatting view"
 ErrDecl view_fmt(struct Nexus *nexus, Str *out, View *view);
 

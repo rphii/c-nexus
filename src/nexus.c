@@ -70,15 +70,17 @@ int nexus_init(Nexus *nexus) //{{{
     nexus->show_desc = true;
     nexus->max_preview = 20;
     /* set up view */
-    nexus->view.id = VIEW_NORMAL;
-    switch(nexus->view.id) {
+    View *view = &nexus->view;
+    view->id = VIEW_NORMAL;
+    switch(view->id) {
         case VIEW_NORMAL: {
-            TRY(!(nexus->view.current = nexus_get(nexus, NEXUS_ROOT)), ERR_NEXUS_GET);
+            TRY(!(view->current = nexus_get(nexus, NEXUS_ROOT)), ERR_NEXUS_GET);
         } break;
         case VIEW_SEARCH: {
-            ASSERT(0, "implementation missing");
+            view->edit = true;
         } break;
-        default: THROW("unknown view id: %u", nexus->view.id);
+        case VIEW_NONE: THROW("view id should not be NONE");
+        default: THROW("unknown view id: %u", view->id);
     }
     return 0;
 error:
@@ -176,9 +178,11 @@ int nexus_userinput(Nexus *nexus, char key)
                         str_clear(&view->search);
                         view->edit = true;
                     } break;
-                    case 'h':
-                    case 'q':
                     case 'Q':
+                    case 'q': {
+                        nexus->quit = true;
+                    } break;
+                    case 'h':
                     case 27: {
                         TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
                     } break;
