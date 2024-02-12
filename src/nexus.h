@@ -12,6 +12,7 @@ typedef struct Nexus {
     VView views;
     View view;
     bool show_desc;
+    bool show_preview;
     bool quit;
     size_t max_preview;
     VrNode findings;
@@ -68,11 +69,16 @@ ErrDecl nexus_change_view(Nexus *nexus, View *view, ViewList id);
 #define ERR_NEXUS_HISTORY_BACK "failed going back in history"
 ErrDecl nexus_history_back(Nexus *nexus, View *view);
 
+
+
 #define ERR_NEXUS_BUILD "failed building nexus"
 ErrDecl nexus_build(Nexus *nexus);
 
+#define ERR_NEXUS_BUILD_CONTROLS "failed building controls"
+ErrDecl nexus_build_controls(Nexus *nexus, Node *anchor);
+
 #define ERR_NEXUS_BUILD_MATH "failed building math"
-int nexus_build_math(Nexus *nexus, Node *anchor);
+ErrDecl nexus_build_math(Nexus *nexus, Node *anchor);
 
 #define ERR_NEXUS_BUILD_PHYSICS "failed building physics"
 ErrDecl nexus_build_physics(Nexus *nexus, Node *anchor);
