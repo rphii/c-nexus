@@ -96,7 +96,7 @@ void nexus_free(Nexus *nexus) //{{{
     view_free(&nexus->view);
 } //}}}
 
-int nexus_userinput(Nexus *nexus, char key)
+int nexus_userinput(Nexus *nexus, int key)
 {
     ASSERT(nexus, ERR_NULL_ARG);
     View *view = &nexus->view;
@@ -164,6 +164,8 @@ int nexus_userinput(Nexus *nexus, char key)
                         }
                     } break;
                     case 'l': {
+                        if(SIZE_IS_NEG(view->sub_sel)) view->sub_sel = 0;
+                        if(view->sub_sel > len) view->sub_sel = len ? len - 1 : 0;
                         if(view->sub_sel < vrnode_length(&nexus->findings)) {
                             Node *target = vrnode_get_at(&nexus->findings, view->sub_sel);
                             TRY(nexus_change_view(nexus, view, VIEW_NORMAL), ERR_NEXUS_CHANGE_VIEW);
