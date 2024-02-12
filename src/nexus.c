@@ -465,6 +465,7 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id)
             view->edit = false;
         } break;
         case VIEW_SEARCH: {
+            view->sub_sel = 0;
             if(id_post != VIEW_SEARCH) {
                 str_clear(&view->search);
                 view->edit = true;
