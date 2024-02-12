@@ -30,6 +30,8 @@ SOFTWARE. */
 
 #include <stdio.h>
 
+#include "platform.h"
+
 #ifndef vec_malloc
 #define vec_malloc  malloc
 #endif
@@ -68,6 +70,8 @@ SOFTWARE. */
 #endif
 
 #define ERR_VEC_PUSH_BACK "failed pushing value to vector"
+#define ERR_VEC_RESIZE "failed resizing vector"
+#define ERR_VEC_RESERVE "failed reserving memory in vector"
 
 #ifndef VEC_H
 
@@ -251,6 +255,7 @@ typedef enum
 #define VEC_IMPLEMENT_COMMON_STATIC_GET(N, A, T, F, M) \
     static inline VEC_ITEM(T, M) *A##_static_get(N *vec, size_t index) \
     { \
+        if(!vec || !(index < vec->last) || !(index >= vec->first)) platform_trace(); \
         assert(vec); \
         assert(index < vec->last); \
         assert(index >= vec->first); \
