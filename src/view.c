@@ -15,8 +15,8 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
     switch(view->id) {
         case VIEW_NORMAL: {
             Node *current = view->current;
-            TRY(node_fmt(out, current, nexus->show_desc, ""), ERR_NODE_FMT);
-            TRY(node_fmt_sub(out, current, nexus->show_desc, view->sub_sel), ERR_NODE_FMT_SUB);
+            TRY(node_fmt(out, current, nexus->show_desc, "", false), ERR_NODE_FMT);
+            TRY(node_fmt_sub(out, current, nexus->show_desc, nexus->show_preview, view->sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_SEARCH: {
             ASSERT(nexus->max_preview, "max_preview cannot be 0");
@@ -41,7 +41,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
                     select = "--> ";
                     node_desc = node;
                 }
-                TRY(node_fmt(out, node, false, select), ERR_NODE_FMT);
+                TRY(node_fmt(out, node, false, select, (node_desc == node)), ERR_NODE_FMT);
             }
             if(vrnode_length(findings) > nexus->max_preview) {
                 TRY(str_fmt(out, F("... (" F("%4zu", IT FG_YL_B) " more)\n", IT), vrnode_length(findings) - nexus->max_preview), ERR_STR_FMT);
