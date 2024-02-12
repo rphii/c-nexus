@@ -33,14 +33,18 @@ error:
     return -1;
 }
 
-int node_fmt(Str *out, Node *node, bool show_desc, const char *select)
+int node_fmt(Str *out, Node *node, bool show_desc, const char *select, bool active)
 {
     ASSERT(out, ERR_NULL_ARG);
     ASSERT(node, ERR_NULL_ARG);
     ASSERT(select, ERR_NULL_ARG);
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
-    TRY(str_fmt(out, "" NODE_FMT_LEN_SUB " :: %s%s %.*s \n", sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
+    if(!active) {
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " :: %s%s %.*s \n", sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
+    } else { 
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " :: %s%s %.*s \n", sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT) 
+    }
     if(show_desc) {
         TRY(node_fmt_desc(out, node), ERR_NODE_FMT_DESC);
     }
@@ -49,7 +53,7 @@ error:
     return -1;
 }
 
-int node_fmt_sub(Str *out, Node *node, bool show_desc, size_t sub_sel)
+int node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t sub_sel)
 {
     ASSERT(out, ERR_NULL_ARG);
     ASSERT(node, ERR_NULL_ARG);
@@ -59,16 +63,16 @@ int node_fmt_sub(Str *out, Node *node, bool show_desc, size_t sub_sel)
     Node *sub_info = 0;
     for(size_t i = 0; i < sO; i++, iE++) {
         Node *sub = vrnode_get_at(&node->outgoing, i);
-        TRY(node_fmt(out, sub, false, iE == sub_sel ? "--> " : "  > "), ERR_NODE_FMT);
+        TRY(node_fmt(out, sub, false, iE == sub_sel ? "--> " : "  > ", iE == sub_sel), ERR_NODE_FMT);
         if(iE == sub_sel) sub_info = sub;
     }
     /* incoming */
     for(size_t i = 0; i < sI; i++, iE++) {
         Node *sub = vrnode_get_at(&node->incoming, i);
-        TRY(node_fmt(out, sub, false, iE == sub_sel ? "<-- " : "<   "), ERR_NODE_FMT);
+        TRY(node_fmt(out, sub, false, iE == sub_sel ? "<-- " : "<   ", iE == sub_sel), ERR_NODE_FMT);
         if(iE == sub_sel) sub_info = sub;
     }
-    if(show_desc && sub_info) {
+    if(show_desc && show_preview && sub_info) {
         TRY(node_fmt_desc(out, sub_info), ERR_NODE_FMT_DESC);
     }
     return 0;

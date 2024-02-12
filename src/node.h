@@ -19,7 +19,8 @@ typedef struct Node {
     //Node *rejoin;
 } Node;
 
-#define NODE_FMT_LEN_SUB    F("%zu", FG_BK_B)
+#define NODE_FMT_LEN_SUB_INACTIVE   F("%zu", FG_BK_B)
+#define NODE_FMT_LEN_SUB_ACTIVE     F("%zu", FG_CY_B)
 
 #define NODE_LEAF  0
 
@@ -36,10 +37,10 @@ ErrDecl node_follow(Node **node, size_t *sub_sel);
 ErrDecl node_fmt_desc(Str *out, Node *node);
 
 #define ERR_NODE_FMT_SUB "failed formatting sub nodes"
-ErrDecl node_fmt_sub(Str *out, Node *node, bool show_desc, size_t sub_sel);
+ErrDecl node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t sub_sel);
 
 #define ERR_NODE_FMT "failed formatting node"
-int node_fmt(Str *out, Node *node, bool show_desc, const char *select);
+int node_fmt(Str *out, Node *node, bool show_desc, const char *select, bool active);
 
 void node_set_sub(Node *node, size_t *sub_sel, size_t to_set);
 
