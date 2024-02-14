@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "platform.h"
 #include "colorprint.h"
 
@@ -10,8 +13,6 @@
 #else
 #include <unistd.h>
 #include <termios.h>
-#include <stdio.h>
-#include <stdlib.h>
 #endif
 
 int platform_getch(void)
@@ -59,7 +60,7 @@ int platform_getch(void)
 
 #endif
 
-void platform_trace(void) 
+void platform_trace(void)
 {
 #if defined(PLATFORM_LINUX)
     void* callstack[128];
