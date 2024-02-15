@@ -94,7 +94,7 @@ typedef enum {
     int A##_del(N *l, LUTD_ITEM(T, M) v); \
     bool A##_has(N *l, LUTD_ITEM(T, M) v); \
     int A##_find(N *l, LUTD_ITEM(T, M) v, size_t *i, size_t *j); \
-    int A##_free(N *l); \
+    void A##_free(N *l); \
     int A##_clear(N *l); \
     int A##_dump(N *l, LUTD_ITEM(T, M) **arr, size_t **counts, size_t *len);
 
@@ -156,10 +156,11 @@ typedef enum {
     }
 
 #define LUTD_IMPLEMENT_BY_VAL_FREE(N, A, T, C, F) \
-    int A##_free(N *l) \
+    void A##_free(N *l) \
     { \
         assert(l); \
-        for(size_t i = 0; i < 1UL << l->width; i++) { \
+        if(!l->width) return; \
+        for(size_t i = 0; i < 1UL << (l->width - 1); i++) { \
             for(size_t j = 0; j < l->buckets[i].cap; j++) { \
                 /* NOTE this is ugly, provide a way to give a clear function for sub items... */ \
                 if(F != 0) LUTD_TYPE_FREE(F, &l->buckets[i].items[j], T); \
@@ -170,7 +171,6 @@ typedef enum {
         memset(l->buckets, 0, sizeof(*l->buckets) * (1UL << l->width)); \
         free(l->buckets); \
         memset(l, 0, sizeof(*l)); \
-        return 0;   \
     }
 
 /* implementation by reference */
@@ -202,10 +202,11 @@ typedef enum {
     }
 
 #define LUTD_IMPLEMENT_BY_REF_FREE(N, A, T, C, F) \
-    int A##_free(N *l) \
+    void A##_free(N *l) \
     { \
         assert(l); \
-        for(size_t i = 0; i < 1UL << l->width; i++) { \
+        if(!l->width) return; \
+        for(size_t i = 0; i < 1UL << (l->width - 1); i++) { \
             for(size_t j = 0; j < l->buckets[i].cap; j++) { \
                 /* NOTE this is ugly, provide a way to give a clear function for sub items... */ \
                 if(F != 0) LUTD_TYPE_FREE(F, l->buckets[i].items[j], T); \
@@ -217,7 +218,6 @@ typedef enum {
         memset(l->buckets, 0, sizeof(*l->buckets) * (1UL << l->width)); \
         free(l->buckets); \
         memset(l, 0, sizeof(*l)); \
-        return 0;   \
     }
 
 /* implementation for both */
