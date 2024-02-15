@@ -9,13 +9,21 @@
 
 #include "nexus.h"
 #include "search.h"
+#include "arg.h"
 
-int main(void)
+int main(int argc, const char **argv)
 {
-    printf("Building...\n");
+    int err = 0;
 
     Str p = {0};
+    Arg arg = {0};
     Nexus nexus = {0};
+
+    TRY(arg_parse(&arg, argc, argv), ERR_ARG_PARSE);
+    if(arg.exit_early) goto clean;
+
+    INFO("Building the Nexus...");
+    TRY(nexus_arg(&nexus, &arg), ERR_NEXUS_ARG);
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
 
     while(!nexus.quit) {
@@ -27,10 +35,14 @@ int main(void)
         TRY(nexus_userinput(&nexus, key), ERR_NEXUS_USERINPUT);
     }
 
-error:
-    str_free(&p);
+clean:
+    //printf("CLEAN\n");
     nexus_free(&nexus);
-    printf("\ndone.\n");
-    return 0;
+    arg_free(&arg);
+    str_free(&p);
+    //printf("\ndone.\n");
+    return err;
+error:
+    ERR_CLEAN;
 }
 
