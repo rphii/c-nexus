@@ -50,11 +50,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
                 TRY(str_fmt(out, F("... (" F("%4zu", IT FG_YL_B) " more)\n", IT), vrnode_length(findings) - nexus->max_preview), ERR_STR_FMT);
             }
             if(nexus->show_desc && node_desc) {
-                if(str_length(&node_desc->desc)) {
-                    TRY(str_fmt(out, "\n%.*s\n\n", STR_F(&node_desc->desc)), ERR_STR_FMT);
-                } else {
-                    TRY(str_fmt(out, F("\nno description.\n\n", IT)), ERR_STR_FMT);
-                }
+                TRY(node_fmt_desc(out, node_desc), ERR_NODE_FMT_DESC);
             }
         } break;
         case VIEW_NONE: THROW("view id should not be NONE");
