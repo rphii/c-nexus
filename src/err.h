@@ -58,9 +58,9 @@
 #define ABORT(fmt, ...)      do { \
     platform_trace(); ERR_PRINTF(F("[ABORT]", BOLD FG_BK BG_RD_B) " " F("%s:%d:%s (end of trace)", FG_WT_B) " " fmt "\n" , __FILE__, __LINE__, __func__, ##__VA_ARGS__); exit(-1); } while(0)
 
-#define INFO(fmt, ...)       do { if(DEBUG) \
-    ERR_PRINTF(F("[INFO]", BOLD FG_YL_B) " " F("%s:%d:%s", FG_WT_B) " " fmt"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
-} while(0)
+#define INFO(fmt, ...)       do { \
+        ERR_PRINTF(F("[INFO]", BOLD FG_YL_B) " " F("%s:%d:%s", FG_WT_B) " " fmt"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
+    } while(0)
 
 #define TRY(stmt, fmt, ...)  if (stmt) { THROW(fmt, ##__VA_ARGS__); }
 #define ASSERT_ERROR(x)      assert(0 && (x))
