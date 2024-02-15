@@ -127,7 +127,7 @@ ErrDeclStatic arg_static_execute(Arg *arg, ArgList id)
                 printf("%*s" F("%s", BOLD) " (one of %zu below)\n", arg->tabs.tiny, "", static_arg[id][1], spec2->len-1);
                 for(size_t i = 1; i < spec2->len; i++) {
                     SpecifyList h = spec2->ids[i];
-                    printf("%*s=%s\n", arg->tabs.main, "", static_specify_str[h]);
+                    printf("%*s=%s%s\n", arg->tabs.main, "", static_specify_str[h], i == 1 ? F(" (default)", IT) : "");
                 }
             } break;
             case SPECIFY_STRING: {
