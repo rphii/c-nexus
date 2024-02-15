@@ -1,5 +1,6 @@
 #include "err.h"
 #include "node.h"
+#include "cmd.h"
 
 void node_zero(Node *node)
 {
@@ -13,6 +14,7 @@ void node_free(Node *node)
     /* free all things */
     str_free(&node->title);
     str_free(&node->desc);
+    str_free(&node->cmd);
     vrnode_free(&node->outgoing);
     vrnode_free(&node->incoming);
     //vnode_free(&node->nodes);
@@ -23,14 +25,35 @@ int node_fmt_desc(Str *out, Node *node)
 {
     ASSERT(out, ERR_NULL_ARG);
     ASSERT(node, ERR_NULL_ARG);
-    if(str_length(&node->desc)) {
-        TRY(str_fmt(out, "\n%.*s\n\n", STR_F(&node->desc)), ERR_STR_FMT);
+    size_t len_cmd = str_length(&node->cmd);
+    size_t len_desc = str_length(&node->desc);
+    if(len_cmd || len_desc) {
+        if(len_cmd) {
+            TRY(str_fmt(out, "\n" CMD_FMT("$ %.*s") "\n", STR_F(&node->cmd)), ERR_STR_FMT);
+        }
+        if(len_desc) {
+            TRY(str_fmt(out, "\n%.*s\n\n", STR_F(&node->desc)), ERR_STR_FMT);
+        }
     } else {
         TRY(str_fmt(out, F("\nno description.\n\n", IT)), ERR_STR_FMT);
     }
     return 0;
 error:
     return -1;
+}
+
+Node *node_get_sub_sel(Node *node, size_t sub_sel)
+{
+    ASSERT(node, ERR_NULL_ARG);
+    size_t sO = vrnode_length(&node->outgoing);
+    size_t sI = vrnode_length(&node->incoming);
+    if(sub_sel < sO) {
+        return vrnode_get_at(&node->outgoing, sub_sel);
+    } else if(sub_sel < sO+sI) {
+        return vrnode_get_at(&node->incoming, sub_sel);
+    } else {
+        ABORT("index (%zu) out of range (%zu+%zu)", sub_sel, sO, sI);
+    }
 }
 
 int node_fmt(Str *out, Node *node, bool show_desc, const char *select, bool active)
@@ -80,15 +103,15 @@ error:
     return -1;
 }
 
-int node_create(Node *node, const char *title, const char *desc, Icon icon)
+int node_create(Node *node, const char *title, const char *cmd, const char *desc, Icon icon)
 {
     ASSERT(node, ERR_NULL_ARG);
     ASSERT(title, ERR_NULL_ARG);
-    ASSERT(desc, ERR_NULL_ARG);
     node_zero(node);
     node->icon = icon;
     TRY(str_fmt(&node->title, "%s", title), ERR_STR_FMT);
-    TRY(str_fmt(&node->desc, "%s", desc), ERR_STR_FMT);
+    TRY(str_fmt(&node->desc, "%s", desc ? desc : ""), ERR_STR_FMT);
+    if(cmd) TRY(str_fmt(&node->cmd, "%s", cmd), ERR_STR_FMT);
     return 0;
 error:
     return -1;

@@ -11,12 +11,9 @@ typedef struct Node {
     Icon icon;
     Str title;
     Str desc;
+    Str cmd;
     VrNode outgoing;
     VrNode incoming;
-    //size_t sub_index;
-    //VNode nodes;
-    //Node *prev;
-    //Node *rejoin;
 } Node;
 
 #define NODE_FMT_LEN_SUB_INACTIVE   F("%zu", FG_BK_B)
@@ -28,7 +25,7 @@ void node_zero(Node *node);
 void node_free(Node *node);
 
 #define ERR_NODE_CREATE "failed creating node"
-ErrDecl node_create(Node *node, const char *title, const char *desc, Icon icon);
+ErrDecl node_create(Node *node, const char *title, const char *desc, const char *cmd, Icon icon);
 
 #define ERR_NODE_FOLLOW "failed following node"
 ErrDecl node_follow(Node **node, size_t *sub_sel);
@@ -38,6 +35,8 @@ ErrDecl node_fmt_desc(Str *out, Node *node);
 
 #define ERR_NODE_FMT_SUB "failed formatting sub nodes"
 ErrDecl node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t sub_sel);
+
+Node *node_get_sub_sel(Node *node, size_t sub_sel);
 
 #define ERR_NODE_FMT "failed formatting node"
 int node_fmt(Str *out, Node *node, bool show_desc, const char *select, bool active);
