@@ -6,6 +6,7 @@
 #include "vector.h"
 #include "lookup.h"
 #include "view.h"
+#include "arg.h"
 
 typedef struct Nexus {
     TNode nodes;
@@ -14,6 +15,10 @@ typedef struct Nexus {
     bool show_desc;
     bool show_preview;
     bool quit;
+    struct {
+        Str entry;
+        ViewList view;
+    } config;
     size_t max_preview;
     VrNode findings;
     bool findings_updated;
@@ -21,6 +26,10 @@ typedef struct Nexus {
 
 #define ERR_NEXUS_INIT "failed initialization of nexus"
 ErrDecl nexus_init(Nexus *nexus);
+
+#define ERR_NEXUS_ARG "failed applying arguments"
+ErrDecl nexus_arg(Nexus *nexus, Arg *arg);
+
 void nexus_free(Nexus *nexus);
 
 #define NEXUS_ROOT  "Nexus"
@@ -28,9 +37,9 @@ void nexus_free(Nexus *nexus);
 #define ERR_NEXUS_INSERT_NODE "failed insertion of node into nexus"
 ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
 
-#define NEXUS_INSERT(nexus, root, ref, time, title, description, ...)  do { \
+#define NEXUS_INSERT(nexus, root, ref, time, cmd, title, description, ...)  do { \
         Node temp, unused; \
-        TRY(node_create(&temp, title, description, time), ERR_NODE_CREATE); \
+        TRY(node_create(&temp, title, cmd, description, time), ERR_NODE_CREATE); \
         TRY(nexus_insert_node(nexus, &temp), ERR_NEXUS_INSERT_NODE); \
         TRY(nexus_link(nexus, root, &temp), ERR_NEXUS_LINK); \
         NEXUS_LINKS_EV_STR(nexus, &temp, __VA_ARGS__); \
@@ -74,6 +83,9 @@ ErrDecl nexus_history_back(Nexus *nexus, View *view);
 
 #define ERR_NEXUS_BUILD "failed building nexus"
 ErrDecl nexus_build(Nexus *nexus);
+
+#define ERR_NEXUS_BUILD_CMDS "failed building cmds"
+ErrDecl nexus_build_cmds(Nexus *nexus, Node *anchor);
 
 #define ERR_NEXUS_BUILD_CONTROLS "failed building controls"
 ErrDecl nexus_build_controls(Nexus *nexus, Node *anchor);

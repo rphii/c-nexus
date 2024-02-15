@@ -1,5 +1,7 @@
 #include "nexus.h"
+#include "node.h"
 #include "search.h"
+#include "cmd.h"
 
 #if PROC_COUNT /* local threading {{{*/
 #include <pthread.h>
@@ -72,6 +74,23 @@ error:
 
 #endif /*}}}*/
 
+
+int nexus_arg(Nexus *nexus, Arg *arg)
+{
+    ASSERT(arg, ERR_NULL_ARG);
+    ASSERT(nexus, ERR_NULL_ARG);
+    TRY(str_copy(&nexus->config.entry, &arg->entry), ERR_STR_COPY);
+    switch(arg->view) {
+        case SPECIFY_NONE:
+        case SPECIFY_NORMAL: nexus->config.view = VIEW_NORMAL; break;
+        case SPECIFY_SEARCH: nexus->config.view = VIEW_SEARCH; break;
+        default: THROW(ERR_UNREACHABLE ", %u", arg->view);
+    }
+    return 0;
+error:
+    return -1;
+}
+
 int nexus_init(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
@@ -83,10 +102,11 @@ int nexus_init(Nexus *nexus) //{{{
     nexus->max_preview = 20;
     /* set up view */
     View *view = &nexus->view;
-    view->id = VIEW_NORMAL;
+    view->id = nexus->config.view;
     switch(view->id) {
         case VIEW_NORMAL: {
-            TRY(!(view->current = nexus_get(nexus, NEXUS_ROOT)), ERR_NEXUS_GET);
+            char *title = str_length(&nexus->config.entry) ? str_iter_begin(&nexus->config.entry) : NEXUS_ROOT;
+            TRY(!(view->current = nexus_get(nexus, title)), ERR_NEXUS_GET);
         } break;
         case VIEW_SEARCH: {
             view->edit = true;
@@ -146,6 +166,13 @@ int nexus_userinput(Nexus *nexus, int key)
                 } break;
                 case 'f': {
                     TRY(nexus_change_view(nexus, view, VIEW_SEARCH), ERR_NEXUS_CHANGE_VIEW);
+                } break;
+                case 'c': {
+                    cmd_run(&view->current->cmd);
+                } break;
+                case 'C': {
+                    Node *sub = node_get_sub_sel(view->current, view->sub_sel);
+                    if(sub) cmd_run(&sub->cmd);
                 } break;
                 default: break;
             }
@@ -215,6 +242,10 @@ int nexus_userinput(Nexus *nexus, int key)
                             TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
                         } while(view->id != VIEW_SEARCH && vview_length(&nexus->views));
                     } break;
+                    case 'C': {
+                        Node *sub = node_get_sub_sel(view->current, view->sub_sel);
+                        if(sub) cmd_run(&sub->cmd);
+                    } break;
                     default: break;
                 }
             }
@@ -238,13 +269,14 @@ Node *nexus_get(Nexus *nexus, const char *title) //{{{
     Node *result = 0;
     size_t i0 = 0, j0 = 0;
     Node find = {0};
-    TRY(node_create(&find, title, "", 0), ERR_NODE_CREATE);
+    TRY(node_create(&find, title, 0, 0, 0), ERR_NODE_CREATE);
     if(tnode_find(&nexus->nodes, &find, &i0, &j0)) {
         THROW("node does not exist in nexus: '%.*s'", STR_F(&find.title));
     }
     result = nexus->nodes.buckets[i0].items[j0];
 clean:
     node_free(&find);
+    str_free(&nexus->config.entry);
     return result;
 error:
     goto clean;
@@ -497,18 +529,18 @@ error:
 int nexus_build_math(Nexus *nexus, Node *anchor) /*{{{*/
 {
     Node base, sub;
-    NEXUS_INSERT(nexus, anchor, &base, ICON_MATH, "Math", "", NODE_LEAF);
+    NEXUS_INSERT(nexus, anchor, &base, ICON_MATH, CMD_NONE, "Math", "", NODE_LEAF);
 
-    NEXUS_INSERT(nexus, &base, &sub, ICON_MATH, "Operations", "", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, "Addition", "Common terms used:\nsum = term + term\nsum = summand + summand\nsum = addend + addend\nsum = augend + addend", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, "Subtraction", "Common terms used:\ndifference = term - term\ndifference = minuend - subtrahend", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, "Multiplication", "Common terms used:\nproduct = factor * factor\nproduct = multiplier * multiplicand", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, "Division", "Common terms used:\nfraction or quotient or ratio = dividend / divisor\nfraction or quotient or ratio = numerator / denominator", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, "Exponentiation", "Common terms used:\npower = base ^ exponent", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, "nth root", "Common terms used:\n"
+    NEXUS_INSERT(nexus, &base, &sub, ICON_MATH, CMD_NONE, "Operations", "", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, CMD_NONE, "Addition", "Common terms used:\nsum = term + term\nsum = summand + summand\nsum = addend + addend\nsum = augend + addend", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, CMD_NONE, "Subtraction", "Common terms used:\ndifference = term - term\ndifference = minuend - subtrahend", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, CMD_NONE, "Multiplication", "Common terms used:\nproduct = factor * factor\nproduct = multiplier * multiplicand", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, CMD_NONE, "Division", "Common terms used:\nfraction or quotient or ratio = dividend / divisor\nfraction or quotient or ratio = numerator / denominator", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, CMD_NONE, "Exponentiation", "Common terms used:\npower = base ^ exponent", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, CMD_NONE, "nth root", "Common terms used:\n"
             "       degree /--------\n"
             "root =      \\/ radicand", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, "Logarithm", "Common terms used:\nlogarithm = log_{base} ( anti-logarithm )", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_MATH, CMD_NONE, "Logarithm", "Common terms used:\nlogarithm = log_{base} ( anti-logarithm )", NODE_LEAF);
     return 0;
 error:
     return -1;
@@ -517,37 +549,37 @@ error:
 int nexus_build_physics(Nexus *nexus, Node *anchor) //{{{
 {
     Node base, sub;
-    NEXUS_INSERT(nexus, anchor, &base, ICON_PHYSICS, "Physics", "", NODE_LEAF);
+    NEXUS_INSERT(nexus, anchor, &base, ICON_PHYSICS, CMD_NONE, "Physics", "", NODE_LEAF);
 
     /* set up units */
-    NEXUS_INSERT(nexus, &base, &sub, ICON_PHYSICS, "Physical Units", "", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Second", "A second is an SI-unit of time.", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Meter", "A meter is an SI-unit of length.", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Speed of Light", "The speed of light " F("in vacuum", IT) " is " F("c = 299'792'458 meters/second", BOLD UL) "", "Second", "Meter");
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Volt", "Volt has the unit [V]", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Ohm", "Ohm has the unit [Ω]", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Ampere", "Ampere has the unit [A]", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Coulomb", "Coulomb has the unit [C]", NODE_LEAF);
+    NEXUS_INSERT(nexus, &base, &sub, ICON_PHYSICS, CMD_NONE, "Physical Units", "", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Second", "A second is an SI-unit of time.", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Meter", "A meter is an SI-unit of length.", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Speed of Light", "The speed of light " F("in vacuum", IT) " is " F("c = 299'792'458 meters/second", BOLD UL) "", "Second", "Meter");
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Volt", "Volt has the unit [V]", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Ohm", "Ohm has the unit [Ω]", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Ampere", "Ampere has the unit [A]", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Coulomb", "Coulomb has the unit [C]", NODE_LEAF);
 
     /* set up other stuff */
-    NEXUS_INSERT(nexus, &base, &sub, ICON_PHYSICS, "Electrical Engineering", "", NODE_LEAF);
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Voltage", "A common formula for the voltage U is " F("U = R * I", BOLD UL) ", where ..\n"
+    NEXUS_INSERT(nexus, &base, &sub, ICON_PHYSICS, CMD_NONE, "Electrical Engineering", "", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Voltage", "A common formula for the voltage U is " F("U = R * I", BOLD UL) ", where ..\n"
             "  - R is the resistance in Ohm\n"
             "  - I is the electric current in Ampere", "Volt");
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Resistance", "A common formula for the resistance R is " F("R = U / I", BOLD UL) ", where ..\n"
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Resistance", "A common formula for the resistance R is " F("R = U / I", BOLD UL) ", where ..\n"
             "  - U is the voltage in Volt\n"
             "  - I is the electric current in Ampere", "Ohm", "Voltage");
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Electric Current", "A common formula for the electric current I is " F("I = U / R", BOLD UL) ", where ..\n"
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Electric Current", "A common formula for the electric current I is " F("I = U / R", BOLD UL) ", where ..\n"
             "  - I is the electric current in Ampere\n"
             "  - R is the resistance in Ohm", "Voltage", "Ampere", "Resistance");
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Capacitance", "A common formula for the capacitance C is " F("C = Q / U", BOLD UL) ", where ..\n"
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Capacitance", "A common formula for the capacitance C is " F("C = Q / U", BOLD UL) ", where ..\n"
             "  - Q is the charge in Coulomb\n"
             "  - U is the voltage in Volts", "Coulomb", "Voltage");
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Capacitor", "In electrical engineering, a " F("capacitor", BOLD) " is a device that stores electrical energy by accumulating electric charges on two closely spaced surfaces that are insulated from each other. It is a passive electronic component with two terminals.\n\n"
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Capacitor", "In electrical engineering, a " F("capacitor", BOLD) " is a device that stores electrical energy by accumulating electric charges on two closely spaced surfaces that are insulated from each other. It is a passive electronic component with two terminals.\n\n"
             "The effect of a capacitor is known as " F("capacitance", UL) ". While some capacitance exists between any two electrical conductors in proximity in a circuit, a capacitor is a component designed to add capacitance to a circuit. The capacitor was originally known as the condenser, a term still encountered in a few compound names, such as the condenser microphone.", "Capacitance");
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Resistor", "A resistor is a passive two-terminal electrical component that implements electrical resistance as a circuit element. In electronic circuits, resistors are used to reduce current flow, adjust signal levels, to divide voltages, bias active elements, and terminate transmission lines, among other uses.\n\n"
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Resistor", "A resistor is a passive two-terminal electrical component that implements electrical resistance as a circuit element. In electronic circuits, resistors are used to reduce current flow, adjust signal levels, to divide voltages, bias active elements, and terminate transmission lines, among other uses.\n\n"
             "The electrical function of a resistor is specified by its " F("resistance", UL), "Resistance");
-    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, "Ohm's law", "Ohm's law is basically any of the common formulas in " F("Resistance", UL) ", " F("Electric Current", UL) " or " F("Capacitance", UL), "Resistance", "Capacitance", "Electric Current");
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_PHYSICS, CMD_NONE, "Ohm's law", "Ohm's law is basically any of the common formulas in " F("Resistance", UL) ", " F("Electric Current", UL) " or " F("Capacitance", UL), "Resistance", "Capacitance", "Electric Current");
 
     return 0;
 error:
@@ -557,10 +589,10 @@ error:
 int nexus_build_controls(Nexus *nexus, Node *anchor)
 {
     Node base, sub;
-    NEXUS_INSERT(nexus, anchor, &base, ICON_WIKI, "Controls", "Guide to all the various controls in c-nexus." , NODE_LEAF);
+    NEXUS_INSERT(nexus, anchor, &base, ICON_WIKI, CMD_NONE, "Controls", "Guide to all the various controls in c-nexus." , NODE_LEAF);
 
     /* normal view {{{ */
-    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, "Normal View", "In this mode you can browse the notes.\n"
+    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_NONE, "Normal View", "In this mode you can browse the notes.\n"
             "\n" F("basic controls", UL) "\n"
             "  for the normal mode are listed in the root, so I'm not going to list them again.\n"
             "\n" F("other controls", UL) "\n"
@@ -568,12 +600,13 @@ int nexus_build_controls(Nexus *nexus, Node *anchor)
             "  f                : enter " F("search mode", FG_YL_B) "\n"
             "  q                : quit and return to the terminal\n"
             "  Q                : same as above\n"
+            "  C                : run command associated to note pointed at by the arrow\n"
             "  SPACE            : toggle showing note descriptions on/off\n"
             "  i                : toggle previewing note descriptions on/off", NODE_LEAF);
     /* }}} */
 
     /* search view {{{ */
-    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, "Search View", "In this mode you can search notes for substrings.\n"
+    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_NONE, "Search View", "In this mode you can search notes for substrings.\n"
             "\n" F("what gets searched?", UL) "\n"
             "  the exact pattern of each note you can search are (in this order): " F("ICON title description", FG_GN) " (e.g. search for: 'wiki normal' -> you will find normal view note)\n"
             "  searches are case insensitive. any newlines are removed. whitespaces are condensed into one space (e.g. XYZ    ABC -> XYZ ABC)\n"
@@ -591,21 +624,43 @@ int nexus_build_controls(Nexus *nexus, Node *anchor)
             "  H                : go back to most recent search\n"
             "  q                : quit and return to the terminal\n"
             "  Q                : same as above\n"
+            "  c                : run command associated to current note\n"
+            "  C                : run command associated to note pointed at by the arrow\n"
             "  SPACE            : toggle showing note descriptions on/off\n"
             , "Normal View");
     /* }}} */
+
 
     return 0;
 error:
     return -1;
 }
 
+int nexus_build_cmds(Nexus *nexus, Node *anchor) /* {{{ */
+{
+    ASSERT(nexus, ERR_NULL_ARG);
+    ASSERT(anchor, ERR_NULL_ARG);
+    Node base, sub;
+    NEXUS_INSERT(nexus, anchor, &base, ICON_WIKI, "", "Notes with Commands", "Every note can have a command attached.", NODE_LEAF);
+    /* linux {{{ */
+    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_NONE, "Linux Commands", "", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_WIKI, CMD_SUDO("shutdown -h now"), "Shutdown linux", "This command lets you shut down your linux system", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_WIKI, CMD_SUDO("reboot"), "Reboot linux", "This command lets you reboot your linux system", NODE_LEAF);
+    NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_WIKI, CMD_IMG("images/stickman.png"), "A stickman", "Execute the command on this note to show an image with the program imv!", NODE_LEAF);
+    /* }}} */
+    /* windows {{{ */
+    /* tbd }}} */
+    return 0;
+error:
+    return -1;
+} /* }}} */
+
 int nexus_build(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
 
     Node root;
-    TRY(node_create(&root, NEXUS_ROOT, "Welcome to " F("c-nexus", BOLD) "\n\n"
+    TRY(node_create(&root, NEXUS_ROOT, CMD_NONE, "Welcome to " F("c-nexus", BOLD) "\n\n"
                 F("basic controls", UL) "\n"
                 "  h : back in history\n"
                 "  j : move arrow down\n"
@@ -615,6 +670,7 @@ int nexus_build(Nexus *nexus) //{{{
     TRY(nexus_insert_node(nexus, &root), ERR_NEXUS_INSERT_NODE);
 
     TRY(nexus_build_controls(nexus, &root), ERR_NEXUS_BUILD_CONTROLS);
+    TRY(nexus_build_cmds(nexus, &root), ERR_NEXUS_BUILD_CMDS);
     TRY(nexus_build_physics(nexus, &root), ERR_NEXUS_BUILD_PHYSICS);
     TRY(nexus_build_math(nexus, &root), ERR_NEXUS_BUILD_MATH);
 
