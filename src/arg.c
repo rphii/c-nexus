@@ -223,15 +223,9 @@ int arg_parse(Arg *args, int argc, const char **argv) /* {{{ */
             //printf("FOUND!! -> id %s (HAS %zu)\n", static_arg[j][1], spec.len);
             TRY(static_arg_parse_spec(args, j, &argY, spec), ERR_ARG_PARSE_SPEC);
             unknown_arg = false;
-
-            //for(size_t k = 1; k < spec.len; ++k) {
-            //    SpecifyList id = spec.ids[k];
-            //    printf("  %s == %.*s\n", static_specify_str[id], STR_F(&argY));
-            //}
-            //break;
+            break;
         }
         if(unknown_arg) {
-            //print_help();
             TRY(arg_static_add_to_unknown(args, &arg), ERR_ARG_ADD_TO_UNKNOWN);
         }
     }
