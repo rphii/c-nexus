@@ -22,12 +22,12 @@ Create notes and link them, however you can think of. Once created you can brows
     - .. `[escape]` : goes back to node you've watched before searching; as if nothing was
       selected (it goes back in the history)
 
-## Change view at startup?
+## Command Line Arguments
 
-Edit the ...
-- function `int nexus_init(Nexus *nexus)` ...
-- on line `view->id = VIEW_NORMAL;` ...
-- in [nexus.c](src/nexus.c)
+- **Print help and exit** : `--help`
+- **Print version and exit** : `--version`
+- **Change default view** : `--view`
+- **Change entry note** : `--node`
 
 ## How to add notes?
 
