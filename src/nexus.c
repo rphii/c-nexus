@@ -641,7 +641,7 @@ int nexus_build_cmds(Nexus *nexus, Node *anchor) /* {{{ */
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(anchor, ERR_NULL_ARG);
     Node base, sub;
-    NEXUS_INSERT(nexus, anchor, &base, ICON_WIKI, "", "Notes with Commands", "Every note can have a command attached.", NODE_LEAF);
+    NEXUS_INSERT(nexus, anchor, &base, ICON_WIKI, "", "Notes with Commands", "Every note can have a command attached. See controls on how to use it.", "Controls");
     /* linux {{{ */
     NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_NONE, "Linux Commands", "", NODE_LEAF);
     NEXUS_INSERT(nexus, &sub, NODE_LEAF, ICON_WIKI, CMD_SUDO("shutdown -h now"), "Shutdown linux", "This command lets you shut down your linux system", NODE_LEAF);
