@@ -140,6 +140,7 @@ void nexus_free(Nexus *nexus) //{{{
 #define ERR_NEXUS_REBUILD "could not rebuild, press a key to resmume in current state"
 void nexus_rebuild(Nexus *nexus)
 {
+    int err = 0;
     ASSERT(nexus, ERR_NULL_ARG);
     Node *current = nexus->view.current;
     Str cmd = {0}, cmd2 = {0};
@@ -162,8 +163,8 @@ void nexus_rebuild(Nexus *nexus)
     TRY(str_fmt(&cmd2, "--entry=\"%.*s\" --view=%s", STR_F(&current->title), specify_str(nexus->args->view)), ERR_STR_FMT);
     STARTUPINFO info_startup = {0};
     PROCESS_INFORMATION info_process = {0};
-    LPCTSTR c = nexus->args->view;
-    LPCTSTR c2 = str_iter_begin(cmd2);
+    LPCTSTR c = nexus->args->name;
+    LPCTSTR c2 = str_iter_begin(&cmd2);
     result = CreateProcess(c, c2, 0, 0, FALSE, 0, 0, 0, &info_startup, &info_process);
     if(result) THROW(ERR_NEXUS_REBUILD);
     CloseHandle(info_process.hProcess);
@@ -174,11 +175,11 @@ void nexus_rebuild(Nexus *nexus)
 clean:
     str_free(&cmd);
     str_free(&cmd2);
-    exit(0);
+    if(!err) exit(0);
     return;
 error:
     platform_getch();
-    goto clean;
+    ERR_CLEAN;
 }
 /* }}} */
 
