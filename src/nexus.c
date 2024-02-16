@@ -79,6 +79,7 @@ int nexus_arg(Nexus *nexus, Arg *arg)
 {
     ASSERT(arg, ERR_NULL_ARG);
     ASSERT(nexus, ERR_NULL_ARG);
+    nexus->args = arg;
     TRY(str_copy(&nexus->config.entry, &arg->entry), ERR_STR_COPY);
     switch(arg->view) {
         case SPECIFY_NONE:
@@ -128,6 +129,59 @@ void nexus_free(Nexus *nexus) //{{{
     view_free(&nexus->view);
 } //}}}
 
+/* rebuild yourself {{{ */
+#if defined(PLATFORM_LINUX)
+#include <pthread.h>
+#include <unistd.h>
+#elif defined(PLATFORM_WINDOWS)
+#include <windows.h>
+#endif
+
+#define ERR_NEXUS_REBUILD "could not rebuild, press a key to resmume in current state"
+void nexus_rebuild(Nexus *nexus)
+{
+    ASSERT(nexus, ERR_NULL_ARG);
+    Node *current = nexus->view.current;
+    Str cmd = {0}, cmd2 = {0};
+#if PROC_COUNT
+    TRY(str_fmt(&cmd, "make -j %u", PROC_COUNT), ERR_STR_FMT)
+#else
+    TRY(str_fmt(&cmd, "make"), ERR_STR_FMT);
+#endif
+    int result = cmd_run(&cmd);
+    if(result) THROW(ERR_NEXUS_REBUILD);
+#if defined(PLATFORM_LINUX)
+    str_clear(&cmd);
+    Str *title = current ? &current->title : &STR(NEXUS_ROOT);
+    TRY(str_fmt(&cmd, "--entry=%.*s", STR_F(title)), ERR_STR_FMT);
+    TRY(str_fmt(&cmd2, "--view=%s", specify_str(nexus->args->view)), ERR_STR_FMT);
+    printf("%s %.*s %.*s\n", nexus->args->name, STR_F(&cmd), STR_F(&cmd2));
+    char *const argv[] = {(char *)nexus->args->name, str_iter_begin(&cmd), str_iter_begin(&cmd2), 0};
+    execv(nexus->args->name, argv);
+#elif defined(PLATFORM_WINDOWS)
+    TRY(str_fmt(&cmd2, "--entry=\"%.*s\" --view=%s", STR_F(&current->title), specify_str(nexus->args->view)), ERR_STR_FMT);
+    STARTUPINFO info_startup = {0};
+    PROCESS_INFORMATION info_process = {0};
+    LPCTSTR c = nexus->args->view;
+    LPCTSTR c2 = str_iter_begin(cmd2);
+    result = CreateProcess(c, c2, 0, 0, FALSE, 0, 0, 0, &info_startup, &info_process);
+    if(result) THROW(ERR_NEXUS_REBUILD);
+    CloseHandle(info_process.hProcess);
+    CloseHandle(info_process.hThread);
+#else
+    THROW("rebuild not yet implemented on '%s'", PLATFORM_NAME);
+#endif
+clean:
+    str_free(&cmd);
+    str_free(&cmd2);
+    exit(0);
+    return;
+error:
+    platform_getch();
+    goto clean;
+}
+/* }}} */
+
 int nexus_userinput(Nexus *nexus, int key)
 {
     ASSERT(nexus, ERR_NULL_ARG);
@@ -160,7 +214,9 @@ int nexus_userinput(Nexus *nexus, int key)
                         TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
                     } while(view->id != VIEW_SEARCH && vview_length(&nexus->views));
                 } break;
-                case 'Q':
+                case 'Q': {
+                    nexus_rebuild(nexus);
+                } break;
                 case 'q': {
                     nexus->quit = true;
                 } break;
@@ -229,7 +285,9 @@ int nexus_userinput(Nexus *nexus, int key)
                         view->edit = true;
                         view->sub_sel = 0;
                     } break;
-                    case 'Q':
+                    case 'Q': {
+                        nexus_rebuild(nexus);
+                    } break;
                     case 'q': {
                         nexus->quit = true;
                     } break;
@@ -599,7 +657,7 @@ int nexus_build_controls(Nexus *nexus, Node *anchor)
             "  H                : go back to most recent search\n"
             "  f                : enter " F("search mode", FG_YL_B) "\n"
             "  q                : quit and return to the terminal\n"
-            "  Q                : same as above\n"
+            "  Q                : rebuild nexus\n"
             "  C                : run command associated to note pointed at by the arrow\n"
             "  SPACE            : toggle showing note descriptions on/off\n"
             "  i                : toggle previewing note descriptions on/off", NODE_LEAF);
@@ -623,7 +681,7 @@ int nexus_build_controls(Nexus *nexus, Node *anchor)
             "  hjkl             : same as the basic controls\n"
             "  H                : go back to most recent search\n"
             "  q                : quit and return to the terminal\n"
-            "  Q                : same as above\n"
+            "  Q                : rebuild nexus\n"
             "  c                : run command associated to current note\n"
             "  C                : run command associated to note pointed at by the arrow\n"
             "  SPACE            : toggle showing note descriptions on/off\n"
@@ -673,6 +731,7 @@ int nexus_build(Nexus *nexus) //{{{
     TRY(nexus_build_cmds(nexus, &root), ERR_NEXUS_BUILD_CMDS);
     TRY(nexus_build_physics(nexus, &root), ERR_NEXUS_BUILD_PHYSICS);
     TRY(nexus_build_math(nexus, &root), ERR_NEXUS_BUILD_MATH);
+    //NEXUS_INSERT(nexus, &root, NODE_LEAF, ICON_WIKI, "make -j \"$(nproc --all)\" && ./a --entry='Rebuild'", "Rebuild", "!!!", NODE_LEAF);
 
     return 0;
 error:

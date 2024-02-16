@@ -68,6 +68,9 @@ typedef struct Arg {
 #define ERR_ARG_PARSE "failed parsing arguments"
 ErrDecl arg_parse(Arg *arg, int argc, const char **argv);
 
+const char *arg_str(ArgList id);
+const char *specify_str(SpecifyList id);
+
 void arg_help(Arg *arg);
 void arg_free(Arg *arg);
 

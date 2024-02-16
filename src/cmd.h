@@ -9,7 +9,7 @@
 
 #define CMD_NONE        0
 
-void cmd_run(Str *cmd);
+int cmd_run(Str *cmd);
 
 #define CMD_H
 #endif

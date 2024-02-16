@@ -14,6 +14,11 @@ static const char *static_arg[][2] = {
     [ARG_VIEW] = {0, "--view"},
 };
 
+const char *arg_str(ArgList id)
+{
+    return static_arg[id][1];
+}
+
 static const char *static_desc[] = {
     [ARG_NONE] = 0,
     [ARG_HELP] = "print this help",
@@ -38,6 +43,11 @@ static const char *static_specify_str[] = {
     [SPECIFY_STRING] = "STRING",
     [SPECIFY_BOOL] = "< y | n >",
 };
+
+const char *specify_str(SpecifyList id)
+{
+    return static_specify_str[id];
+}
 
 
 int print_line(int max, int current, int tabs, Str *str)
@@ -182,6 +192,7 @@ ErrDeclStatic static_arg_parse_spec(Arg *args, ArgList arg, Str *argY, Specify s
             }
         } break;
         case SPECIFY_STRING: {
+            str_clear((Str *)to_set);
             TRY(str_fmt((Str *)to_set, "%.*s", STR_F(argY)), ERR_STR_FMT);
         } break;
         default: THROW("unhandled id0! (%u)", id0);
@@ -195,6 +206,9 @@ int arg_parse(Arg *args, int argc, const char **argv) /* {{{ */
 {
     ASSERT(args, ERR_NULL_ARG);
     ASSERT(argv, ERR_NULL_ARG);
+    /* default arguments */
+    args->view = SPECIFY_NORMAL;
+    TRY(str_fmt(&args->entry, "%s", NEXUS_ROOT), ERR_STR_FMT);
     /* set up */
     args->name = argv[0];
     args->tabs.tiny = 2;

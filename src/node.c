@@ -32,8 +32,9 @@ int node_fmt_desc(Str *out, Node *node)
             TRY(str_fmt(out, "\n" CMD_FMT("$ %.*s") "\n", STR_F(&node->cmd)), ERR_STR_FMT);
         }
         if(len_desc) {
-            TRY(str_fmt(out, "\n%.*s\n\n", STR_F(&node->desc)), ERR_STR_FMT);
+            TRY(str_fmt(out, "\n%.*s\n", STR_F(&node->desc)), ERR_STR_FMT);
         }
+        TRY(str_fmt(out, "\n"), ERR_STR_FMT);
     } else {
         TRY(str_fmt(out, F("\nno description.\n\n", IT)), ERR_STR_FMT);
     }
@@ -54,6 +55,7 @@ Node *node_get_sub_sel(Node *node, size_t sub_sel)
     } else {
         ABORT("index (%zu) out of range (%zu+%zu)", sub_sel, sO, sI);
     }
+    return 0;
 }
 
 int node_fmt(Str *out, Node *node, bool show_desc, const char *select, bool active)
