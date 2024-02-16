@@ -9,7 +9,8 @@ Create notes and link them, however you can think of. Once created you can brows
 - ``j`` : down
 - ``k`` : up
 - ``l`` : follow the arrow
-- ``q``, `Q` : quit
+- ``q`` : quit
+- ``Q`` : rebuild (certainly works on linux)
 - ``[space]`` : fold/unfold descriptions
 - ``f`` : enter search view
 
