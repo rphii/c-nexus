@@ -93,7 +93,7 @@ static void arg_static_print_version(Arg *arg)
     ASSERT(arg, ERR_NULL_ARG);
 #if defined(VERSION)
     if(strlen(VERSION)) {
-        printf("%s version %s\n", arg->name, VERSION);
+        printf("%s version %s %s\n", arg->name, VERSION, PLATFORM_NAME);
     } else {
         printf(F("failed ", FG_RD)"(git not installed or you didn't clone the repository)\n");
     }
