@@ -58,6 +58,9 @@
     #define PLATFORM_CH_SUBDIR  '/'
 #endif
 
+#define ERR_PLATFORM_COLORPRINT_INIT "failed enabling color prints"
+int platform_colorprint_init(void);
+
 int platform_getch(void);
 void platform_clear(void);
 void platform_trace(void);

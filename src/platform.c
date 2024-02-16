@@ -3,6 +3,27 @@
 
 #include "platform.h"
 #include "colorprint.h"
+#include "err.h"
+
+#define S(x)        #x
+#define S_(x)       S(X)
+
+int platform_colorprint_init(void)
+{
+    int err = 0;
+#if defined(PLATFORM_WINDOWS) && !defined(COLORPRINT_DISABLE)
+    err = system("chcp 65001 >nul");
+    if(err) {
+        THROW("failed enabling utf-8 codepage. Try compiling with -D" S(PLATFORM_DISABLE) "");
+    }
+clean:
+    return err;
+error:
+    ERR_CLEAN;
+#else
+    return err;
+#endif
+}
 
 /******************************************************************************/
 /* getch **********************************************************************/

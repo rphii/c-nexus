@@ -19,6 +19,8 @@ int main(int argc, const char **argv)
     Arg arg = {0};
     Nexus nexus = {0};
 
+    TRY(platform_colorprint_init(), ERR_PLATFORM_COLORPRINT_INIT);
+
     TRY(arg_parse(&arg, argc, argv), ERR_ARG_PARSE);
     if(arg.exit_early) goto clean;
 
