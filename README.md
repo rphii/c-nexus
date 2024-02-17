@@ -49,7 +49,7 @@ Create notes and link them, however you can think of. Once created you can brows
 
 - Print version and exit : `--version`
 - Change default view : `--view`
-- Change entry note : `--node`
+- Change entry note : `--entry`
 - Print help (about these and more arguments) and exit : `--help`
 
 ## How to add notes?
