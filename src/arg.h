@@ -14,8 +14,13 @@ typedef enum {
     /* below */
     SPECIFY_OPTIONAL,
     SPECIFY_OPTION,
+        SPECIFY_YES,
+        SPECIFY_TRUE,
+        SPECIFY_NO,
+        SPECIFY_FALSE,
         SPECIFY_NORMAL,
         SPECIFY_SEARCH,
+    SPECIFY_NUMBER,
     SPECIFY_STRING,
     SPECIFY_BOOL,
     /* above */
@@ -42,6 +47,9 @@ typedef enum {
     ARG_VERSION,
     ARG_ENTRY,
     ARG_VIEW,
+    ARG_SHOW_DESCRIPTION,
+    ARG_SHOW_PREVIEW,
+    ARG_MAX_LIST,
     /* args above */
     ARG__COUNT
 } ArgList;
@@ -51,6 +59,9 @@ typedef struct Arg {
     Str unknown;
     bool exit_early;
     SpecifyList view;
+    SpecifyList show_description;
+    SpecifyList show_preview;
+    size_t max_list;
     Str entry;
     struct {
         int tiny; /* tiny, because short is reserved */

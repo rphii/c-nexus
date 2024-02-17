@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <errno.h>
 
 #include "arg.h"
 #include "nexus.h"
@@ -12,6 +13,9 @@ static const char *static_arg[][2] = {
     [ARG_VERSION] = {0, "--version"},
     [ARG_ENTRY] = {0, "--entry"},
     [ARG_VIEW] = {0, "--view"},
+    [ARG_SHOW_DESCRIPTION] = {"-d", "--show-description"},
+    [ARG_SHOW_PREVIEW] = {"-p", "--show-preview"},
+    [ARG_MAX_LIST] = {"-l", "--max-list"},
 };
 
 const char *arg_str(ArgList id)
@@ -25,6 +29,9 @@ static const char *static_desc[] = {
     [ARG_VERSION] = "display the version",
     [ARG_ENTRY] = "specify node to start out on",
     [ARG_VIEW] = "specify the view to start out on",
+    [ARG_SHOW_DESCRIPTION] = "show or hide description at startup",
+    [ARG_SHOW_PREVIEW] = "show or hide preview at startup",
+    [ARG_MAX_LIST] = "maximum notes to show at once (e.g. search) before scrolling",
 };
 
 /* specify */
@@ -32,6 +39,9 @@ static const char *static_desc[] = {
 static const Specify static_specify[ARG__COUNT] = {
     [ARG_ENTRY] = SPECIFY(SPECIFY_STRING),
     [ARG_VIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_NORMAL, SPECIFY_SEARCH),
+    [ARG_SHOW_DESCRIPTION] = SPECIFY(SPECIFY_OPTION, SPECIFY_YES, SPECIFY_TRUE, SPECIFY_NO, SPECIFY_FALSE),
+    [ARG_SHOW_PREVIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_NO, SPECIFY_FALSE, SPECIFY_YES, SPECIFY_TRUE),
+    [ARG_MAX_LIST] = SPECIFY(SPECIFY_NUMBER)
 };
 
 static const char *static_specify_str[] = {
@@ -40,6 +50,11 @@ static const char *static_specify_str[] = {
     [SPECIFY_OPTION] = "OPTION",
         [SPECIFY_NORMAL] = "normal",
         [SPECIFY_SEARCH] = "search",
+        [SPECIFY_TRUE] = "true",
+        [SPECIFY_YES] = "yes",
+        [SPECIFY_FALSE] = "false",
+        [SPECIFY_NO] = "no",
+    [SPECIFY_NUMBER] = "NUMBER",
     [SPECIFY_STRING] = "STRING",
     [SPECIFY_BOOL] = "< y | n >",
 };
@@ -117,15 +132,21 @@ ErrDeclStatic arg_static_execute(Arg *arg, ArgList id)
             arg_static_print_version(arg);
             arg->exit_early = true;
         } break;
-        case ARG_VIEW: {
-            spec = &arg->view;
-        } break;
         case ARG_ENTRY: {
             if(!str_length(&arg->entry)) {
-                printf("%*s" F("%s", BOLD) "=STRING (missing string)\n", arg->tabs.tiny, "", static_arg[id][1]);
+                printf("%*s" F("%s", BOLD) "=STRING is missing\n", arg->tabs.tiny, "", static_arg[id][1]);
                 arg->exit_early = true;
             }
         } break;
+        case ARG_MAX_LIST: {
+            if(!arg->max_list) {
+                printf("%*s" F("%s", BOLD) "=NUMBER cannot be 0\n", arg->tabs.tiny, "", static_arg[id][1]);
+                arg->exit_early = true;
+            }
+        } break;
+        case ARG_VIEW: { spec = &arg->view; } break;
+        case ARG_SHOW_PREVIEW: { spec = &arg->show_preview; } break;
+        case ARG_SHOW_DESCRIPTION: { spec = &arg->show_description; } break;
         default: THROW(ERR_UNHANDLED_ID" (%d)", id);
     }
     if(spec) {
@@ -175,7 +196,10 @@ ErrDeclStatic static_arg_parse_spec(Arg *args, ArgList arg, Str *argY, Specify s
     switch(arg) {
         case ARG_VIEW: { to_set = &args->view; } break;
         case ARG_ENTRY: { to_set = &args->entry; } break;
-        default: break;
+        case ARG_MAX_LIST: { to_set = &args->max_list; } break;
+        case ARG_SHOW_PREVIEW: { to_set = &args->show_preview; } break;
+        case ARG_SHOW_DESCRIPTION: { to_set = &args->show_description; } break;
+        default: THROW("unhandled arg id (%u)", arg);
     }
     switch(id0) {
         case SPECIFY_OPTION: {
@@ -195,6 +219,18 @@ ErrDeclStatic static_arg_parse_spec(Arg *args, ArgList arg, Str *argY, Specify s
             str_clear((Str *)to_set);
             TRY(str_fmt((Str *)to_set, "%.*s", STR_F(argY)), ERR_STR_FMT);
         } break;
+        case SPECIFY_NUMBER: {
+            errno = 0;
+            char *endptr;
+            char *begin = str_iter_begin(argY);
+            size_t val = 0;
+            if(begin) {
+                val = (size_t)strtoll(begin, &endptr, 0);
+            }
+            if(*endptr) THROW("could not convert to number: %s (because of: %s)", begin, endptr);
+            if(errno) THROW("strtoll conversion error");
+            *(size_t *)to_set = val;
+        } break;
         default: THROW("unhandled id0! (%u)", id0);
     }
     return 0;
@@ -207,13 +243,16 @@ int arg_parse(Arg *args, int argc, const char **argv) /* {{{ */
     ASSERT(args, ERR_NULL_ARG);
     ASSERT(argv, ERR_NULL_ARG);
     /* default arguments */
+    args->show_description = static_specify[ARG_SHOW_DESCRIPTION].ids[1];
+    args->show_preview = static_specify[ARG_SHOW_PREVIEW].ids[1];
+    args->max_list = 20; /* TODO .. make something with this */
     args->view = SPECIFY_NORMAL;
     TRY(str_fmt(&args->entry, "%s", NEXUS_ROOT), ERR_STR_FMT);
     /* set up */
     args->name = argv[0];
     args->tabs.tiny = 2;
     args->tabs.main = 7;
-    args->tabs.ext = 32;
+    args->tabs.ext = 34;
     args->tabs.spec = args->tabs.ext + 2;
     args->tabs.max = 80;
     //arg_help(args);
@@ -321,12 +360,14 @@ void arg_help(Arg *arg) /* {{{ */
                         const char *spec = static_specify_str[specify->ids[j]];
                         if(!spec) continue;
                         TRY(str_fmt(&ts, "%s=%s", j == 1 ? "" : ", ", spec), ERR_STR_FMT);
-                        if(specify->ids[0] == SPECIFY_OPTION) {
-                            TRY(str_fmt(&ts, ""F(" (default)", IT)""), ERR_STR_FMT);
-                        } else if(specify->ids[0] == SPECIFY_OPTIONAL) {
-                            TRY(str_fmt(&ts, ""F(" (optional)", IT)""), ERR_STR_FMT);
-                        } else {
-                            ABORT("!!! missing behavior hint !!!");
+                        if(j == 1) {
+                            if(specify->ids[0] == SPECIFY_OPTION) {
+                                TRY(str_fmt(&ts, ""F(" (default)", IT)""), ERR_STR_FMT);
+                            } else if(specify->ids[0] == SPECIFY_OPTIONAL) {
+                                TRY(str_fmt(&ts, ""F(" (optional)", IT)""), ERR_STR_FMT);
+                            } else {
+                                ABORT("!!! missing behavior hint !!!");
+                            }
                         }
                     }
                     tp = print_line(arg->tabs.max, arg->tabs.spec, 0, &ts);
