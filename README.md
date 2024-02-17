@@ -4,6 +4,19 @@ Small code footprint.
 
 Create notes and link them, however you can think of. Once created you can browse the nodes.
 
+## Build
+
+- run `make`
+
+### Compile Flags
+
+- `-DCOLORPRINT_DISABLE` disable all colored/bold/italic (formatted) output
+- `-DPROC_COUNT <num>` number of threads
+
+## Clean
+
+- run `make clean` (on Cygwin trick it into thinking we're on linux so it can use rm etc. by running `OS= make clean`)
+
 ## Normal View
 - ``h`` : go back in history (can be: viewed notes, searches)
 - ``j`` : down
