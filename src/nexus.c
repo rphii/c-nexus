@@ -42,7 +42,6 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
     NexusThreadSearch *arg = args;
 
     /* thread processing / search */
-    Str timefmt = {0};
     for(size_t ib = 0; ib < SEARCH_THREAD_BATCH; ib++) {
         size_t i = arg->job[ib].i;
         size_t j = arg->job[ib].j;
