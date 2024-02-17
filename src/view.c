@@ -15,16 +15,17 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
     switch(view->id) {
         case VIEW_NORMAL: {
             Node *current = view->current;
-            TRY(node_fmt(out, current, nexus->show_desc, "", false), ERR_NODE_FMT);
-            TRY(node_fmt_sub(out, current, nexus->show_desc, nexus->show_preview, view->sub_sel), ERR_NODE_FMT_SUB);
+            TRY(node_fmt(out, current, nexus->config.show_desc, "", false), ERR_NODE_FMT);
+            TRY(node_fmt_sub(out, current, nexus->config.show_desc, nexus->config.show_preview, view->sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_SEARCH: {
-            ASSERT(nexus->max_preview, "max_preview cannot be 0");
+            ASSERT(nexus->config.max_preview, "max_preview cannot be 0");
             /* first perform the search */
             Str *search = &view->search;
             VrNode *findings = &nexus->findings;
             if(!nexus->findings_updated) {
                 TRY(nexus_search(nexus, search, findings), ERR_NEXUS_SEARCH);
+                /* on THIS line I suggest sorting stuff! */
                 nexus->findings_updated = true;
             }
             /* check that sub selection is in bounds */
@@ -32,11 +33,11 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             size_t sub_max = vrnode_length(findings);
             if(sub_sel >= sub_max) sub_sel = sub_max ? sub_max - 1 : 0;
             /* check that we display all items up to max_preview ... and shift accordingly */
-            size_t ioff = sub_sel >= nexus->max_preview ? 1 + sub_sel - nexus->max_preview : 0;
+            size_t ioff = sub_sel >= nexus->config.max_preview ? 1 + sub_sel - nexus->config.max_preview : 0;
             TRY(str_fmt(out, "Found " F("%4zu", FG_YL_B) " for : %.*s%s\n\n", vrnode_length(findings), STR_F(search), view->edit ? "_" : ""), ERR_STR_FMT);
             /* finally create output */
             Node *node_desc = 0;
-            for(size_t i = 0; i < vrnode_length(findings) && i < nexus->max_preview; ++i) {
+            for(size_t i = 0; i < vrnode_length(findings) && i < nexus->config.max_preview; ++i) {
                 size_t ireal = i+ioff;
                 Node *node = vrnode_get_at(findings, ireal);
                 char *select = !view->edit ? "  > " : "";
@@ -46,10 +47,10 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
                 }
                 TRY(node_fmt(out, node, false, select, (node_desc == node)), ERR_NODE_FMT);
             }
-            if(vrnode_length(findings) > nexus->max_preview) {
-                TRY(str_fmt(out, F("... (" F("%4zu", IT FG_YL_B) " more)\n", IT), vrnode_length(findings) - nexus->max_preview), ERR_STR_FMT);
+            if(vrnode_length(findings) > nexus->config.max_preview) {
+                TRY(str_fmt(out, F("... (" F("%4zu", IT FG_YL_B) " more)\n", IT), vrnode_length(findings) - nexus->config.max_preview), ERR_STR_FMT);
             }
-            if(nexus->show_desc && node_desc) {
+            if(nexus->config.show_desc && node_desc) {
                 TRY(node_fmt_desc(out, node_desc), ERR_NODE_FMT_DESC);
             }
         } break;
