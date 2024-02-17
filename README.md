@@ -13,11 +13,20 @@ Create notes and link them, however you can think of. Once created you can brows
 - `-DCOLORPRINT_DISABLE` disable all colored/bold/italic (formatted) output
 - `-DPROC_COUNT <num>` number of threads
 
-## Clean
+### Clean
 
-- run `make clean` (on Cygwin trick it into thinking we're on linux so it can use rm etc. by running `OS= make clean`)
+- run `make clean`
+- on Cygwin trick it into thinking we're on linux so it can use rm etc. by running `OS= make clean`
+- on Windows I don't know if this cleaning stuff works (or anything in general... if something
+  doesn't quite work on windows, well, I'll fix it maybe, if I know about the issue and feel like
+  fixing it)
 
-## Normal View
+## Views
+
+- These controls (and maybe even more) are also found in the nexus itself, since I keep that more
+  updated than this readme... Gotta use your program, y'know :)
+
+### Normal View
 - ``h`` : go back in history (can be: viewed notes, searches)
 - ``j`` : down
 - ``k`` : up
@@ -27,7 +36,7 @@ Create notes and link them, however you can think of. Once created you can brows
 - ``[space]`` : fold/unfold descriptions
 - ``f`` : enter search view
 
-## Search View
+### Search View
 - ``[type something]`` : search for something, case insensitive
 - ``[enter]`` : switch from editing search string to selecting found nodes; in this mode ..
     - .. `hjkl` : behaves as it would in normal view
@@ -38,10 +47,10 @@ Create notes and link them, however you can think of. Once created you can brows
 
 ## Command Line Arguments
 
-- **Print help and exit** : `--help`
-- **Print version and exit** : `--version`
-- **Change default view** : `--view`
-- **Change entry note** : `--node`
+- Print version and exit : `--version`
+- Change default view : `--view`
+- Change entry note : `--node`
+- Print help (about these and more arguments) and exit : `--help`
 
 ## How to add notes?
 
