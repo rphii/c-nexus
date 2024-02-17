@@ -12,14 +12,14 @@ typedef struct Nexus {
     TNode nodes;
     VView views;
     View view;
-    bool show_desc;
-    bool show_preview;
     bool quit;
     struct {
         Str entry;
         ViewList view;
+        bool show_desc;
+        bool show_preview;
+        size_t max_preview;
     } config;
-    size_t max_preview;
     VrNode findings;
     bool findings_updated;
     Arg *args;
@@ -38,9 +38,9 @@ void nexus_free(Nexus *nexus);
 #define ERR_NEXUS_INSERT_NODE "failed insertion of node into nexus"
 ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
 
-#define NEXUS_INSERT(nexus, root, ref, time, cmd, title, description, ...)  do { \
+#define NEXUS_INSERT(nexus, root, ref, icon, cmd, title, description, ...)  do { \
         Node temp, unused; \
-        TRY(node_create(&temp, title, cmd, description, time), ERR_NODE_CREATE); \
+        TRY(node_create(&temp, title, cmd, description, icon), ERR_NODE_CREATE); \
         TRY(nexus_insert_node(nexus, &temp), ERR_NEXUS_INSERT_NODE); \
         TRY(nexus_link(nexus, root, &temp), ERR_NEXUS_LINK); \
         NEXUS_LINKS_EV_STR(nexus, &temp, __VA_ARGS__); \
@@ -79,8 +79,6 @@ ErrDecl nexus_change_view(Nexus *nexus, View *view, ViewList id);
 
 #define ERR_NEXUS_HISTORY_BACK "failed going back in history"
 ErrDecl nexus_history_back(Nexus *nexus, View *view);
-
-
 
 #define ERR_NEXUS_BUILD "failed building nexus"
 ErrDecl nexus_build(Nexus *nexus);

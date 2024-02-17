@@ -3,7 +3,7 @@
 #include "search.h"
 #include "cmd.h"
 
-#if PROC_COUNT /* local threading {{{*/
+#if PROC_COUNT /* local threading {{{ */
 #include <pthread.h>
 
 #define ThreadQueue(X)      \
@@ -42,6 +42,7 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
     NexusThreadSearch *arg = args;
 
     /* thread processing / search */
+    Str timefmt = {0};
     for(size_t ib = 0; ib < SEARCH_THREAD_BATCH; ib++) {
         size_t i = arg->job[ib].i;
         size_t j = arg->job[ib].j;
@@ -80,11 +81,30 @@ int nexus_arg(Nexus *nexus, Arg *arg)
     ASSERT(arg, ERR_NULL_ARG);
     ASSERT(nexus, ERR_NULL_ARG);
     nexus->args = arg;
+    nexus->config.max_preview = arg->max_list;
     TRY(str_copy(&nexus->config.entry, &arg->entry), ERR_STR_COPY);
     switch(arg->view) {
         case SPECIFY_NONE:
         case SPECIFY_NORMAL: nexus->config.view = VIEW_NORMAL; break;
         case SPECIFY_SEARCH: nexus->config.view = VIEW_SEARCH; break;
+        default: THROW(ERR_UNREACHABLE ", %u", arg->view);
+    }
+    switch(arg->show_preview) {
+        case SPECIFY_YES: case SPECIFY_TRUE: {
+            nexus->config.show_preview = true;
+        } break;
+        case SPECIFY_NO: case SPECIFY_FALSE: {
+            nexus->config.show_preview = false;
+        } break;
+        default: THROW(ERR_UNREACHABLE ", %u", arg->view);
+    }
+    switch(arg->show_description) {
+        case SPECIFY_YES: case SPECIFY_TRUE: {
+            nexus->config.show_desc = true;
+        } break;
+        case SPECIFY_NO: case SPECIFY_FALSE: {
+            nexus->config.show_desc = false;
+        } break;
         default: THROW(ERR_UNREACHABLE ", %u", arg->view);
     }
     return 0;
@@ -97,10 +117,6 @@ int nexus_init(Nexus *nexus) //{{{
     ASSERT(nexus, ERR_NULL_ARG);
     TRY(tnode_init(&nexus->nodes, 12), ERR_LUTD_INIT);
     TRY(nexus_build(nexus), ERR_NEXUS_BUILD);
-    /* configure settings */
-    nexus->show_desc = true;
-    nexus->show_preview = false;
-    nexus->max_preview = 20;
     /* set up view */
     View *view = &nexus->view;
     view->id = nexus->config.view;
@@ -143,7 +159,7 @@ void nexus_rebuild(Nexus *nexus)
     int err = 0;
     ASSERT(nexus, ERR_NULL_ARG);
     Node *current = nexus->view.current;
-    Str cmd = {0}, cmd2 = {0};
+    Str cmd = {0};
 #if PROC_COUNT
     TRY(str_fmt(&cmd, "make -j %u", PROC_COUNT), ERR_STR_FMT)
 #else
@@ -152,29 +168,43 @@ void nexus_rebuild(Nexus *nexus)
     int result = cmd_run(&cmd);
     if(result) THROW(ERR_NEXUS_REBUILD);
 #if defined(PLATFORM_LINUX)
-    str_clear(&cmd);
+    Str args[5] = {0};
     Str *title = current ? &current->title : &STR(NEXUS_ROOT);
-    TRY(str_fmt(&cmd, "--entry=%.*s", STR_F(title)), ERR_STR_FMT);
-    TRY(str_fmt(&cmd2, "--view=%s", specify_str(nexus->args->view)), ERR_STR_FMT);
-    printf("%s %.*s %.*s\n", nexus->args->name, STR_F(&cmd), STR_F(&cmd2));
-    char *const argv[] = {(char *)nexus->args->name, str_iter_begin(&cmd), str_iter_begin(&cmd2), 0};
+    TRY(str_fmt(&args[0], "--entry=%.*s", STR_F(title)), ERR_STR_FMT);
+    TRY(str_fmt(&args[1], "--view=%s", specify_str(nexus->args->view)), ERR_STR_FMT);
+    TRY(str_fmt(&args[2], "--show-preview=%s", specify_str(nexus->args->show_preview)), ERR_STR_FMT);
+    TRY(str_fmt(&args[3], "--show-description=%s", specify_str(nexus->args->show_description)), ERR_STR_FMT);
+    TRY(str_fmt(&args[4], "--max-list=%zu", nexus->args->max_list), ERR_STR_FMT);
+    printf("%s %.*s %.*s %.*s %.*s %.*s\n", nexus->args->name, STR_F(&args[0]), STR_F(&args[1]), STR_F(&args[2]), STR_F(&args[3]), STR_F(&args[4]));
+    char *const argv[] = {(char *)nexus->args->name,
+        str_iter_begin(&args[0]),
+        str_iter_begin(&args[1]),
+        str_iter_begin(&args[2]),
+        str_iter_begin(&args[3]),
+        str_iter_begin(&args[4]),
+        0};
     execv(nexus->args->name, argv);
+clean:
+    for(size_t i = 0; i < sizeof(args)/sizeof(*args); ++i) {
+        str_free(&args[i]);
+    }
 #elif defined(PLATFORM_WINDOWS)
-    TRY(str_fmt(&cmd2, "--entry=\"%.*s\" --view=%s", STR_F(&current->title), specify_str(nexus->args->view)), ERR_STR_FMT);
+    Str args = {0};
+    TRY(str_fmt(&args, "--entry=\"%.*s\" --view=%s", STR_F(&current->title), specify_str(nexus->args->view)), ERR_STR_FMT);
     STARTUPINFO info_startup = {0};
     PROCESS_INFORMATION info_process = {0};
     LPCTSTR c = nexus->args->name;
-    LPCTSTR c2 = str_iter_begin(&cmd2);
+    LPCTSTR c2 = str_iter_begin(&args);
     result = CreateProcess(c, c2, 0, 0, FALSE, 0, 0, 0, &info_startup, &info_process);
     if(result) THROW(ERR_NEXUS_REBUILD);
     CloseHandle(info_process.hProcess);
     CloseHandle(info_process.hThread);
+clean:
+    str_free(&args);
 #else
     THROW("rebuild not yet implemented on '%s'", PLATFORM_NAME);
 #endif
-clean:
     str_free(&cmd);
-    str_free(&cmd2);
     if(!err) exit(0);
     return;
 error:
@@ -183,7 +213,7 @@ error:
 }
 /* }}} */
 
-int nexus_userinput(Nexus *nexus, int key)
+int nexus_userinput(Nexus *nexus, int key) /*{{{*/
 {
     ASSERT(nexus, ERR_NULL_ARG);
     View *view = &nexus->view;
@@ -192,10 +222,10 @@ int nexus_userinput(Nexus *nexus, int key)
         case VIEW_NORMAL: {
             switch(key) {
                 case ' ': {
-                    nexus->show_desc ^= true;
+                    nexus->config.show_desc ^= true;
                 } break;
                 case 'i': {
-                    nexus->show_preview ^= true;
+                    nexus->config.show_preview ^= true;
                 } break;
                 case 'j': {
                     node_set_sub(view->current, &view->sub_sel, view->sub_sel + 1);
@@ -243,16 +273,14 @@ int nexus_userinput(Nexus *nexus, int key)
                     if(len_search) str_pop_back(&view->search, 0);
                 } else if(key == 8) {
                     str_pop_back_word(&view->search);
-                } else if(key == '\n') {
+                } else if(key == '\n' || key == 27) {
                     view->edit = false;
-                } else if(key == 27) {
-                    TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
                 }
             } else {
                 size_t len = vrnode_length(&nexus->findings);
                 switch(key) {
                     case ' ': {
-                        nexus->show_desc ^= true;
+                        nexus->config.show_desc ^= true;
                     } break;
                     case 'j': {
                         if(SIZE_IS_NEG(view->sub_sel)) view->sub_sel = 0;
@@ -319,7 +347,7 @@ int nexus_userinput(Nexus *nexus, int key)
     return 0;
 error:
     return -1;
-}
+} /*}}}*/
 
 Node *nexus_get(Nexus *nexus, const char *title) //{{{
 {
@@ -379,7 +407,7 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
     assert(thr_queue.len <= PROC_COUNT);
 
     /* search */
-    size_t len_t = (1UL << (tnodes->width - 1));
+    size_t len_t = (1ULL << (tnodes->width - 1));
     size_t last_t = 0;
     for(size_t i = 0; i < len_t; i++) {
         if(tnodes->buckets[i].len) last_t = i;
@@ -433,7 +461,6 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
     /* now free since we *know* all threads finished, we can ignore usage of the lock */
     for(size_t i = 0; i < PROC_COUNT; ++i) {
         if(thr_search[i].queue->id) {
-            /* free */
             str_free(&thr_search[i].content);
             str_free(&thr_search[i].cmd);
         }
@@ -441,11 +468,12 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
 
     return err;
 
-#else
+#else /* is active when : PROC_COUNT == 0 {{{*/
 
     vrnode_clear(findings);
     TNode *tnodes = &nexus->nodes;
     Str cmd = {0}, content = {0};
+    Str timefmt = {0};
     for(size_t i = 0; i < (1ULL << tnodes->width); i++) {
         size_t len = tnodes->buckets[i].len;
         for(size_t j = 0; j < len; j++) {
@@ -465,7 +493,7 @@ clean:
 error:
     ERR_CLEAN;
 
-#endif
+#endif /*}}}*/
 
 } //}}}
 
@@ -732,7 +760,6 @@ int nexus_build(Nexus *nexus) //{{{
     TRY(nexus_build_cmds(nexus, &root), ERR_NEXUS_BUILD_CMDS);
     TRY(nexus_build_physics(nexus, &root), ERR_NEXUS_BUILD_PHYSICS);
     TRY(nexus_build_math(nexus, &root), ERR_NEXUS_BUILD_MATH);
-    //NEXUS_INSERT(nexus, &root, NODE_LEAF, ICON_WIKI, "make -j \"$(nproc --all)\" && ./a --entry='Rebuild'", "Rebuild", "!!!", NODE_LEAF);
 
     return 0;
 error:
