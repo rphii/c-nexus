@@ -11,7 +11,7 @@ Create notes and link them, however you can think of. Once created you can brows
 ### Compile Flags
 
 - `-DCOLORPRINT_DISABLE` disable all colored/bold/italic (formatted) output
-- `-DPROC_COUNT <num>` number of threads
+- `-DPROC_COUNT=<num>` number of threads
 
 ### Clean
 
@@ -72,9 +72,9 @@ There's a handy macro called `NEXUS_INSERT`. See the example(s) provided.
 ## Notes on Searching
 - if you have many notes, you might benefit from parallelized searching. you can activate it via
   specifing the number of threads with the preprocessor token `PROC_COUNT` (e.g. if you want to
-  search with 8 threads, in the Makefile add `-D PROC_COUNT=8` to the `CFLAGS`)
+  search with 8 threads, in the Makefile add `-DPROC_COUNT=8` to the `CFLAGS`)
 - if multithreaded searching is enabled, I at the moment do not bother to sort the found results, so
-  that's that (equal searches of something might spit out randomized notes)
+  that's that (equal searches of something might spit them out in randomized order)
 - even if you're not searching with multithreading, the results can seem unordered, because we're
   searching through the items in a hash table, after all. and I do not bother to sort them as well
 - Q: why not sort the results?
