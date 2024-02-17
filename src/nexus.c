@@ -329,8 +329,12 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
                         } while(view->id != VIEW_SEARCH && vview_length(&nexus->views));
                     } break;
                     case 'C': {
-                        Node *sub = node_get_sub_sel(view->current, view->sub_sel);
-                        if(sub) cmd_run(&sub->cmd);
+                        if(SIZE_IS_NEG(view->sub_sel)) view->sub_sel = 0;
+                        if(view->sub_sel > len) view->sub_sel = len ? len - 1 : 0;
+                        if(view->sub_sel < vrnode_length(&nexus->findings)) {
+                            Node *target = vrnode_get_at(&nexus->findings, view->sub_sel);
+                            if(target) cmd_run(&target->cmd);
+                        }
                     } break;
                     default: break;
                 }
