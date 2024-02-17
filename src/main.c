@@ -38,11 +38,9 @@ int main(int argc, const char **argv)
     }
 
 clean:
-    //printf("CLEAN\n");
     nexus_free(&nexus);
     arg_free(&arg);
     str_free(&p);
-    //printf("\ndone.\n");
     return err;
 error:
     ERR_CLEAN;
