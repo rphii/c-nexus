@@ -7,6 +7,7 @@ Create notes and link them, however you can think of. Once created you can brows
 ## Build
 
 - run `make`
+- alternatively, you could just run `gcc src/*.c -o a` with "a" being the name of the binary
 
 ### Compile Flags
 
