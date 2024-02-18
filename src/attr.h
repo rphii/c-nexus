@@ -7,8 +7,8 @@
 /* this preprocessor thing is mainly to disable clang lsp messages */
 /* TODO add clang's way of handling the ones below? */
 
-#define ATTR_FALLTHROUGH    [[fallthrough]]
-#define ATTR_NODISCARD      [[nodiscard]]
+#define ATTR_FALLTHROUGH        [[fallthrough]]
+#define ATTR_NODISCARD          [[nodiscard]]
 
 #define ATTR_NORETURN           __attribute__((noreturn)) /* this might have a c23 attribute... */
 #define ATTR_NOTHROW            __attribute__((nothrow))
