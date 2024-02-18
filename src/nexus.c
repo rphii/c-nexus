@@ -476,7 +476,6 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
     vrnode_clear(findings);
     TNode *tnodes = &nexus->nodes;
     Str cmd = {0}, content = {0};
-    Str timefmt = {0};
     for(size_t i = 0; i < (1ULL << tnodes->width); i++) {
         size_t len = tnodes->buckets[i].len;
         for(size_t j = 0; j < len; j++) {
