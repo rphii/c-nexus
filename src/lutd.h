@@ -44,8 +44,6 @@ typedef enum {
 #define ERR_LUTD_ADD "failed adding item to lookup table"
 
 #define LUTD_DEFAULT_SIZE    4
-//#define LUTD_TYPE_FREE(F)    (void (*)(void *))(F)
-//#define LUTD_TYPE_CMP(T, M, C)  (int (*)(LUTD_ITEM(T, M), LUTD_ITEM(T, M)))C
 
 #define LUTD_CAST_FREE(X)        ((void *)(X))
 #define LUTD_TYPE_FREE(F,X,T)    ((void (*)(T *))(F))(LUTD_CAST_FREE(X))
@@ -99,8 +97,7 @@ typedef enum {
     int A##_dump(N *l, LUTD_ITEM(T, M) **arr, size_t **counts, size_t *len);
 
 #define LUTD_IMPLEMENT(N, A, T, M, H, C, F) \
-    /*STATIC_ASSERT(H != 0, "missing hash function");*/ \
-    LUTD_IMPLEMENT_##M(N, A, T, H, C, F) \
+    LUTD_IMPLEMENT_##M(N, A, T, H, C, F); \
     /*LUTD_IMPLEMENT_COMMON_STATIC_THREAD_JOIN(N, A, T, C, F);*/ \
     /*LUTD_IMPLEMENT_COMMON_JOIN(N, A, T, C, F);*/ \
     LUTD_IMPLEMENT_COMMON_INIT(N, A, T, C, F) \
@@ -121,12 +118,6 @@ typedef enum {
     LUTD_IMPLEMENT_BY_REF_FREE(N, A, T, C, F) \
 
 /* implementation for both */
-
-/*#define LUTD_IMPLEMENT_COMMON_STATIC_F(N, A, T, F) \
-     static void (*A##_static_f)(void *) = F != 0 ? LUTD_TYPE_FREE(F) : 0; \*/
-
-/*#define LUTD_IMPLEMENT_COMMON_STATIC_CMP(N, A, T, M, C, F) \
-    int (*A##_static_cmp)(LUTD_ITEM(T, M), LUTD_ITEM(T, M)) = C != 0 ? LUTD_TYPE_CMP(T, M, C) : 0;*/
 
 /******************************************************************************/
 /* PUBLIC FUNCTION IMPLEMENTATIONS ********************************************/
