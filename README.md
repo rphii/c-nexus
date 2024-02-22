@@ -10,6 +10,7 @@ It's possible to link a note to one that may or may not get created in the past.
 
 ```sh
 git clone https://github.com/rphii/c-nexus
+cd c-nexus
 make
 ```
 
@@ -17,6 +18,7 @@ or alternatively *without* `make` (you can choose your compiler of choice; gcc, 
 
 ```sh
 git clone https://github.com/rphii/c-nexus
+cd c-nexus
 gcc src/*.c -o a
 ```
 
