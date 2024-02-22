@@ -74,8 +74,7 @@ error:
 
 #endif /*}}}*/
 
-
-int nexus_arg(Nexus *nexus, Arg *arg)
+int nexus_arg(Nexus *nexus, Arg *arg) /*{{{*/
 {
     ASSERT(arg, ERR_NULL_ARG);
     ASSERT(nexus, ERR_NULL_ARG);
@@ -109,7 +108,7 @@ int nexus_arg(Nexus *nexus, Arg *arg)
     return 0;
 error:
     return -1;
-}
+} /*}}}*/
 
 int nexus_init(Nexus *nexus) //{{{
 {
@@ -499,12 +498,34 @@ error:
 
 } //}}}
 
-int nexus_insert_node(Nexus *nexus, Node *node) //{{{
+int nexus_insert_node(Nexus *nexus, Node **ref, char *title, char *cmd, char *desc, Icon icon) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
-    ASSERT(node, ERR_NULL_ARG);
-    if(tnode_has(&nexus->nodes, node)) THROW("should not insert node with equal title");
-    TRY(tnode_add(&nexus->nodes, node), ERR_LUTD_ADD);
+    ASSERT(ref, ERR_NULL_ARG);
+    size_t i = 0, j = 0;
+    Node find = {
+        .title = STR_L(title),
+    };
+    bool found = !tnode_find(&nexus->nodes, &find, &i, &j);
+    if(found) {
+        if(nexus->nodes.buckets[i].count[j]) {
+            THROW("should not insert node with equal title");
+        } else {
+            /* node was added in nexus_link, via. add_count(0), meaning we should set the proper description etc. */
+            Node *node = nexus->nodes.buckets[i].items[j];
+            str_free(&node->title);
+            VrNode in = node->incoming, out = node->outgoing;
+            TRY(node_create(node, title, cmd, desc, icon), ERR_NODE_CREATE);
+            node->incoming = in;
+            node->outgoing = out;
+        }
+    } else {
+        Node node;
+        TRY(node_create(&node, title, cmd, desc, icon), ERR_NODE_CREATE);
+        TRY(tnode_add(&nexus->nodes, &node), ERR_LUTD_ADD);
+        tnode_find(&nexus->nodes, &find, &i, &j);
+    }
+    *ref = nexus->nodes.buckets[i].items[j];
     return 0;
 error:
     return -1;
@@ -515,8 +536,19 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(src, ERR_NULL_ARG);
     ASSERT(dest, ERR_NULL_ARG);
-    if(!tnode_has(&nexus->nodes, src)) THROW("node does not exist in nexus: '%.*s'", STR_F(&src->title));
-    if(!tnode_has(&nexus->nodes, dest)) THROW("node does not exist in nexus: '%.*s'", STR_F(&dest->title));
+    //printf("LINK %s ---- %s\n", str_iter_begin(&src->title), str_iter_begin(&dest->title));
+    if(!tnode_has(&nexus->nodes, src)) {
+        Node temp;
+        TRY(node_copy(&temp, src), ERR_NODE_COPY);
+        TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
+        //THROW("node does not exist in nexus: '%.*s'", STR_F(&src->title));
+    }
+    if(!tnode_has(&nexus->nodes, dest)) {
+        Node temp;
+        TRY(node_copy(&temp, dest), ERR_NODE_COPY);
+        TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
+        //THROW("node does not exist in nexus: '%.*s'", STR_F(&dest->title));
+    }
     size_t i0 = 0, i1 = 0, j0 = 0, j1 = 0;
     tnode_find(&nexus->nodes, src, &i0, &j0);
     tnode_find(&nexus->nodes, dest, &i1, &j1);
@@ -561,7 +593,7 @@ error:
     return -1;
 } //}}}
 
-int nexus_change_view(Nexus *nexus, View *view, ViewList id)
+int nexus_change_view(Nexus *nexus, View *view, ViewList id) /*{{{*/
 {
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(view, ERR_NULL_ARG);
@@ -598,7 +630,7 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id)
     return 0;
 error:
     return -1;
-}
+} /*}}}*/
 
 int nexus_history_back(Nexus *nexus, View *view) //{{{
 {
@@ -675,7 +707,7 @@ error:
     return -1;
 } //}}}
 
-int nexus_build_controls(Nexus *nexus, Node *anchor)
+int nexus_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
 {
     Node base, sub;
     NEXUS_INSERT(nexus, anchor, &base, ICON_WIKI, CMD_NONE, "Controls", "Guide to all the various controls in c-nexus." , NODE_LEAF);
@@ -723,7 +755,7 @@ int nexus_build_controls(Nexus *nexus, Node *anchor)
     return 0;
 error:
     return -1;
-}
+} /*}}}*/
 
 int nexus_build_cmds(Nexus *nexus, Node *anchor) /* {{{ */
 {
@@ -748,20 +780,23 @@ int nexus_build(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
 
-    Node root;
-    TRY(node_create(&root, NEXUS_ROOT, CMD_NONE, "Welcome to " F("c-nexus", BOLD) "\n\n"
+    Node *root;
+    TRY(nexus_insert_node(nexus, &root, NEXUS_ROOT, CMD_NONE, "Welcome to " F("c-nexus", BOLD) "\n\n"
                 F("basic controls", UL) "\n"
                 "  h : back in history\n"
                 "  j : move arrow down\n"
                 "  k : move arrow up\n"
                 "  l : follow the arrow\n\n"
-                "more can be found in the " F("controls wiki", UL) "", ICON_NONE), ERR_NODE_CREATE);
-    TRY(nexus_insert_node(nexus, &root), ERR_NEXUS_INSERT_NODE);
+                "more can be found in the " F("controls wiki", UL), ICON_ROOT), ERR_NEXUS_INSERT_NODE);
+    //TRY(nexus_insert_node(nexus, &root), ERR_NEXUS_INSERT_NODE);
 
-    TRY(nexus_build_controls(nexus, &root), ERR_NEXUS_BUILD_CONTROLS);
-    TRY(nexus_build_cmds(nexus, &root), ERR_NEXUS_BUILD_CMDS);
-    TRY(nexus_build_physics(nexus, &root), ERR_NEXUS_BUILD_PHYSICS);
-    TRY(nexus_build_math(nexus, &root), ERR_NEXUS_BUILD_MATH);
+    NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created");
+    NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Note yet to be created", "This note is created after Test!", NODE_LEAF);
+
+    TRY(nexus_build_controls(nexus, root), ERR_NEXUS_BUILD_CONTROLS);
+    TRY(nexus_build_cmds(nexus, root), ERR_NEXUS_BUILD_CMDS);
+    TRY(nexus_build_physics(nexus, root), ERR_NEXUS_BUILD_PHYSICS);
+    TRY(nexus_build_math(nexus, root), ERR_NEXUS_BUILD_MATH);
 
     return 0;
 error:

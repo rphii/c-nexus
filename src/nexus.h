@@ -36,16 +36,16 @@ void nexus_free(Nexus *nexus);
 #define NEXUS_ROOT  "Nexus"
 
 #define ERR_NEXUS_INSERT_NODE "failed insertion of node into nexus"
-ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
+//ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
+ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, char *title, char *cmd, char *desc, Icon icon);
 
 #define NEXUS_INSERT(nexus, root, ref, icon, cmd, title, description, ...)  do { \
-        Node temp, unused; \
-        TRY(node_create(&temp, title, cmd, description, icon), ERR_NODE_CREATE); \
-        TRY(nexus_insert_node(nexus, &temp), ERR_NEXUS_INSERT_NODE); \
-        TRY(nexus_link(nexus, root, &temp), ERR_NEXUS_LINK); \
-        NEXUS_LINKS_EV_STR(nexus, &temp, __VA_ARGS__); \
+        Node *temp, unused; \
+        TRY(nexus_insert_node(nexus, &temp, title, cmd, description, icon), ERR_NEXUS_INSERT_NODE); \
+        TRY(nexus_link(nexus, root, temp), ERR_NEXUS_LINK); \
+        NEXUS_LINKS_EV_STR(nexus, temp, __VA_ARGS__); \
         if(ref != 0) { \
-            memcpy(ref != 0 ? ref : &unused, &temp, sizeof(temp)); \
+            memcpy(ref != 0 ? ref : &unused, temp, sizeof(*temp)); \
         } \
     } while(0)
 
