@@ -24,6 +24,9 @@ typedef struct Node {
 void node_zero(Node *node);
 void node_free(Node *node);
 
+#define ERR_NODE_COPY "failed copying node"
+ErrDecl node_copy(Node *restrict dst, Node *restrict src);
+
 #define ERR_NODE_CREATE "failed creating node"
 ErrDecl node_create(Node *node, const char *title, const char *cmd, const char *desc, Icon icon);
 

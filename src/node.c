@@ -105,6 +105,16 @@ error:
     return -1;
 }
 
+int node_copy(Node *restrict dst, Node *restrict src)
+{
+    ASSERT(dst, ERR_NULL_ARG);
+    ASSERT(src, ERR_NULL_ARG);
+    TRY(node_create(dst, str_iter_begin(&src->title), str_iter_begin(&src->cmd), str_iter_begin(&src->desc), src->icon), ERR_NODE_CREATE);
+    return 0;
+error:
+    return -1;
+}
+
 int node_create(Node *node, const char *title, const char *cmd, const char *desc, Icon icon)
 {
     ASSERT(node, ERR_NULL_ARG);
