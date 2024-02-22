@@ -69,6 +69,23 @@ int str_fmt(Str *str, char *format, ...)
 }
 #endif
 
+int str_get_str(Str *str)
+{
+    ASSERT(str, ERR_NULL_ARG);
+    int err = 0;
+    int c = 0;
+    while((c = getchar()) != '\n' && c != EOF) {
+        TRY(str_fmt(str, "%c", (char)c), ERR_STR_FMT);  /* append string */
+    }
+    if(!str->last && (!c || c == EOF || c == '\n')) {
+        //THROW("an error"); /* TODO describe this error */
+    }
+clean:
+    fflush(stdin);
+    return err;
+error: ERR_CLEAN;
+}
+
 int str_cmp(Str *a, Str *b)
 {
     int result = -1;
@@ -135,4 +152,5 @@ size_t str_hash(Str *a)
     }
     return hash;
 }
+
 

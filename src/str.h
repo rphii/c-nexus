@@ -37,10 +37,14 @@ void str_pop_back_word(Str *str);
 ErrDecl str_fmt_va(Str *str, char *format, va_list argp);
 ErrDecl str_fmt(Str *str, char *format, ...);
 
+#define ERR_STR_GET_STR     "failed getting string from user"
+ErrDecl str_get_str(Str *str);
+
 int str_cmp(Str *a, Str *b);
 size_t str_count_overlap(Str *a, Str *b, bool ignorecase);
 size_t str_find_substring(Str *str, Str *sub);
 size_t str_hash(Str *a);
+
 
 #define STR_H
 #endif
