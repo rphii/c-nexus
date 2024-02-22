@@ -1,14 +1,8 @@
-#include <stdlib.h>
 #include <stdio.h>
 
 #include "platform.h"
 #include "err.h"
-#include "node.h"
-#include "vector.h"
-#include "lookup.h"
-
 #include "nexus.h"
-#include "search.h"
 #include "arg.h"
 
 int main(int argc, const char **argv)
