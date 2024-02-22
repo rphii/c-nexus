@@ -6,10 +6,21 @@ Create notes and link them, however you can think of. Once created you can brows
 
 It's possible to link a note to one that may or may not get created in the past.
 
-## Build
+## Installation
 
-- run `make`
-- alternatively, you could just run `gcc src/*.c -o a` with "a" being the name of the binary
+```sh
+git clone https://github.com/rphii/c-nexus
+make
+```
+
+or alternatively *without* `make` (you can choose your compiler of choice; gcc, clang, tcc, ...)
+
+```sh
+git clone https://github.com/rphii/c-nexus
+gcc src/*.c -o a
+```
+
+In both cases it creates an executable `a`; adjust it if desired.
 
 ### Compile Flags
 
