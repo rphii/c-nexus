@@ -4,9 +4,12 @@
 #include "err.h"
 #include "nexus.h"
 #include "arg.h"
+#include "screen.h"
 
 int main(int argc, const char **argv)
 {
+    screen_enter();
+
     int err = 0;
 
     Str p = {0};
@@ -35,6 +38,7 @@ clean:
     nexus_free(&nexus);
     arg_free(&arg);
     str_free(&p);
+    screen_leave();
     return err;
 error:
     ERR_CLEAN;

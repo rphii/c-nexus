@@ -32,6 +32,7 @@ VEC_INCLUDE(Str, str, char, BY_VAL);
 
 /* other functions */
 
+void str_pop_back_char(Str *str);
 void str_pop_back_word(Str *str);
 
 ErrDecl str_fmt_va(Str *str, char *format, va_list argp);

@@ -15,6 +15,20 @@ VEC_IMPLEMENT(Str, str, char, BY_VAL, 0);
 
 #if 1
 
+void str_pop_back_char(Str *str)
+{
+    bool next;
+    do {
+        next = false;
+        size_t len = str_length(str);
+        char c = 0;
+        if(len) {
+            str_pop_back(str, &c);
+            next = (bool)((c & 0xC0) == 0x80);
+        }
+    } while(next);
+}
+
 void str_pop_back_word(Str *str)
 {
     size_t len = str_length(str);

@@ -49,13 +49,17 @@
 #define ERR_PRINTF(fmt, ...)    do { fflush(stdout); /* for whatever reason I have to do this fflush... */ fprintf(ERR_FILE_STREAM, fmt, ##__VA_ARGS__); } while(0)
 #endif
 
+void screen_leave(void);    /* implementation is in "screen.h" */
+
 /* macros */
 
 #define THROW(fmt, ...)      do { \
+    (void)screen_leave(); \
     ERR_PRINTF(F("[ERROR]", BOLD FG_RD_B) " " F("%s:%d:%s", FG_WT_B) " " fmt "\n" , __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
     goto error; } while(0)
 
 #define ABORT(fmt, ...)      do { \
+    (void)screen_leave(); \
     platform_trace(); ERR_PRINTF(F("[ABORT]", BOLD FG_BK BG_RD_B) " " F("%s:%d:%s (end of trace)", FG_WT_B) " " fmt "\n" , __FILE__, __LINE__, __func__, ##__VA_ARGS__); exit(-1); } while(0)
 
 #define INFO(fmt, ...)       do { \
@@ -64,7 +68,11 @@
 
 #define TRY(stmt, fmt, ...)  if (stmt) { THROW(fmt, ##__VA_ARGS__); }
 #define ASSERT_ERROR(x)      assert(0 && (x))
-#define ASSERT(stmt, fmt, ...)   if (!stmt) { ABORT("assertion of '" ERR_STRINGIFY(stmt) "' failed... " fmt, ##__VA_ARGS__); }
+#define ASSERT(stmt, fmt, ...)   do { \
+    if (!stmt) { \
+        (void)screen_leave(); \
+        ABORT("assertion of '" ERR_STRINGIFY(stmt) "' failed... " fmt, ##__VA_ARGS__); } \
+    } while(0)
 
 
 #define ERR_H

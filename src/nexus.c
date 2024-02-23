@@ -268,7 +268,7 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
                 if(key >= 0x20 && key != 127) {
                     TRY(str_fmt(&view->search, "%c", key), ERR_STR_FMT);
                 } else if(key == 127) {
-                    if(len_search) str_pop_back(&view->search, 0);
+                    if(len_search) str_pop_back_char(&view->search);
                 } else if(key == 8) {
                     str_pop_back_word(&view->search);
                 } else if(key == '\n' || key == 27) {
