@@ -107,7 +107,6 @@ static void arg_static_print_version(Arg *arg)
 {
     ASSERT(arg, ERR_NULL_ARG);
 #if defined(VERSION)
-    screen_leave();
     if(strlen(VERSION)) {
         printf("%s version %s %s\n", arg->name, VERSION, PLATFORM_NAME);
     } else {
@@ -135,14 +134,12 @@ ErrDeclStatic arg_static_execute(Arg *arg, ArgList id)
         } break;
         case ARG_ENTRY: {
             if(!str_length(&arg->entry)) {
-                screen_leave();
                 printf("%*s" F("%s", BOLD) "=STRING is missing\n", arg->tabs.tiny, "", static_arg[id][1]);
                 arg->exit_early = true;
             }
         } break;
         case ARG_MAX_LIST: {
             if(!arg->max_list) {
-                screen_leave();
                 printf("%*s" F("%s", BOLD) "=NUMBER cannot be 0\n", arg->tabs.tiny, "", static_arg[id][1]);
                 arg->exit_early = true;
             }
@@ -155,7 +152,6 @@ ErrDeclStatic arg_static_execute(Arg *arg, ArgList id)
     if(spec) {
         switch(*spec) {
             case SPECIFY_OPTION: {
-                screen_leave();
                 arg->exit_early = true;
                 /* list options available */
                 const Specify *spec2 = &static_specify[id];
@@ -166,7 +162,6 @@ ErrDeclStatic arg_static_execute(Arg *arg, ArgList id)
                 }
             } break;
             case SPECIFY_STRING: {
-                screen_leave();
                 arg->exit_early = true;
                 printf("%*s" F("%s", BOLD) "=STRING is missing\n", arg->tabs.tiny, "", static_arg[id][1]);
             } break;
@@ -318,7 +313,6 @@ void arg_help(Arg *arg) /* {{{ */
     ASSERT(arg, ERR_NULL_ARG);
     int err = 0;
     Str ts = {0};
-    screen_leave();
     print_line(arg->tabs.max, 0, 0, &STR(F("c-nexus:", BOLD)" terminal note browsing application."));
     printf("\n\n");
     print_line(arg->tabs.max, 0, 0, &STR("Usage:\n"));
