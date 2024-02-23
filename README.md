@@ -4,7 +4,7 @@ Small code footprint.
 
 Create notes and link them, however you can think of. Once created you can browse the nodes.
 
-It's possible to link a note to one that may or may not get created in the past.
+It's possible to link a note to one that may or may not get created in the future.
 
 ## Installation
 
