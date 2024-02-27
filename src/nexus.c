@@ -730,7 +730,7 @@ int nexus_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
     /* search view {{{ */
     NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_NONE, "Search View", "In this mode you can search notes for substrings.\n"
             "\n" F("what gets searched?", UL) "\n"
-            "  the exact pattern of each note you can search are (in this order): " F("ICON title description", FG_GN) " (e.g. search for: 'wiki normal' -> you will find normal view note)\n"
+            "  the exact pattern of each note you can search are (in this order): " F("ICON title command description", FG_GN) " (e.g. search for: 'wiki normal' -> you will find normal view note)\n"
             "  searches are case insensitive. any newlines are removed. whitespaces are condensed into one space (e.g. XYZ    ABC -> XYZ ABC)\n"
             "\n" F("controls while editing search string", UL) "\n"
             "  ESC              : browse found notes\n"
