@@ -747,7 +747,7 @@ int nexus_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
             "  q                : quit and return to the terminal\n"
             "  Q                : rebuild nexus\n"
             "  C                : run command associated to note pointed at by the arrow\n"
-            "  SPACE            : toggle showing note descriptions on/off\n"
+            "  i                : toggle previewing note descriptions on/off\n"
             , "Normal View");
     /* }}} */
 
