@@ -277,8 +277,8 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
             } else {
                 size_t len = vrnode_length(&nexus->findings);
                 switch(key) {
-                    case ' ': {
-                        nexus->config.show_desc ^= true;
+                    case 'i': {
+                        nexus->config.show_preview ^= true;
                     } break;
                     case 'j': {
                         if(SIZE_IS_NEG(view->sub_sel)) view->sub_sel = 0;
