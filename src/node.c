@@ -83,6 +83,7 @@ int node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t
     ASSERT(out, ERR_NULL_ARG);
     ASSERT(node, ERR_NULL_ARG);
     ASSERT(max_preview, "max_preview cannot be 0");
+    int err = 0;
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
     size_t n = sO+sI;
@@ -129,9 +130,11 @@ int node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t
     if(show_preview && sub_info) {
         TRY(node_fmt_desc(out, sub_info), ERR_NODE_FMT_DESC);
     }
-    return 0;
+clean:
+    str_free(&padtest);
+    return err;
 error:
-    return -1;
+    ERR_CLEAN;
 }
 
 int node_copy(Node *restrict dst, Node *restrict src)
