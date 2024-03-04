@@ -13,7 +13,7 @@
     #define PLATFORM_NAME "windows" // Windows
     #define PLATFORM_WINDOWS
 #elif defined(__CYGWIN__) && !defined(_WIN32)
-    #define PLATFORM_NAME "windows" // Windows (Cygwin POSIX under Microsoft Window)
+    #define PLATFORM_NAME "windows-cygwin" // Windows (Cygwin POSIX under Microsoft Window)
     #define PLATFORM_CYGWIN
 #elif defined(__ANDROID__)
     #define PLATFORM_NAME "android" // Android (implies Linux, so it must come first)

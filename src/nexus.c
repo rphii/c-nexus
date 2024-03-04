@@ -144,7 +144,7 @@ void nexus_free(Nexus *nexus) //{{{
 } //}}}
 
 /* rebuild yourself {{{ */
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_CYGWIN)
 #include <pthread.h>
 #include <unistd.h>
 #elif defined(PLATFORM_WINDOWS)
@@ -156,7 +156,6 @@ void nexus_rebuild(Nexus *nexus)
 {
     int err = 0;
     ASSERT(nexus, ERR_NULL_ARG);
-    Node *current = nexus->view.current;
     Str cmd = {0};
 #if PROC_COUNT
     TRY(str_fmt(&cmd, "make -j %u", PROC_COUNT), ERR_STR_FMT)
@@ -165,7 +164,8 @@ void nexus_rebuild(Nexus *nexus)
 #endif
     int result = cmd_run(&cmd);
     if(result) THROW(ERR_NEXUS_REBUILD);
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_CYGWIN)
+    Node *current = nexus->view.current;
     Str args[5] = {0};
     Str *title = current ? &current->title : &STR(NEXUS_ROOT);
     TRY(str_fmt(&args[0], "--entry=%.*s", STR_F(title)), ERR_STR_FMT);
@@ -187,6 +187,7 @@ clean:
         str_free(&args[i]);
     }
 #elif defined(PLATFORM_WINDOWS)
+    Node *current = nexus->view.current;
     Str args = {0};
     TRY(str_fmt(&args, "--entry=\"%.*s\" --view=%s", STR_F(&current->title), specify_str(nexus->args->view)), ERR_STR_FMT);
     STARTUPINFO info_startup = {0};
@@ -200,6 +201,7 @@ clean:
 clean:
     str_free(&args);
 #else
+clean:
     THROW("rebuild not yet implemented on '%s'", PLATFORM_NAME);
 #endif
     str_free(&cmd);
