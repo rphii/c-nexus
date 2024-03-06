@@ -30,7 +30,14 @@ SOFTWARE. */
 
 #include <stdio.h>
 
+#define VEC_PLATFORM    1
+
+#if VEC_PLATFORM
 #include "platform.h"
+#define VEC_TRACE   platform_trace()
+#else
+#define VEC_TRACE   do {} while(0)
+#endif
 
 #ifndef vec_malloc
 #define vec_malloc  malloc
@@ -145,7 +152,7 @@ typedef enum
     VEC_ITEM(T, M) A##_get_back(N *vec); \
     VEC_ITEM(T, M) A##_get_at(N *vec, size_t index); \
     /* slice operations */ \
-    int A##_extend_front(N *vec, N *v2, size_t n); \
+    /* TODO */ int A##_extend_front(N *vec, N *v2, size_t n); \
     /* TODO */ int A##_extend_back(N *vec, N *v2, size_t n); \
     /* TODO */ int A##_extend_at(N *vec, size_t index, N *v2, size_t n); \
     /* TODO */ int A##_paste_front(N *vec, N *v2, size_t n); \

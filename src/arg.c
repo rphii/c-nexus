@@ -221,7 +221,7 @@ ErrDeclStatic static_arg_parse_spec(Arg *args, ArgList arg, Str *argY, Specify s
         } break;
         case SPECIFY_NUMBER: {
             errno = 0;
-            char *endptr;
+            char *endptr = 0;
             char *begin = str_iter_begin(argY);
             size_t val = 0;
             if(begin) {
