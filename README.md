@@ -70,7 +70,7 @@ In both cases it creates an executable `a`; adjust it if desired.
 
 ## How to add notes?
 
-Edit the [source file](src/nexus.c).
+Edit the [source file](src/content.c).
 
 There's a handy macro called `NEXUS_INSERT`. See the example(s) provided.
 
