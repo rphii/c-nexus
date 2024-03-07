@@ -66,9 +66,9 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int pad, 
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
     if(!active) {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " :: %s%s %.*s \n", sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " :: %s%s %.*s \n", pad, sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
     } else {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " :: %s%s %.*s \n", sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " :: %s%s %.*s \n", pad, sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
     }
     if(show_desc) {
         TRY(node_fmt_desc(out, node), ERR_NODE_FMT_DESC);

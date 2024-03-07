@@ -16,8 +16,8 @@ typedef struct Node {
     VrNode incoming;
 } Node;
 
-#define NODE_FMT_LEN_SUB_INACTIVE   F("%zu", FG_BK_B)
-#define NODE_FMT_LEN_SUB_ACTIVE     F("%zu", FG_CY_B)
+#define NODE_FMT_LEN_SUB_INACTIVE   F("%*zu", FG_BK_B)
+#define NODE_FMT_LEN_SUB_ACTIVE     F("%*zu", FG_CY_B)
 
 #define NODE_LEAF  0
 
