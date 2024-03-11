@@ -10,6 +10,8 @@
 
 typedef struct Nexus {
     TNode nodes;
+    TNodeIcon nodesicon;
+    Node nodeicon;
     VView views;
     View view;
     bool quit;
@@ -82,15 +84,6 @@ ErrDecl nexus_history_back(Nexus *nexus, View *view);
 
 #define ERR_NEXUS_BUILD "failed building nexus"
 ErrDecl nexus_build(Nexus *nexus);
-
-#define ERR_NEXUS_BUILD_CMDS "failed building cmds"
-ErrDecl nexus_build_cmds(Nexus *nexus, Node *anchor);
-
-#define ERR_NEXUS_BUILD_CONTROLS "failed building controls"
-ErrDecl nexus_build_controls(Nexus *nexus, Node *anchor);
-
-#define ERR_NEXUS_BUILD_MATH "failed building math"
-ErrDecl nexus_build_math(Nexus *nexus, Node *anchor);
 
 #define ERR_NEXUS_BUILD_PHYSICS "failed building physics"
 ErrDecl nexus_build_physics(Nexus *nexus, Node *anchor);

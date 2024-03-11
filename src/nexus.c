@@ -111,11 +111,47 @@ error:
     return -1;
 } /*}}}*/
 
+int nexus_create_by_icon(Nexus *nexus)
+{
+    TRY(node_create(&nexus->nodeicon, "Browse by icon", 0, 0, ICON_ROOT), ERR_NODE_CREATE);
+    TRY(tnodeicon_init(&nexus->nodesicon, 6), ERR_LUTD_INIT);
+    for(size_t i = 0; i < (1ULL << (nexus->nodes.width - 1)); ++i) {
+        size_t N = nexus->nodes.buckets[i].len;
+        for(size_t j = 0; j < N; ++j) {
+            Node *ref = nexus->nodes.buckets[i].items[j];
+            if(!tnodeicon_has(&nexus->nodesicon, ref)) {
+                Node niv = {0};
+                TRY(node_create(&niv, "Group", 0, 0, ref->icon), ERR_NODE_CREATE);
+                TRY(tnodeicon_add(&nexus->nodesicon, &niv), ERR_LUTD_ADD);
+            }
+            size_t ii = 0, jj = 0;
+            TRY(tnodeicon_find(&nexus->nodesicon, ref, &ii, &jj), "failed finding node with date '%u'", ref->icon);
+            Node *ni = nexus->nodesicon.buckets[ii].items[jj];
+            ASSERT(ni, ERR_UNREACHABLE);
+            TRY(vrnode_push_back(&ni->outgoing, ref), ERR_VEC_PUSH_BACK);
+        }
+    }
+
+    VrNode *nio = &nexus->nodeicon.outgoing;
+    for(size_t i = 0; i < (1ULL << (nexus->nodesicon.width - 1)); ++i) {
+        size_t N = nexus->nodesicon.buckets[i].len;
+        for(size_t j = 0; j < N; ++j) {
+            Node *ni = nexus->nodesicon.buckets[i].items[j];
+            vrnode_sort(&ni->outgoing);
+            TRY(vrnode_push_back(nio, ni), ERR_VEC_PUSH_BACK);
+        }
+    }
+    vrnode_sort(&nexus->nodeicon.outgoing);
+    return 0;
+error:
+    return -1;
+}
+
 int nexus_init(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     TRY(tnode_init(&nexus->nodes, 12), ERR_LUTD_INIT);
-    TRY(content_build(nexus), ERR_NEXUS_BUILD);
+    TRY(nexus_build(nexus), ERR_NEXUS_BUILD);
     /* set up view */
     View *view = &nexus->view;
     view->id = nexus->config.view;
@@ -130,6 +166,8 @@ int nexus_init(Nexus *nexus) //{{{
         case VIEW_NONE: THROW("view id should not be NONE");
         default: THROW("unknown view id: %u", view->id);
     }
+    TRY(nexus_create_by_icon(nexus), "could not create by-icon view");
+
     return 0;
 error:
     return -1;
@@ -139,9 +177,11 @@ void nexus_free(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     tnode_free(&nexus->nodes);
+    tnodeicon_free(&nexus->nodesicon);
     vview_free(&nexus->views);
     vrnode_free(&nexus->findings);
     view_free(&nexus->view);
+    node_free(&nexus->nodeicon);
 } //}}}
 
 /* rebuild yourself {{{ */
@@ -171,8 +211,8 @@ void nexus_rebuild(Nexus *nexus)
     Str *title = current ? &current->title : &STR(NEXUS_ROOT);
     TRY(str_fmt(&args[0], "--entry=%.*s", STR_F(title)), ERR_STR_FMT);
     TRY(str_fmt(&args[1], "--view=%s", specify_str(nexus->args->view)), ERR_STR_FMT);
-    TRY(str_fmt(&args[2], "--show-preview=%s", specify_str(nexus->args->show_preview)), ERR_STR_FMT);
-    TRY(str_fmt(&args[3], "--show-description=%s", specify_str(nexus->args->show_description)), ERR_STR_FMT);
+    TRY(str_fmt(&args[2], "--show-preview=%s", nexus->config.show_preview ? "yes" : "no"), ERR_STR_FMT);
+    TRY(str_fmt(&args[3], "--show-description=%s", nexus->config.show_desc ? "yes" : "no"), ERR_STR_FMT);
     TRY(str_fmt(&args[4], "--max-list=%zu", nexus->args->max_list), ERR_STR_FMT);
     printf("%s %.*s %.*s %.*s %.*s %.*s\n", nexus->args->name, STR_F(&args[0]), STR_F(&args[1]), STR_F(&args[2]), STR_F(&args[3]), STR_F(&args[4]));
     char *const argv[] = {(char *)nexus->args->name,
@@ -262,6 +302,10 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
                     Node *sub = node_get_sub_sel(view->current, view->sub_sel);
                     if(sub) cmd_run(&sub->cmd);
                 } break;
+                case 't': {
+                    TRY(nexus_change_view(nexus, view, VIEW_ICON), ERR_NEXUS_CHANGE_VIEW);
+                } break;
+                /* TODO : jump to random note! */
                 default: break;
             }
         } break;
@@ -338,6 +382,9 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
                             if(target) cmd_run(&target->cmd);
                         }
                     } break;
+                    case 't': {
+                        TRY(nexus_change_view(nexus, view, VIEW_ICON), ERR_NEXUS_CHANGE_VIEW);
+                    } break;
                     default: break;
                 }
             }
@@ -346,6 +393,56 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
                 nexus->findings_updated = false;
             }
 
+        } break;
+        case VIEW_ICON: {
+            size_t len = vrnode_length(&nexus->nodeicon.outgoing);
+            switch(key) {
+                case ' ': {
+                    /* TODO: this is stupid. make it so that each view has the show_desc, show_preview etc. saved for itself... */
+                    nexus->config.show_desc ^= true;
+                } break;
+                case 'f': {
+                    TRY(nexus_change_view(nexus, view, VIEW_SEARCH), ERR_NEXUS_CHANGE_VIEW);
+                } break;
+                case 'j': {
+                    if(SIZE_IS_NEG(view->sub_sel)) view->sub_sel = 0;
+                    ++view->sub_sel;
+                    if(view->sub_sel >= len) {
+                        view->sub_sel = 0;
+                    }
+                } break;
+                case 'k': {
+                    if(view->sub_sel > len) view->sub_sel = len ? len - 1 : 0;
+                    --view->sub_sel;
+                    if(SIZE_IS_NEG(view->sub_sel)) {
+                        view->sub_sel = len ? len - 1 : 0;
+                    }
+                } break;
+                case 'l': {
+                    if(SIZE_IS_NEG(view->sub_sel)) view->sub_sel = 0;
+                    if(view->sub_sel > len) view->sub_sel = len ? len - 1 : 0;
+                    if(view->sub_sel < vrnode_length(&nexus->nodeicon.outgoing)) {
+                        Node *target = vrnode_get_at(&nexus->nodeicon.outgoing, view->sub_sel);
+                        TRY(nexus_change_view(nexus, view, VIEW_NORMAL), ERR_NEXUS_CHANGE_VIEW);
+                        size_t ni = 0, nj = 0;
+                        TRY(tnodeicon_find(&nexus->nodesicon, target, &ni, &nj), "could not find node with icon %u", target->icon);
+                        view->current = nexus->nodesicon.buckets[ni].items[nj];
+                        //TRY(!(view->current = nexus_get(nexus, target->title.s)), ERR_NEXUS_GET); /* risky */
+                    }
+                } break;
+                case 'h':
+                case 't':
+                case 27: {
+                    TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
+                } break;
+                case 'Q': {
+                    nexus_rebuild(nexus);
+                } break;
+                case 'q': {
+                    nexus->quit = true;
+                } break;
+                default: break;
+            }
         } break;
         default: THROW("unknown view id: %u", view->id);
     }
@@ -617,7 +714,7 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id) /*{{{*/
     /* init the different views */
     switch(id) {
         case VIEW_NORMAL: {
-            if(ref.id == VIEW_SEARCH) view->sub_sel = 0;
+            if(ref.id != VIEW_NORMAL) view->sub_sel = 0;
             view->edit = false;
         } break;
         case VIEW_SEARCH: {
@@ -626,6 +723,10 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id) /*{{{*/
                 str_clear(&view->search);
                 view->edit = true;
             }
+        } break;
+        case VIEW_ICON: {
+            view->sub_sel = 0;
+            view->current = &nexus->nodeicon;
         } break;
         case VIEW_NONE: THROW("view id should not be NONE");
         default: THROW("unknown view id: %u", id);
@@ -645,6 +746,30 @@ int nexus_history_back(Nexus *nexus, View *view) //{{{
         vview_pop_back(&nexus->views, &ref);
         TRY(view_copy(view, &ref), ERR_VIEW_COPY);
     }
+    return 0;
+error:
+    return -1;
+} //}}}
+
+int nexus_build(Nexus *nexus) //{{{
+{
+    ASSERT(nexus, ERR_NULL_ARG);
+
+    Node *root;
+    TRY(nexus_insert_node(nexus, &root, NEXUS_ROOT, CMD_NONE, "Welcome to " F("c-nexus", BOLD) "\n\n"
+                F("basic controls", UL) "\n"
+                "  h : back in history\n"
+                "  j : move arrow down\n"
+                "  k : move arrow up\n"
+                "  l : follow the arrow\n\n"
+                "more can be found in the " F("controls wiki", UL), ICON_ROOT), ERR_NEXUS_INSERT_NODE);
+
+    NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created");
+    NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Note yet to be created", "This note is created after Test!", NODE_LEAF);
+
+    TRY(content_build(nexus, root), ERR_CONTENT_BUILD);
+    tnode_sort_sub(&nexus->nodes);
+
     return 0;
 error:
     return -1;

@@ -16,8 +16,18 @@ typedef struct Node {
     VrNode incoming;
 } Node;
 
+#if defined NODE_SHOW_COUNT_IN_OUT
+#define NODE_FMT_LEN_SUB_INACTIVE   F("%*zu<->%-*zu", FG_BK_B)
+#define NODE_FMT_LEN_SUB_ACTIVE     F("%*zu<->%-*zu", FG_CY_B)
+#else
 #define NODE_FMT_LEN_SUB_INACTIVE   F("%*zu", FG_BK_B)
 #define NODE_FMT_LEN_SUB_ACTIVE     F("%*zu", FG_CY_B)
+#endif
+
+#define NODE_FMT_ARR_ACTIVE         F("-> ", FG_CY_B)
+#define NODE_FMT_ARL_ACTIVE         F("<- ", FG_CY_B)
+#define NODE_FMT_ARR_INACTIVE       F(" > ", FG_BK_B)
+#define NODE_FMT_ARL_INACTIVE       F("<  ", FG_BK_B)
 
 #define NODE_LEAF  0
 
@@ -42,7 +52,7 @@ ErrDecl node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, si
 Node *node_get_sub_sel(Node *node, size_t sub_sel);
 
 #define ERR_NODE_FMT "failed formatting node"
-int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int pad, bool active);
+int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl, int padr, bool active);
 
 void node_set_sub(Node *node, size_t *sub_sel, size_t to_set);
 

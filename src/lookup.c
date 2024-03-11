@@ -12,21 +12,30 @@ static inline int tnode_cmp(Node *a, Node *b)
     return str_cmp(&a->title, &b->title);
 }
 
-LUTD_IMPLEMENT(TNode, tnode, Node, BY_REF, tnode_hash, tnode_cmp, node_free);
-
-
-#if 0
-static inline size_t tlink_hash(Link *link)
+static inline size_t tnodeicon_hash(Node *node)
 {
-    size_t hash = (size_t)link;//str_hash(&node->title);
+    size_t hash = hash = 99194853094755497ULL * (size_t)node->icon; /* 83rd fibonacci number because why not */
     return hash;
 }
 
-static inline int tlink_cmp(Link *a, Link *b)
+static inline int tnodeicon_cmp(Node *a, Node *b)
 {
-    return 0;//str_cmp(&a->title, &b->title);
+    return !(a->icon == b->icon);
 }
 
-LUTD_IMPLEMENT(TLink, tlink, Link, BY_REF, tlink_hash, tlink_cmp, link_free);
-#endif
+LUTD_IMPLEMENT(TNode, tnode, Node, BY_REF, tnode_hash, tnode_cmp, node_free);
+LUTD_IMPLEMENT(TNodeIcon, tnodeicon, Node, BY_REF, tnodeicon_hash, tnodeicon_cmp, node_free);
+
+void tnode_sort_sub(TNode *tnode)
+{
+    ASSERT(tnode, ERR_NULL_ARG);
+    for(size_t i = 0; i < 1ULL << (tnode->width - 1); ++i) {
+        for(size_t j = 0; j < tnode->buckets[i].cap; j++) { \
+            Node *node = tnode->buckets[i].items[j];
+            vrnode_sort(&node->incoming);
+            vrnode_sort(&node->outgoing);
+        }
+    }
+}
+
 

@@ -58,18 +58,26 @@ Node *node_get_sub_sel(Node *node, size_t sub_sel)
     return 0;
 }
 
-int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int pad, bool active)
+int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl, int padr, bool active)
 {
     ASSERT(out, ERR_NULL_ARG);
     ASSERT(node, ERR_NULL_ARG);
     ASSERT(select, ERR_NULL_ARG);
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
+#if (NODE_SHOW_COUNT_IN_OUT)
     if(!active) {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " :: %s%s %.*s \n", pad, sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s%s %.*s \n", padl, sI, padr, sO, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
     } else {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " :: %s%s %.*s \n", pad, sO+sI, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s%s %.*s \n", padl, sI, padr, sO, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
     }
+#else
+    if(!active) {
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s%s %.*s\n", padl > padr ? padl : padr, sI+sO, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
+    } else {
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s%s %.*s\n", padl > padr ? padl : padr, sI+sO, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
+    }
+#endif
     if(show_desc) {
         TRY(node_fmt_desc(out, node), ERR_NODE_FMT_DESC);
     }
@@ -88,19 +96,26 @@ int node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t
     size_t sI = vrnode_length(&node->incoming);
     size_t n = sO+sI;
     /* determine padding ... TODO improve, in some way shape or form so we can also pad the icon ... */
-    int padding = 0;
+    int paddingr = 0;
+    int paddingl = 0;
     Str padtest = {0};
     for(size_t i = 0; i < sO; i++) {
-        str_clear(&padtest);
         Node *sub = vrnode_get_at(&node->outgoing, i);
-        TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->outgoing) + vrnode_length(&sub->incoming)), ERR_STR_FMT);
-        if(str_length(&padtest) > (size_t)padding) padding = (int)str_length(&padtest);
+        str_clear(&padtest);
+        TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->outgoing)), ERR_STR_FMT);
+        if(str_length(&padtest) > (size_t)paddingr) paddingr = (int)str_length(&padtest);
+        str_clear(&padtest);
+        TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->incoming)), ERR_STR_FMT);
+        if(str_length(&padtest) > (size_t)paddingl) paddingl = (int)str_length(&padtest);
     }
     for(size_t i = 0; i < sI; i++) {
-        str_clear(&padtest);
         Node *sub = vrnode_get_at(&node->incoming, i);
-        TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->outgoing) + vrnode_length(&sub->incoming)), ERR_STR_FMT);
-        if(str_length(&padtest) > (size_t)padding) padding = (int)str_length(&padtest);
+        str_clear(&padtest);
+        TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->outgoing)), ERR_STR_FMT);
+        if(str_length(&padtest) > (size_t)paddingr) paddingr = (int)str_length(&padtest);
+        str_clear(&padtest);
+        TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->incoming)), ERR_STR_FMT);
+        if(str_length(&padtest) > (size_t)paddingl) paddingl = (int)str_length(&padtest);
     }
     /* actually format */
     Node *sub_info = 0;
@@ -113,14 +128,14 @@ int node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t
         Node *sub = 0;
         if(ireal < sO) {
             sub = vrnode_get_at(&node->outgoing, ireal);
-            const char *arrow = i+ioff == sub_sel ? "--> " : "  > ";
+            const char *arrow = i+ioff == sub_sel ? NODE_FMT_ARR_ACTIVE : NODE_FMT_ARR_INACTIVE;
             if(SIZE_IS_NEG(sub_sel)) arrow = "";
-            TRY(node_fmt(out, sub, false, arrow, padding, i+ioff == sub_sel), ERR_NODE_FMT);
+            TRY(node_fmt(out, sub, false, arrow, paddingl, paddingr, i+ioff == sub_sel), ERR_NODE_FMT);
         } else if(ireal < n) {
-            const char *arrow = i+ioff == sub_sel ? "<-- " : "<   ";
+            const char *arrow = i+ioff == sub_sel ? NODE_FMT_ARL_ACTIVE : NODE_FMT_ARL_INACTIVE;
             if(SIZE_IS_NEG(sub_sel)) arrow = "";
             sub = vrnode_get_at(&node->incoming, ireal-sO);
-            TRY(node_fmt(out, sub, false, arrow, padding, i+ioff == sub_sel), ERR_NODE_FMT);
+            TRY(node_fmt(out, sub, false, arrow, paddingl, paddingr, i+ioff == sub_sel), ERR_NODE_FMT);
         }
         if(ireal == sub_sel) sub_info = sub;
     }

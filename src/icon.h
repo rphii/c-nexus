@@ -2,6 +2,7 @@
 
 typedef enum {
     ICON_NONE,
+    ICON_NOTE,
     ICON_ROOT,
     ICON_WIKI,
     ICON_MATH,

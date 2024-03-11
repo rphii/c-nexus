@@ -73,6 +73,7 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
             "\n" F("other controls", UL) "\n"
             "  H                : go back to most recent search\n"
             "  f                : enter " F("search mode", FG_YL_B) "\n"
+            "  t                : enter " F("icon view", FG_YL_B) "\n"
             "  q                : quit and return to the terminal\n"
             "  Q                : rebuild nexus\n"
             "  c                : run command associated to current note\n"
@@ -96,6 +97,7 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
             "  ENTER            : edit search string\n"
             "  f                : same as above\n"
             "  F                : clear search string and edit it\n"
+            "  t                : enter " F("icon view", FG_YL_B) "\n"
             "  hjkl             : same as the basic controls\n"
             "  H                : go back to most recent search\n"
             "  q                : quit and return to the terminal\n"
@@ -105,6 +107,13 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
             , "Normal View");
     /* }}} */
 
+    /* icon view {{{ */
+    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_NONE, "Icon View", "In this mode the notes are browsable by icon.\n"
+            "  f                : enter " F("search mode", FG_YL_B) "\n"
+            "  t, ESC           : abort icon view and go back\n"
+            "  hjkl             : same as the basic controls\n"
+            , "Normal View", "Search View");
+    /* }}} */
 
     return 0;
 error:
@@ -130,27 +139,12 @@ error:
     return -1;
 } /* }}} */
 
-int content_build(Nexus *nexus) //{{{
+int content_build(Nexus *nexus, Node *root) //{{{
 {
-    ASSERT(nexus, ERR_NULL_ARG);
-
-    Node *root;
-    TRY(nexus_insert_node(nexus, &root, NEXUS_ROOT, CMD_NONE, "Welcome to " F("c-nexus", BOLD) "\n\n"
-                F("basic controls", UL) "\n"
-                "  h : back in history\n"
-                "  j : move arrow down\n"
-                "  k : move arrow up\n"
-                "  l : follow the arrow\n\n"
-                "more can be found in the " F("controls wiki", UL), ICON_ROOT), ERR_NEXUS_INSERT_NODE);
-
-    NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created");
-    NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Note yet to be created", "This note is created after Test!", NODE_LEAF);
-
-    TRY(content_build_controls(nexus, root), ERR_NEXUS_BUILD_CONTROLS);
-    TRY(content_build_cmds(nexus, root), ERR_NEXUS_BUILD_CMDS);
-    TRY(content_build_physics(nexus, root), ERR_NEXUS_BUILD_PHYSICS);
-    TRY(content_build_math(nexus, root), ERR_NEXUS_BUILD_MATH);
-
+    TRY(content_build_controls(nexus, root), "failed building controls");
+    TRY(content_build_cmds(nexus, root), "failed building cmds");
+    TRY(content_build_physics(nexus, root), "failed building physics");
+    TRY(content_build_math(nexus, root), "failed building math");
     return 0;
 error:
     return -1;

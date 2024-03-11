@@ -12,6 +12,7 @@ typedef enum {
     /* views below */
     VIEW_NORMAL,
     VIEW_SEARCH,
+    VIEW_ICON,
 } ViewList;
 
 typedef struct View {

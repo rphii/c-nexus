@@ -15,7 +15,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
     switch(view->id) {
         case VIEW_NORMAL: {
             Node *current = view->current;
-            TRY(node_fmt(out, current, nexus->config.show_desc, "", 0, false), ERR_NODE_FMT);
+            TRY(node_fmt(out, current, nexus->config.show_desc, "", 0, 0, false), ERR_NODE_FMT);
             TRY(node_fmt_sub(out, current, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, view->sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_SEARCH: {
@@ -25,6 +25,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             if(!nexus->findings_updated) {
                 TRY(nexus_search(nexus, search, findings), ERR_NEXUS_SEARCH);
                 /* on THIS line I suggest sorting stuff! */
+                vrnode_sort(findings);
                 nexus->findings_updated = true;
             }
             /* check that sub selection is in bounds */
@@ -36,6 +37,11 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             fake.outgoing = *findings;
             TRY(str_fmt(out, "Found " F("%4zu", FG_YL_B) " for : %.*s%s\n\n", vrnode_length(findings), STR_F(search), view->edit ? "_" : ""), ERR_STR_FMT);
             TRY(node_fmt_sub(out, &fake, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, sub_sel), ERR_NODE_FMT_SUB);
+        } break;
+        case VIEW_ICON: {
+            Node *current = &nexus->nodeicon;
+            TRY(node_fmt(out, current, nexus->config.show_desc, "", 0, 0, false), ERR_NODE_FMT);
+            TRY(node_fmt_sub(out, current, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, view->sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_NONE: THROW("view id should not be NONE");
         default: THROW("unknown id: %u", view->id);

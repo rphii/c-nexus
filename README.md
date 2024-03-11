@@ -39,8 +39,8 @@ In both cases it creates an executable `a`; adjust it if desired.
 
 ## Views
 
-- These controls (and maybe even more) are also found in the nexus itself, since I keep that more
-  updated than this readme... Gotta use your program, y'know :)
+These controls (and maybe even more) are also found in the nexus itself, since I keep that more
+updated than this readme... Gotta use your program, y'know :)
 
 ### Normal View
 - ``h`` : go back in history (can be: viewed notes, searches)
@@ -51,6 +51,7 @@ In both cases it creates an executable `a`; adjust it if desired.
 - ``Q`` : rebuild (certainly works on linux)
 - ``[space]`` : fold/unfold descriptions
 - ``f`` : enter search view
+- ``t`` : enter icon view
 
 ### Search View
 - ``[type something]`` : search for something, case insensitive
@@ -60,6 +61,12 @@ In both cases it creates an executable `a`; adjust it if desired.
     - .. `F` : clears the editing string and puts you back to editing it
     - .. `[escape]` : goes back to node you've watched before searching; as if nothing was
       selected (it goes back in the history)
+    - .. ``t`` : enter icon view
+
+### Icon View
+- `hjkl` : behaves as it would in normal view
+- ``t``, `[escape]` : abort icon view and go back
+- ``f`` : enter search view
 
 ## Command Line Arguments
 
@@ -77,6 +84,7 @@ There's a handy macro called `NEXUS_INSERT`. See the example(s) provided.
 ### Upsides?
 - at startup, all notes are stored in RAM (fast lookup)
 - compile checked code/notes
+- you can just disable the notes you don't want to be seen via. code
 
 ### Downsides?
 - at startup, all notes are stored in RAM (amount limited through RAM)
