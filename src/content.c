@@ -163,7 +163,7 @@ int content_log(Nexus *nexus, Node *anchor) /* {{{ */
 
     time_t today;
     time(&today);
-    LOG2(today, "Last Compilation", "Date of most recent compilation", NODE_LEAF);
+    LOG2(today, "Today", "Date of today", NODE_LEAF);
 #undef LOG
 #undef LOG2
     return 0; error: return -1;
