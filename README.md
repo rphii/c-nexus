@@ -1,5 +1,7 @@
 # c-nexus
 
+![alt text](images/start.png)
+
 Small code footprint.
 
 Create notes and link them, however you can think of. Once created you can browse the nodes.
