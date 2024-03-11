@@ -69,7 +69,7 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
     NEXUS_INSERT(nexus, anchor, &base, ICON_WIKI, CMD_NONE, "Controls", "Guide to all the various controls in c-nexus." , NODE_LEAF);
 
     /* normal view {{{ */
-    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_NONE, "Normal View", "In this mode you can browse the notes.\n"
+    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_IMG("./images/start.png"), "Normal View", "In this mode you can browse the notes.\n"
             "\n" F("basic controls", UL) "\n"
             "  for the normal mode are listed in the root, so I'm not going to list them again.\n"
             "\n" F("other controls", UL) "\n"
@@ -85,7 +85,7 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
     /* }}} */
 
     /* search view {{{ */
-    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_NONE, "Search View", "In this mode you can search notes for substrings.\n"
+    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_IMG("./images/search.png"), "Search View", "In this mode you can search notes for substrings.\n"
             "\n" F("what gets searched?", UL) "\n"
             "  the exact pattern of each note you can search are (in this order): " F("ICON title command description", FG_GN) " (e.g. search for: 'wiki normal' -> you will find normal view note)\n"
             "  searches are case insensitive. any newlines are removed. whitespaces are condensed into one space (e.g. XYZ    ABC -> XYZ ABC)\n"
@@ -110,7 +110,7 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
     /* }}} */
 
     /* icon view {{{ */
-    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_NONE, "Icon View", "In this mode the notes are browsable by icon.\n"
+    NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_IMG("./images/icon.png"), "Icon View", "In this mode the notes are browsable by icon.\n"
             "  f                : enter " F("search mode", FG_YL_B) "\n"
             "  t, ESC           : abort icon view and go back\n"
             "  hjkl             : same as the basic controls\n"
