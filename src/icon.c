@@ -35,7 +35,7 @@ Icon icon_base(int year, int month, int day, int hour, int minute, int second)
 {
     struct tm t = {0};
     t.tm_year = year - 1900;
-    t.tm_mon = month;
+    t.tm_mon = month - 1;
     t.tm_mday = day;
     t.tm_hour = hour;
     t.tm_min = minute;
