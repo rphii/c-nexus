@@ -15,6 +15,12 @@ VEC_IMPLEMENT(Vu64, vu64, uint64_t, BY_VAL, 0);
 VEC_IMPLEMENT(VNode, vnode, Node, BY_REF, node_free);
 VEC_IMPLEMENT(VrNode, vrnode, Node *, BY_VAL, 0);
 
+#if VECTOR_SORT_DATES_FIRST
+#define FAKE_TIME(x)    (INT64_MIN-x)
+#else
+#define FAKE_TIME(x)    (x)
+#endif
+
 void vrnode_sort(VrNode *vec)
 {
     /* shell sort, https://rosettacode.org/wiki/Sorting_algorithms/Shell_sort#C */
@@ -25,7 +31,7 @@ void vrnode_sort(VrNode *vec)
             //t = a[i];
             temp = vrnode_get_at(vec, i);
             //for (j = i; j >= h && t < a[j - h]; j -= h) {
-            for (j = i; j >= h && temp->icon < vrnode_get_at(vec, j-h)->icon; j -= h) {
+            for (j = i; j >= h && FAKE_TIME(temp->icon) < FAKE_TIME(vrnode_get_at(vec, j-h)->icon); j -= h) {
                 vrnode_set_at(vec, j, vrnode_get_at(vec, j-h));
                 //a[j] = a[j - h];
             }

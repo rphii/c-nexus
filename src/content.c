@@ -112,6 +112,8 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
             "  f                : enter " F("search mode", FG_YL_B) "\n"
             "  t, ESC           : abort icon view and go back\n"
             "  hjkl             : same as the basic controls\n"
+            "  q                : quit and return to the terminal\n"
+            "  Q                : rebuild nexus\n"
             , "Normal View", "Search View");
     /* }}} */
 
@@ -139,12 +141,33 @@ error:
     return -1;
 } /* }}} */
 
+int content_log(Nexus *nexus, Node *anchor) /* {{{ */
+{
+    ASSERT(nexus, ERR_NULL_ARG);
+    ASSERT(anchor, ERR_NULL_ARG);
+    Node base, sub;
+    NEXUS_INSERT(nexus, anchor, &base, ICON_DATE, "", "Log", "", NODE_LEAF);
+#define LOG(Y,D,M,title,desc,...) NEXUS_INSERT(nexus, &base, &sub, icon_base(Y,D,M,0,0,0), "", title, desc, __VA_ARGS__)
+    LOG(2024, 2, 7, "Initial commit", "Very bare-bones prototype", NODE_LEAF);
+    LOG(2024, 2,11, "Hacked in a search prototype", "", "Search View");
+    LOG(2024, 2,12, "Created the views source files", "Will allow for more modular stuff in the future", NODE_LEAF);
+    LOG(2024, 2,15, "Added arg[ument] source files (command line arguments)", "arg source files = src/arg.{c,h}", NODE_LEAF);
+    LOG(2024, 2,15, "Add command support for notes", "", "Notes with Commands");
+    LOG(2024, 2,16, "Add rebuild functionality", "", NODE_LEAF);
+    LOG(2024, 2,22, "Allowing linkage to notes that may or may not exist", "", NODE_LEAF);
+    LOG(2024, 2,28, "Improve scrolling by reusing code", "", NODE_LEAF);
+    LOG(2024, 3,11, "Added browse by icon and time functionality", "", "Icon View", "Unlinked Note. Visible in icon/search view!");
+#undef LOG
+    return 0; error: return -1;
+} /* }}} */
+
 int content_build(Nexus *nexus, Node *root) //{{{
 {
     TRY(content_build_controls(nexus, root), "failed building controls");
     TRY(content_build_cmds(nexus, root), "failed building cmds");
     TRY(content_build_physics(nexus, root), "failed building physics");
     TRY(content_build_math(nexus, root), "failed building math");
+    TRY(content_log(nexus, root), "failed building log");
     return 0;
 error:
     return -1;

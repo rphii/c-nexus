@@ -64,11 +64,15 @@ updated than this readme... Gotta use your program, y'know :)
     - .. `[escape]` : goes back to node you've watched before searching; as if nothing was
       selected (it goes back in the history)
     - .. ``t`` : enter icon view
+    - .. ``q`` : quit
+    - .. ``Q`` : rebuild (certainly works on linux)
 
 ### Icon View
 - `hjkl` : behaves as it would in normal view
 - ``t``, `[escape]` : abort icon view and go back
 - ``f`` : enter search view
+- ``q`` : quit
+- ``Q`` : rebuild (certainly works on linux)
 
 ## Command Line Arguments
 

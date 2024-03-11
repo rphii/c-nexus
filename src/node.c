@@ -65,17 +65,19 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
     ASSERT(select, ERR_NULL_ARG);
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
+    IconStr iconstr = {0};
+    icon_fmt(iconstr, node->icon);
 #if (NODE_SHOW_COUNT_IN_OUT)
     if(!active) {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s%s %.*s \n", padl, sI, padr, sO, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s%s %.*s \n", padl, sI, padr, sO, select, iconstr, STR_F(&node->title)), ERR_STR_FMT)
     } else {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s%s %.*s \n", padl, sI, padr, sO, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT)
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s%s %.*s \n", padl, sI, padr, sO, select, iconstr, STR_F(&node->title)), ERR_STR_FMT)
     }
 #else
     if(!active) {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s%s %.*s\n", padl > padr ? padl : padr, sI+sO, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s%s %.*s\n", padl > padr ? padl : padr, sI+sO, select, iconstr, STR_F(&node->title)), ERR_STR_FMT);
     } else {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s%s %.*s\n", padl > padr ? padl : padr, sI+sO, select, icon_str(node->icon), STR_F(&node->title)), ERR_STR_FMT);
+        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s%s %.*s\n", padl > padr ? padl : padr, sI+sO, select, iconstr, STR_F(&node->title)), ERR_STR_FMT);
     }
 #endif
     if(show_desc) {

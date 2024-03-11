@@ -50,7 +50,9 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
         Node *node = arg->tnodes->buckets[i].items[j];
         str_clear(&arg->cmd);
         str_clear(&arg->content);
-        int found = search_fmt_nofree(true, &arg->cmd, &arg->content, arg->search, "%s %.*s %.*s %.*s", icon_str(node->icon), STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
+        IconStr iconstr = {0};
+        icon_fmt(iconstr, node->icon);
+        int found = search_fmt_nofree(true, &arg->cmd, &arg->content, arg->search, "%s %.*s %.*s %.*s", iconstr, STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
         if(found) {
             pthread_mutex_lock(arg->findings_mutex);
             TRY(vrnode_push_back(arg->findings, node), ERR_VEC_PUSH_BACK);
@@ -119,13 +121,19 @@ int nexus_create_by_icon(Nexus *nexus)
         size_t N = nexus->nodes.buckets[i].len;
         for(size_t j = 0; j < N; ++j) {
             Node *ref = nexus->nodes.buckets[i].items[j];
+            Node *reffind = ref;
+            Node temp = {0};
             if(!tnodeicon_has(&nexus->nodesicon, ref)) {
                 Node niv = {0};
-                TRY(node_create(&niv, "Group", 0, 0, ref->icon), ERR_NODE_CREATE);
+                TRY(node_create(&niv, "Group", 0, 0, ref->icon >= 0 ? ICON_DATE : ref->icon), ERR_NODE_CREATE);
+                if(ref->icon >= 0) {
+                    temp.icon = ICON_DATE;
+                    reffind = &temp;
+                }
                 TRY(tnodeicon_add(&nexus->nodesicon, &niv), ERR_LUTD_ADD);
             }
             size_t ii = 0, jj = 0;
-            TRY(tnodeicon_find(&nexus->nodesicon, ref, &ii, &jj), "failed finding node with date '%u'", ref->icon);
+            TRY(tnodeicon_find(&nexus->nodesicon, reffind, &ii, &jj), "failed finding node with date '%zi'", ref->icon);
             Node *ni = nexus->nodesicon.buckets[ii].items[jj];
             ASSERT(ni, ERR_UNREACHABLE);
             TRY(vrnode_push_back(&ni->outgoing, ref), ERR_VEC_PUSH_BACK);
@@ -425,7 +433,7 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
                         Node *target = vrnode_get_at(&nexus->nodeicon.outgoing, view->sub_sel);
                         TRY(nexus_change_view(nexus, view, VIEW_NORMAL), ERR_NEXUS_CHANGE_VIEW);
                         size_t ni = 0, nj = 0;
-                        TRY(tnodeicon_find(&nexus->nodesicon, target, &ni, &nj), "could not find node with icon %u", target->icon);
+                        TRY(tnodeicon_find(&nexus->nodesicon, target, &ni, &nj), "could not find node with icon %zi", target->icon);
                         view->current = nexus->nodesicon.buckets[ni].items[nj];
                         //TRY(!(view->current = nexus_get(nexus, target->title.s)), ERR_NEXUS_GET); /* risky */
                     }
@@ -581,7 +589,9 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
             Node *node = tnodes->buckets[i].items[j];
             str_clear(&cmd);
             str_clear(&content);
-            int found = search_fmt_nofree(true, &cmd, &content, search, "%s %.*s %.*s %.*s", icon_str(node->icon), STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
+            IconStr iconstr = {0};
+            icon_fmt(iconstr, node->icon);
+            int found = search_fmt_nofree(true, &cmd, &content, search, "%s %.*s %.*s %.*s", iconstr, STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
             if(found) {
                 TRY(vrnode_push_back(findings, node), ERR_VEC_PUSH_BACK);
             }
@@ -640,12 +650,14 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
     if(!tnode_has(&nexus->nodes, src)) {
         Node temp;
         TRY(node_copy(&temp, src), ERR_NODE_COPY);
+        temp.icon = ICON_NONE;
         TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
         //THROW("node does not exist in nexus: '%.*s'", STR_F(&src->title));
     }
     if(!tnode_has(&nexus->nodes, dest)) {
         Node temp;
         TRY(node_copy(&temp, dest), ERR_NODE_COPY);
+        temp.icon = ICON_NONE;
         TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
         //THROW("node does not exist in nexus: '%.*s'", STR_F(&dest->title));
     }
