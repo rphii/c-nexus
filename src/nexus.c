@@ -88,6 +88,7 @@ int nexus_arg(Nexus *nexus, Arg *arg) /*{{{*/
         case SPECIFY_NONE:
         case SPECIFY_NORMAL: nexus->config.view = VIEW_NORMAL; break;
         case SPECIFY_SEARCH: nexus->config.view = VIEW_SEARCH; break;
+        case SPECIFY_ICON: nexus->config.view = VIEW_ICON; break;
         default: THROW(ERR_UNREACHABLE ", %u", arg->view);
     }
     switch(arg->show_preview) {
@@ -166,6 +167,10 @@ int nexus_init(Nexus *nexus) //{{{
         } break;
         case VIEW_SEARCH: {
             view->edit = true;
+            view->current = &nexus->findings;
+        } break;
+        case VIEW_ICON: {
+            view->current = &nexus->nodeicon;
         } break;
         case VIEW_NONE: THROW("view id should not be NONE");
         default: THROW("unknown view id: %u", view->id);

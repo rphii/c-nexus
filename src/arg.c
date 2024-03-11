@@ -38,7 +38,7 @@ static const char *static_desc[] = {
 
 static const Specify static_specify[ARG__COUNT] = {
     [ARG_ENTRY] = SPECIFY(SPECIFY_STRING),
-    [ARG_VIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_NORMAL, SPECIFY_SEARCH),
+    [ARG_VIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_NORMAL, SPECIFY_SEARCH, SPECIFY_ICON),
     [ARG_SHOW_DESCRIPTION] = SPECIFY(SPECIFY_OPTION, SPECIFY_YES, SPECIFY_TRUE, SPECIFY_NO, SPECIFY_FALSE),
     [ARG_SHOW_PREVIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_NO, SPECIFY_FALSE, SPECIFY_YES, SPECIFY_TRUE),
     [ARG_MAX_LIST] = SPECIFY(SPECIFY_NUMBER)
@@ -50,6 +50,7 @@ static const char *static_specify_str[] = {
     [SPECIFY_OPTION] = "OPTION",
         [SPECIFY_NORMAL] = "normal",
         [SPECIFY_SEARCH] = "search",
+        [SPECIFY_ICON] = "icon",
         [SPECIFY_TRUE] = "true",
         [SPECIFY_YES] = "yes",
         [SPECIFY_FALSE] = "false",

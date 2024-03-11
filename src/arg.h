@@ -20,6 +20,7 @@ typedef enum {
         SPECIFY_FALSE,
         SPECIFY_NORMAL,
         SPECIFY_SEARCH,
+        SPECIFY_ICON,
     SPECIFY_NUMBER,
     SPECIFY_STRING,
     SPECIFY_BOOL,
