@@ -15,7 +15,7 @@ VEC_IMPLEMENT(Vu64, vu64, uint64_t, BY_VAL, 0);
 VEC_IMPLEMENT(VNode, vnode, Node, BY_REF, node_free);
 VEC_IMPLEMENT(VrNode, vrnode, Node *, BY_VAL, 0);
 
-#if VECTOR_SORT_DATES_FIRST
+#if (VECTOR_SORT_DATES_FIRST)
 #define FAKE_TIME(x)    (INT64_MIN-x)
 #else
 #define FAKE_TIME(x)    (x)

@@ -32,6 +32,8 @@ In both cases it creates an executable `a`; adjust it if desired.
 
 - `-DCOLORPRINT_DISABLE` disable all colored/bold/italic (formatted) output
 - `-DPROC_COUNT=<num>` number of threads
+- `-DNODE_SHOW_COUNT_IN_OUT=1` show in and outgoing number of notes, instead of the sum
+- `-DVECTOR_SORT_DATES_FIRST=1` show dates first, then icons
 
 ### Clean
 
