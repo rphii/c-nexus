@@ -154,7 +154,7 @@ int content_log(Nexus *nexus, Node *anchor) /* {{{ */
     LOG(2024, 2,15, "Added arg[ument] source files (command line arguments)", "arg source files = src/arg.{c,h}", NODE_LEAF);
     LOG(2024, 2,15, "Add command support for notes", "", "Notes with Commands");
     LOG(2024, 2,16, "Add rebuild functionality", "", NODE_LEAF);
-    LOG(2024, 2,22, "Allowing linkage to notes that may or may not exist", "", NODE_LEAF);
+    LOG(2024, 2,22, "Allowing linkage to notes that may or may not exist", "", "Unlinked Note. Visible in icon/search view!");
     LOG(2024, 2,28, "Improve scrolling by reusing code", "", NODE_LEAF);
     LOG(2024, 3,11, "Added browse by icon and time functionality", "", "Icon View", "Unlinked Note. Visible in icon/search view!");
 #undef LOG
