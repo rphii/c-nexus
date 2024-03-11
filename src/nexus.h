@@ -88,6 +88,8 @@ ErrDecl nexus_build(Nexus *nexus);
 #define ERR_NEXUS_BUILD_PHYSICS "failed building physics"
 ErrDecl nexus_build_physics(Nexus *nexus, Node *anchor);
 
+int nexus_current_view_arg(Nexus *nexus);
+
 #define NEXUS_H
 #endif
 

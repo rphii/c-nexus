@@ -218,17 +218,18 @@ void nexus_rebuild(Nexus *nexus)
     Str args[5] = {0};
     Str *title = current ? &current->title : &STR(NEXUS_ROOT);
     TRY(str_fmt(&args[0], "--entry=%.*s", STR_F(title)), ERR_STR_FMT);
-    TRY(str_fmt(&args[1], "--view=%s", specify_str(nexus->args->view)), ERR_STR_FMT);
+    TRY(str_fmt(&args[1], "--view=%s", specify_str(nexus_current_view_arg(nexus))), ERR_STR_FMT);
     TRY(str_fmt(&args[2], "--show-preview=%s", nexus->config.show_preview ? "yes" : "no"), ERR_STR_FMT);
     TRY(str_fmt(&args[3], "--show-description=%s", nexus->config.show_desc ? "yes" : "no"), ERR_STR_FMT);
     TRY(str_fmt(&args[4], "--max-list=%zu", nexus->args->max_list), ERR_STR_FMT);
+    if(nexus_current_view_arg(nexus) != SPECIFY_NORMAL) str_clear(&args[0]);
     printf("%s %.*s %.*s %.*s %.*s %.*s\n", nexus->args->name, STR_F(&args[0]), STR_F(&args[1]), STR_F(&args[2]), STR_F(&args[3]), STR_F(&args[4]));
     char *const argv[] = {(char *)nexus->args->name,
-        str_iter_begin(&args[0]),
-        str_iter_begin(&args[1]),
-        str_iter_begin(&args[2]),
-        str_iter_begin(&args[3]),
-        str_iter_begin(&args[4]),
+        str_length(&args[0]) ? str_iter_begin(&args[0]) : "",
+        str_length(&args[1]) ? str_iter_begin(&args[1]) : "",
+        str_length(&args[2]) ? str_iter_begin(&args[2]) : "",
+        str_length(&args[3]) ? str_iter_begin(&args[3]) : "",
+        str_length(&args[4]) ? str_iter_begin(&args[4]) : "",
         0};
     execv(nexus->args->name, argv);
 clean:
@@ -238,7 +239,13 @@ clean:
 #elif defined(PLATFORM_WINDOWS)
     Node *current = nexus->view.current;
     Str args = {0};
-    TRY(str_fmt(&args, "--entry=\"%.*s\" --view=%s", STR_F(&current->title), specify_str(nexus->args->view)), ERR_STR_FMT);
+    if(nexus_current_view_arg(nexus) == SPECIFY_NORMAL) {
+        TRY(str_fmt(&args, "--entry=\"%.*s\"", STR_F(&current->title)), ERR_STR_FMT);
+    }
+    TRY(str_fmt(&args, "--view=%s", specify_str(nexus_current_view_arg(nexus))), ERR_STR_FMT);
+    TRY(str_fmt(&args, "--show-preview=%s", nexus->config.show_preview ? "yes" : "no"), ERR_STR_FMT);
+    TRY(str_fmt(&args, "--show-description=%s", nexus->config.show_desc ? "yes" : "no"), ERR_STR_FMT);
+    TRY(str_fmt(&args, "--max-list=%zu", nexus->args->max_list), ERR_STR_FMT);
     STARTUPINFO info_startup = {0};
     PROCESS_INFORMATION info_process = {0};
     LPCTSTR c = nexus->args->name;
@@ -690,4 +697,16 @@ int nexus_build(Nexus *nexus) //{{{
 error:
     return -1;
 } //}}}
+
+int nexus_current_view_arg(Nexus *nexus) /* {{{ */
+{
+    Node *current = nexus->view.current;
+    if(current == &nexus->nodeicon) {
+        return SPECIFY_ICON;
+    } else if(current == &nexus->findings) {
+        return SPECIFY_SEARCH;
+    } else {
+        return SPECIFY_NORMAL;
+    }
+} /* }}} */
 

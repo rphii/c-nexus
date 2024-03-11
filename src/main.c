@@ -19,7 +19,7 @@ int main(int argc, const char **argv)
     TRY(arg_parse(&arg, argc, argv), ERR_ARG_PARSE);
     if(arg.exit_early) goto clean;
 
-    screen_enter();
+    //screen_enter();
     INFO("Building the Nexus...");
     TRY(nexus_arg(&nexus, &arg), ERR_NEXUS_ARG);
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
