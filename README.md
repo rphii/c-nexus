@@ -1,8 +1,8 @@
 # c-nexus
 
-| start                      | search                       | icon                     |
+| normal                     | search                       | icon                     |
 | ---                        | ---                          | ---                      |
-| ![start](images/start.png) | ![search](images/search.png) | ![icon](images/icon.png) |
+| ![normal](images/start.png) | ![search](images/search.png) | ![icon](images/icon.png) |
 
 Small code footprint.
 
