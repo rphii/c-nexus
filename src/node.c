@@ -17,7 +17,6 @@ void node_free(Node *node)
     str_free(&node->cmd);
     vrnode_free(&node->outgoing);
     vrnode_free(&node->incoming);
-    //vnode_free(&node->nodes);
     node_zero(node);
 }
 
@@ -48,12 +47,13 @@ Node *node_get_sub_sel(Node *node, size_t sub_sel)
     ASSERT(node, ERR_NULL_ARG);
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
+    if(sub_sel >= sO+sI) sub_sel = sO+sI - 1;
     if(sub_sel < sO) {
         return vrnode_get_at(&node->outgoing, sub_sel);
     } else if(sub_sel < sO+sI) {
         return vrnode_get_at(&node->incoming, sub_sel);
     } else {
-        ABORT("index (%zu) out of range (%zu+%zu)", sub_sel, sO, sI);
+        //ABORT("index (%zu) out of range (%zu+%zu)", sub_sel, sO, sI);
     }
     return 0;
 }

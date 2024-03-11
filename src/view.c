@@ -21,22 +21,20 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
         case VIEW_SEARCH: {
             /* first perform the search */
             Str *search = &view->search;
-            VrNode *findings = &nexus->findings;
+            Node *findings = &nexus->findings;
             if(!nexus->findings_updated) {
-                TRY(nexus_search(nexus, search, findings), ERR_NEXUS_SEARCH);
+                TRY(nexus_search(nexus, search, &findings->outgoing), ERR_NEXUS_SEARCH);
                 /* on THIS line I suggest sorting stuff! */
-                vrnode_sort(findings);
+                vrnode_sort(&findings->outgoing);
                 nexus->findings_updated = true;
             }
             /* check that sub selection is in bounds */
             size_t sub_sel = view->sub_sel;
-            size_t sub_max = vrnode_length(findings);
+            size_t sub_max = vrnode_length(&findings->outgoing);
             if(sub_sel >= sub_max) sub_sel = sub_max ? sub_max - 1 : 0;
             if(view->edit) sub_sel = SIZE_MAX;
-            Node fake = {0};
-            fake.outgoing = *findings;
-            TRY(str_fmt(out, "Found " F("%4zu", FG_YL_B) " for : %.*s%s\n\n", vrnode_length(findings), STR_F(search), view->edit ? "_" : ""), ERR_STR_FMT);
-            TRY(node_fmt_sub(out, &fake, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, sub_sel), ERR_NODE_FMT_SUB);
+            TRY(str_fmt(out, "Found " F("%4zu", FG_YL_B) " for : %.*s%s\n\n", vrnode_length(&findings->outgoing), STR_F(search), view->edit ? "_" : ""), ERR_STR_FMT);
+            TRY(node_fmt_sub(out, findings, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_ICON: {
             Node *current = &nexus->nodeicon;

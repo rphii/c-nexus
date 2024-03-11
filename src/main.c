@@ -25,9 +25,9 @@ int main(int argc, const char **argv)
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
 
     while(!nexus.quit) {
-        platform_clear();
         str_clear(&p);
         TRY(view_fmt(&nexus, &p, &nexus.view), ERR_VIEW_FMT);
+        platform_clear();
         printf("%.*s", STR_F(&p));
         int key = platform_getch();
         TRY(nexus_userinput(&nexus, key), ERR_NEXUS_USERINPUT);
