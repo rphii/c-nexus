@@ -114,6 +114,7 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
             "  f                : enter " F("search mode", FG_YL_B) "\n"
             "  t, ESC           : abort icon view and go back\n"
             "  hjkl             : same as the basic controls\n"
+            "  H                : go back to most recent search\n"
             "  q                : quit and return to the terminal\n"
             "  Q                : rebuild nexus\n"
             , "Normal View", "Search View");

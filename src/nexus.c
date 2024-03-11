@@ -438,6 +438,11 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
                         //TRY(!(view->current = nexus_get(nexus, target->title.s)), ERR_NEXUS_GET); /* risky */
                     }
                 } break;
+                case 'H': {
+                    do {
+                        TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
+                    } while(view->id != VIEW_SEARCH && vview_length(&nexus->views));
+                } break;
                 case 'h':
                 case 't':
                 case 27: {
