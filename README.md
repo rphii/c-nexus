@@ -91,13 +91,31 @@ There's a handy macro called `NEXUS_INSERT`. See the example(s) provided.
 
 ### Upsides?
 - at startup, all notes are stored in RAM (fast lookup)
-- compile checked code/notes
-- you can just disable the notes you don't want to be seen via. code
+- compile checked code/notes! _isn't that cool?_
+- you can just disable the notes you don't want to be seen via. code!
+- advanced formatting is [quite easily doable](src/colorprint.h); bold, italicize, underline and even colorize your texts!
+- every note can have a icon + description (unlike in a file/folder structure, where folders typically don't)
 
 ### Downsides?
 - at startup, all notes are stored in RAM (amount limited through RAM)
 - no editing of notes while browsing them _(at least not yet)_
 - terminal interface doesn't yet handle the displaying of very long notes
+
+### Tradeoffs
+
+One could argue that this approach is bad; well, it certainly
+_isn't bad_ - I could've used (and probably will in the future) a file/folder structure with
+HTML/Markdown files and just parse them instead. Since that also costs time to do, I for the time being,
+focus on just getting the app working. Once that's all done and good and the project is at a point
+where I'm satisfied with all the other, more important tasks that are screaming to get fixed, I'll
+probably look into that a bit more.
+
+During development of this project I came across several tradeoffs that I'm quite willingly going to
+accept, for better or worse - but mainly for simplicity's sake in note organization.
+
+- only one note with the same title is possible - and that is case insensitive at that
+- each note can "only" have one command attached
+- each note can only have one icon
 
 ## Notes on Searching
 - if you have many notes, you might benefit from parallelized searching. you can activate it via

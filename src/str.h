@@ -45,6 +45,7 @@ int str_cmp(Str *a, Str *b);
 size_t str_count_overlap(Str *a, Str *b, bool ignorecase);
 size_t str_find_substring(Str *str, Str *sub);
 size_t str_hash(Str *a);
+size_t str_hash_ci(Str *a);
 
 
 #define STR_H

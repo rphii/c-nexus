@@ -167,4 +167,15 @@ size_t str_hash(Str *a)
     return hash;
 }
 
+size_t str_hash_ci(Str *a)
+{
+    size_t hash = 5381;
+    size_t i = 0;
+    while(i < str_length(a)) {
+        unsigned char c = (unsigned char)tolower(str_get_at(a, i++));
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+    return hash;
+}
+
 

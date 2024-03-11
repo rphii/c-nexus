@@ -117,7 +117,7 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
             "  H                : go back to most recent search\n"
             "  q                : quit and return to the terminal\n"
             "  Q                : rebuild nexus\n"
-            , "Normal View", "Search View");
+            , "normal View", "search View");
     /* }}} */
 
     return 0;
