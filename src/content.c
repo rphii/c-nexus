@@ -74,7 +74,8 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
             "  for the normal mode are listed in the root, so I'm not going to list them again.\n"
             "\n" F("other controls", UL) "\n"
             "  H                : go back to most recent search\n"
-            "  f                : enter " F("search mode", FG_YL_B) "\n"
+            "  f                : enter " F("search mode", FG_YL_B) "(all)\n"
+            "  F                : enter " F("search mode", FG_YL_B) "(only linked)\n"
             "  t                : enter " F("icon view", FG_YL_B) "\n"
             "  q                : quit and return to the terminal\n"
             "  Q                : rebuild nexus\n"
@@ -111,7 +112,8 @@ int content_build_controls(Nexus *nexus, Node *anchor) /*{{{*/
 
     /* icon view {{{ */
     NEXUS_INSERT(nexus, &base, &sub, ICON_WIKI, CMD_IMG("./images/icon.png"), "Icon View", "In this mode the notes are browsable by icon.\n"
-            "  f                : enter " F("search mode", FG_YL_B) "\n"
+            "  f                : enter " F("search mode", FG_YL_B) "(all)\n"
+            "  F                : enter " F("search mode", FG_YL_B) "(only linked)\n"
             "  t, ESC           : abort icon view and go back\n"
             "  hjkl             : same as the basic controls\n"
             "  H                : go back to most recent search\n"
@@ -161,6 +163,7 @@ int content_log(Nexus *nexus, Node *anchor) /* {{{ */
     LOG(2024, 2,22, "Allowing linkage to notes that may or may not exist", "", "Unlinked Note. Visible in icon/search view!");
     LOG(2024, 2,28, "Improve scrolling by reusing code", "", NODE_LEAF);
     LOG(2024, 3,11, "Added browse by icon and time functionality", "", "Icon View", "Unlinked Note. Visible in icon/search view!");
+    LOG(2024, 3,13, "Allowing search on all linked notes on current one", "", NODE_LEAF);
 
     time_t today;
     time(&today);

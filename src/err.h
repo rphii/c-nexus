@@ -69,7 +69,7 @@ void screen_leave(void);    /* implementation is in "screen.h" */
 #define TRY(stmt, fmt, ...)  if (stmt) { THROW(fmt, ##__VA_ARGS__); }
 #define ASSERT_ERROR(x)      assert(0 && (x))
 #define ASSERT(stmt, fmt, ...)   do { \
-    if (!stmt) { \
+    if (!(stmt)) { \
         (void)screen_leave(); \
         ABORT("assertion of '" ERR_STRINGIFY(stmt) "' failed... " fmt, ##__VA_ARGS__); } \
     } while(0)

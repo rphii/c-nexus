@@ -71,7 +71,7 @@ ErrDecl nexus_userinput(Nexus *nexus, int key);
 Node *nexus_get(Nexus *nexus, const char *title);
 
 #define ERR_NEXUS_SEARCH "failed searching nexus"
-ErrDecl nexus_search(Nexus *nexus, Str *search, VrNode *findings);
+ErrDecl nexus_search(Nexus *nexus, Node *anchor, Str *search, Node *results);
 
 #define ERR_NEXUS_FOLLOW_SUB "failed following current nexus node"
 ErrDecl nexus_follow_sub(Nexus *nexus, View *view);

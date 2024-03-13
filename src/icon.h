@@ -25,6 +25,7 @@ char *icon_str(IconList icon);
 void icon_fmt(IconStr str, Icon icon);
 Icon icon_base(int year, int month, int day, int hour, int minute, int second);
 
+
 #define ICON_H
 #endif
 

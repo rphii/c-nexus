@@ -8,7 +8,7 @@
 #include <pthread.h>
 
 #define ThreadQueue(X)      \
-    typedef struct X##_ThreadQueue { \
+    typedef struct X##ThreadQueue { \
         pthread_t id; \
         pthread_mutex_t mutex; \
         size_t i0; \
@@ -28,12 +28,13 @@ typedef struct NexusThreadSearchJob {
 ThreadQueue(NexusThreadSearch) /* {{{ */
 typedef struct NexusThreadSearch {
     TNode *tnodes;
+    Node *anchor;
     size_t human;
     Str cmd;
     Str content;
     Str *search;
-    pthread_mutex_t *findings_mutex;
-    VrNode *findings;
+    pthread_mutex_t *results_mutex;
+    Node *results;
   NexusThreadSearchJob job[SEARCH_THREAD_BATCH];
   NexusThreadSearchThreadQueue *queue;
 } NexusThreadSearch; /* }}} */
@@ -41,22 +42,39 @@ typedef struct NexusThreadSearch {
 static void *nexus_static_thread_search(void *args) /* {{{ */
 {
     NexusThreadSearch *arg = args;
+    Node *anchor = arg->anchor;
+    size_t sO = 0; //, sI = 0;
+    if(anchor) {
+        sO = vrnode_length(&anchor->outgoing);
+        //sI = vrnode_length(&anchor->incoming);
+    }
 
     /* thread processing / search */
     for(size_t ib = 0; ib < SEARCH_THREAD_BATCH; ib++) {
         size_t i = arg->job[ib].i;
         size_t j = arg->job[ib].j;
         if(SIZE_IS_NEG(i) || SIZE_IS_NEG(j)) continue;
-        Node *node = arg->tnodes->buckets[i].items[j];
+        Node *node = 0;
+        if(anchor) {
+            if(j < sO) {
+                node = vrnode_get_at(&anchor->outgoing, j);
+            } else {
+                node = vrnode_get_at(&anchor->incoming, j-sO);
+            }
+        } else {
+            node = arg->tnodes->buckets[i].items[j];
+        }
         str_clear(&arg->cmd);
         str_clear(&arg->content);
         IconStr iconstr = {0};
         icon_fmt(iconstr, node->icon);
         int found = search_fmt_nofree(true, &arg->cmd, &arg->content, arg->search, "%s %.*s %.*s %.*s", iconstr, STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
         if(found) {
-            pthread_mutex_lock(arg->findings_mutex);
-            TRY(vrnode_push_back(arg->findings, node), ERR_VEC_PUSH_BACK);
-            pthread_mutex_unlock(arg->findings_mutex);
+            VrNode *findings = &arg->results->outgoing;
+            if(anchor) findings = j < sO ? &arg->results->outgoing : &arg->results->incoming;
+            pthread_mutex_lock(arg->results_mutex);
+            TRY(vrnode_push_back(findings, node), ERR_VEC_PUSH_BACK);
+            pthread_mutex_unlock(arg->results_mutex);
         }
     }
 
@@ -87,7 +105,8 @@ int nexus_arg(Nexus *nexus, Arg *arg) /*{{{*/
     switch(arg->view) {
         case SPECIFY_NONE:
         case SPECIFY_NORMAL: nexus->config.view = VIEW_NORMAL; break;
-        case SPECIFY_SEARCH: nexus->config.view = VIEW_SEARCH; break;
+        case SPECIFY_SEARCH_ALL: nexus->config.view = VIEW_SEARCH_ALL; break;
+        case SPECIFY_SEARCH_SUB: nexus->config.view = VIEW_SEARCH_SUB; break;
         case SPECIFY_ICON: nexus->config.view = VIEW_ICON; break;
         default: THROW(ERR_UNREACHABLE ", %u", arg->view);
     }
@@ -114,7 +133,7 @@ error:
     return -1;
 } /*}}}*/
 
-int nexus_create_by_icon(Nexus *nexus)
+int nexus_create_by_icon(Nexus *nexus) /* {{{ */
 {
     TRY(node_create(&nexus->nodeicon, "Browse by icon", 0, 0, ICON_ROOT), ERR_NODE_CREATE);
     TRY(tnodeicon_init(&nexus->nodesicon, 6), ERR_LUTD_INIT);
@@ -150,7 +169,7 @@ int nexus_create_by_icon(Nexus *nexus)
     return 0;
 error:
     return -1;
-}
+} /* }}} */
 
 int nexus_init(Nexus *nexus) //{{{
 {
@@ -165,9 +184,15 @@ int nexus_init(Nexus *nexus) //{{{
             char *title = str_length(&nexus->config.entry) ? str_iter_begin(&nexus->config.entry) : NEXUS_ROOT;
             TRY(!(view->current = nexus_get(nexus, title)), ERR_NEXUS_GET);
         } break;
-        case VIEW_SEARCH: {
+        case VIEW_SEARCH_ALL: {
             view->edit = true;
             view->current = &nexus->findings;
+        } break;
+        case VIEW_SEARCH_SUB: {
+            view->edit = true;
+            view->current = &nexus->findings;
+            char *title = str_length(&nexus->config.entry) ? str_iter_begin(&nexus->config.entry) : NEXUS_ROOT;
+            TRY(!(view->search_on = nexus_get(nexus, title)), ERR_NEXUS_GET);
         } break;
         case VIEW_ICON: {
             view->current = &nexus->nodeicon;
@@ -189,6 +214,7 @@ void nexus_free(Nexus *nexus) //{{{
     tnodeicon_free(&nexus->nodesicon);
     vview_free(&nexus->views);
     node_free(&nexus->findings);
+    view_free(&nexus->view);
     node_free(&nexus->nodeicon);
 } //}}}
 
@@ -213,8 +239,9 @@ void nexus_rebuild(Nexus *nexus)
 #endif
     int result = cmd_run(&cmd);
     if(result) THROW(ERR_NEXUS_REBUILD);
+    ViewList id = nexus->view.id;
 #if defined(PLATFORM_LINUX) || defined(PLATFORM_CYGWIN)
-    Node *current = nexus->view.current;
+    Node *current = (id == VIEW_SEARCH_SUB) ? nexus->view.search_on : nexus->view.current;
     Str args[5] = {0};
     Str *title = current ? &current->title : &STR(NEXUS_ROOT);
     TRY(str_fmt(&args[0], "--entry=%.*s", STR_F(title)), ERR_STR_FMT);
@@ -222,7 +249,7 @@ void nexus_rebuild(Nexus *nexus)
     TRY(str_fmt(&args[2], "--show-preview=%s", nexus->config.show_preview ? "yes" : "no"), ERR_STR_FMT);
     TRY(str_fmt(&args[3], "--show-description=%s", nexus->config.show_desc ? "yes" : "no"), ERR_STR_FMT);
     TRY(str_fmt(&args[4], "--max-list=%zu", nexus->args->max_list), ERR_STR_FMT);
-    if(nexus_current_view_arg(nexus) != SPECIFY_NORMAL) str_clear(&args[0]);
+    if(!(id == VIEW_NORMAL || id == VIEW_SEARCH_SUB)) str_clear(&args[0]);
     printf("%s %.*s %.*s %.*s %.*s %.*s\n", nexus->args->name, STR_F(&args[0]), STR_F(&args[1]), STR_F(&args[2]), STR_F(&args[3]), STR_F(&args[4]));
     char *const argv[] = {(char *)nexus->args->name,
         str_length(&args[0]) ? str_iter_begin(&args[0]) : "",
@@ -237,9 +264,9 @@ clean:
         str_free(&args[i]);
     }
 #elif defined(PLATFORM_WINDOWS)
-    Node *current = nexus->view.current;
+    Node *current = id == VIEW_SEARCH_SUB ? nexus->view.search_on : nexus->view.current;
     Str args = {0};
-    if(nexus_current_view_arg(nexus) == SPECIFY_NORMAL) {
+    if(id == VIEW_NORMAL || id == VIEW_SEARCH_SUB) {
         TRY(str_fmt(&args, "--entry=\"%.*s\"", STR_F(&current->title)), ERR_STR_FMT);
     }
     TRY(str_fmt(&args, "--view=%s", specify_str(nexus_current_view_arg(nexus))), ERR_STR_FMT);
@@ -278,7 +305,8 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
     switch(view->id) {
         case VIEW_NORMAL: {
         } break;
-        case VIEW_SEARCH: {
+        case VIEW_SEARCH_SUB: // fallthrough
+        case VIEW_SEARCH_ALL: {
             if(view->edit) {
                 disable_default = true;
             }
@@ -303,7 +331,7 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
             case 'H': {
                 do {
                     TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK);
-                } while(view->id != VIEW_SEARCH && vview_length(&nexus->views));
+                } while(!(view->id == VIEW_SEARCH_ALL || view->id == VIEW_SEARCH_SUB) && vview_length(&nexus->views));
             } break;
             case 'c': { cmd_run(&view->current->cmd); } break;
             case 'C': {
@@ -318,11 +346,13 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
         case VIEW_NORMAL: {
             switch(key) {
                 case 't': { TRY(nexus_change_view(nexus, view, VIEW_ICON), ERR_NEXUS_CHANGE_VIEW); } break;
-                case 'f': { TRY(nexus_change_view(nexus, view, VIEW_SEARCH), ERR_NEXUS_CHANGE_VIEW); } break;
+                case 'f': { TRY(nexus_change_view(nexus, view, VIEW_SEARCH_ALL), ERR_NEXUS_CHANGE_VIEW); } break;
+                case 'F': { TRY(nexus_change_view(nexus, view, VIEW_SEARCH_SUB), ERR_NEXUS_CHANGE_VIEW); } break;
                 default: break;
             }
         } break;
-        case VIEW_SEARCH: {
+        case VIEW_SEARCH_SUB: // fallthrough
+        case VIEW_SEARCH_ALL: {
             size_t len_search = str_length(&view->search);
             if(view->edit) {
                 if(key >= 0x20 && key != 127) {
@@ -336,7 +366,7 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
                 }
             } else {
                 switch(key) {
-                    case '\n':
+                    case '\n': { view->edit = true; } break;
                     case 't': { TRY(nexus_change_view(nexus, view, VIEW_ICON), ERR_NEXUS_CHANGE_VIEW); } break;
                     case 'f': { view->edit = true; } break;
                     case 'F': {
@@ -355,7 +385,8 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
         } break;
         case VIEW_ICON: {
             switch(key) {
-                case 'f': { TRY(nexus_change_view(nexus, view, VIEW_SEARCH), ERR_NEXUS_CHANGE_VIEW); } break;
+                case 'f': { TRY(nexus_change_view(nexus, view, VIEW_SEARCH_ALL), ERR_NEXUS_CHANGE_VIEW); } break;
+                case 'F': { TRY(nexus_change_view(nexus, view, VIEW_SEARCH_SUB), ERR_NEXUS_CHANGE_VIEW); } break;
                 case 't':
                 case 27: { TRY(nexus_history_back(nexus, view), ERR_NEXUS_HISTORY_BACK); } break;
                 default: break;
@@ -388,14 +419,14 @@ error:
     goto clean;
 } //}}}
 
-int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
+int nexus_search(Nexus *nexus, Node *anchor, Str *search, Node *results) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(search, ERR_NULL_ARG);
-    ASSERT(findings, ERR_NULL_ARG);
+    ASSERT(results, ERR_NULL_ARG);
     int err = 0;
 
-#if PROC_COUNT
+#if PROC_COUNT /* {{{ */
 
     /* declarations */
     TNode *tnodes = &nexus->nodes;
@@ -404,19 +435,21 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
     NexusThreadSearchJob job[SEARCH_THREAD_BATCH] = {0};
     size_t job_counter = 0;
     pthread_attr_t thr_attr;
-    pthread_mutex_t findings_mutex;
+    pthread_mutex_t results_mutex;
 
     /* set up */
-    vrnode_clear(findings);
+    vrnode_clear(&results->outgoing);
+    vrnode_clear(&results->incoming);
     pthread_mutex_init(&thr_queue.mutex, 0);
-    pthread_mutex_init(&findings_mutex, 0);
+    pthread_mutex_init(&results_mutex, 0);
     for(size_t i = 0; i < PROC_COUNT; ++i) {
-        thr_search[i].findings = findings;
-        thr_search[i].findings_mutex = &findings_mutex;
+        thr_search[i].results = results;
+        thr_search[i].results_mutex = &results_mutex;
         thr_search[i].tnodes = tnodes;
         thr_search[i].queue = &thr_queue;
         thr_search[i].human = i;
         thr_search[i].search = search;
+        thr_search[i].anchor = anchor;
         /* add to queue */
         thr_queue.q[i] = &thr_search[i];
         ++thr_queue.len;
@@ -428,11 +461,18 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
     /* search */
     size_t len_t = (1ULL << (tnodes->width - 1));
     size_t last_t = 0;
-    for(size_t i = 0; i < len_t; i++) {
-        if(tnodes->buckets[i].len) last_t = i;
+    size_t sO = 0, sI = 0;
+    if(anchor) {
+        len_t = 1;
+        sO = vrnode_length(&anchor->outgoing);
+        sI = vrnode_length(&anchor->incoming);
+    } else {
+        for(size_t i = 0; i < len_t; i++) {
+            if(tnodes->buckets[i].len) last_t = i;
+        }
     }
     for(size_t i = 0; i < len_t; ++i) {
-        size_t len = tnodes->buckets[i].len;
+        size_t len = anchor ? sO+sI : tnodes->buckets[i].len;
         for(size_t j = 0; j < len || job_counter == SEARCH_THREAD_BATCH; ++j) {
             if(job_counter < SEARCH_THREAD_BATCH) {
                 /* set ub jobs */
@@ -487,21 +527,41 @@ int nexus_search(Nexus *nexus, Str *search, VrNode *findings) //{{{
 
     return err;
 
+    /* }}} */
 #else /* is active when : PROC_COUNT == 0 {{{*/
 
-    vrnode_clear(findings);
+    vrnode_clear(&results->outgoing);
+    vrnode_clear(&results->incoming);
+    VrNode *findings = &results->outgoing;
     TNode *tnodes = &nexus->nodes;
     Str cmd = {0}, content = {0};
-    for(size_t i = 0; i < (1ULL << tnodes->width); i++) {
-        size_t len = tnodes->buckets[i].len;
+    size_t len_t = (1ULL << (tnodes->width - 1));
+    size_t sO = 0, sI = 0;
+    if(anchor) {
+        len_t = 1;
+        sO = vrnode_length(&anchor->outgoing);
+        sI = vrnode_length(&anchor->incoming);
+    }
+    for(size_t i = 0; i < len_t; i++) {
+        size_t len = anchor ? sO+sI : tnodes->buckets[i].len;
         for(size_t j = 0; j < len; j++) {
-            Node *node = tnodes->buckets[i].items[j];
+            Node *node = 0;
+            if(anchor) {
+                if(j < sO) {
+                    node = vrnode_get_at(&anchor->outgoing, j);
+                } else {
+                    node = vrnode_get_at(&anchor->incoming, j-sO);
+                }
+            } else {
+                node = tnodes->buckets[i].items[j];
+            }
             str_clear(&cmd);
             str_clear(&content);
             IconStr iconstr = {0};
             icon_fmt(iconstr, node->icon);
             int found = search_fmt_nofree(true, &cmd, &content, search, "%s %.*s %.*s %.*s", iconstr, STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
             if(found) {
+                if(anchor && !(j < sO)) findings = &results->incoming;
                 TRY(vrnode_push_back(findings, node), ERR_VEC_PUSH_BACK);
             }
         }
@@ -528,7 +588,7 @@ int nexus_insert_node(Nexus *nexus, Node **ref, char *title, char *cmd, char *de
     bool found = !tnode_find(&nexus->nodes, &find, &i, &j);
     if(found) {
         if(nexus->nodes.buckets[i].count[j]) {
-            THROW("should not insert node with equal title");
+            THROW("should not insert node with equal title '%s'", title);
         } else {
             /* node was added in nexus_link, via. add_count(0), meaning we should set the proper description etc. */
             Node *node = nexus->nodes.buckets[i].items[j];
@@ -612,8 +672,6 @@ int nexus_follow_sub(Nexus *nexus, View *view) //{{{
     view->current = result;
     view->sub_sel = 0;
     return 0;
-//error:
-//    return -1;
 } //}}}
 
 int nexus_change_view(Nexus *nexus, View *view, ViewList id) /*{{{*/
@@ -627,7 +685,7 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id) /*{{{*/
     TRY(view_copy(&ref, view), ERR_VIEW_COPY);
     TRY(vview_push_back(&nexus->views, ref), ERR_VEC_PUSH_BACK);
     /* check history if we maybe have one item to use */
-    ViewList id_post = VIEW_NONE;
+    //ViewList id_post = VIEW_NONE;
     /* init view to be changed into */
     view_free(view);
     memset(view, 0, sizeof(*view));
@@ -639,13 +697,25 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id) /*{{{*/
         case VIEW_NORMAL: {
             view->edit = false;
         } break;
-        case VIEW_SEARCH: {
+        case VIEW_SEARCH_ALL: {
             view->sub_sel = 0;
-            if(id_post != VIEW_SEARCH) {
+            //if(id_post != VIEW_SEARCH_ALL) {
                 str_clear(&view->search);
                 view->edit = true;
-            }
+            //}
             view->current = &nexus->findings;
+            nexus->findings_updated = false;
+        } break;
+        case VIEW_SEARCH_SUB: {
+            ASSERT(ref.id == VIEW_NORMAL || ref.id == VIEW_ICON, "Cannot search for id %i, maybe we don't have a node to search off of!", ref.id);
+            view->sub_sel = 0;
+            view->search_on = ref.current;
+            //if(id_post != VIEW_SEARCH_ALL) {
+                str_clear(&view->search);
+                view->edit = true;
+            //}
+            view->current = &nexus->findings;
+            nexus->findings_updated = false;
         } break;
         case VIEW_ICON: {
             view->sub_sel = 0;
@@ -663,6 +733,7 @@ int nexus_history_back(Nexus *nexus, View *view) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(view, ERR_NULL_ARG);
+    nexus->findings_updated = false;
     if(vview_length(&nexus->views)) {
         view_free(view);
         View ref;
@@ -700,13 +771,13 @@ error:
 
 int nexus_current_view_arg(Nexus *nexus) /* {{{ */
 {
-    Node *current = nexus->view.current;
-    if(current == &nexus->nodeicon) {
-        return SPECIFY_ICON;
-    } else if(current == &nexus->findings) {
-        return SPECIFY_SEARCH;
-    } else {
-        return SPECIFY_NORMAL;
+    ViewList id = nexus->view.id;
+    switch(id) {
+        case VIEW_NORMAL: return SPECIFY_NORMAL;
+        case VIEW_ICON: return SPECIFY_ICON;
+        case VIEW_SEARCH_ALL: return SPECIFY_SEARCH_ALL;
+        case VIEW_SEARCH_SUB: return SPECIFY_SEARCH_SUB;
+        default: ABORT("can't translate view id (%i) to argument view id! perhaps it's argument's behavior is missing! (this is stupid)", id);
     }
 } /* }}} */
 

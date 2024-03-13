@@ -16,7 +16,7 @@ typedef struct Node {
     VrNode incoming;
 } Node;
 
-#if defined NODE_SHOW_COUNT_IN_OUT
+#if (NODE_SHOW_COUNT_IN_OUT)
 #define NODE_FMT_LEN_SUB_INACTIVE   F("%*zu<->%-*zu", FG_BK_B)
 #define NODE_FMT_LEN_SUB_ACTIVE     F("%*zu<->%-*zu", FG_CY_B)
 #else

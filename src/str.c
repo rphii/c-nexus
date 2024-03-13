@@ -13,8 +13,6 @@ VEC_IMPLEMENT(Str, str, char, BY_VAL, 0);
 
 /* other functions */
 
-#if 1
-
 void str_pop_back_char(Str *str)
 {
     bool next;
@@ -81,7 +79,6 @@ int str_fmt(Str *str, char *format, ...)
     va_end(argp);
     return result;
 }
-#endif
 
 int str_get_str(Str *str)
 {

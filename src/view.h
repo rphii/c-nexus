@@ -11,13 +11,15 @@ typedef enum {
     VIEW_NONE,
     /* views below */
     VIEW_NORMAL,
-    VIEW_SEARCH,
+    VIEW_SEARCH_ALL,
+    VIEW_SEARCH_SUB,
     VIEW_ICON,
 } ViewList;
 
 typedef struct View {
     ViewList id;
     Node *current;  /* normal */
+    Node *search_on;
     Str search;     /* search */
     bool edit;      /* serach */
     size_t sub_sel; /* normal & search */

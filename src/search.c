@@ -28,7 +28,7 @@ static inline int search_static_remove_escapes(Str *restrict out, Str *restrict 
             } else if(isspace(c_last) && isspace(c)) {
                 iX = i + 1;
             }
-            c_last = c;
+            if(!skip) c_last = c;
         } else {
             if(c == 'm') {
                 iX = i + 1;
@@ -49,9 +49,7 @@ int search_fmt_nofree(bool ignorecase, Str *nofree_cmd, Str *nofree_content, Str
     /* form format string */
     va_list argp;
     va_start(argp, format);
-    //printf("format [[[%s]]]\n", format);
     int result = str_fmt_va(nofree_content, format, argp);
-    //printf("content [[[%s]]]\n", nofree_content->s);
     va_end(argp);
     /* search */
     int found = search_nofree(ignorecase, nofree_cmd, find, nofree_content);
