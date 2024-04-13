@@ -167,6 +167,7 @@ int node_create(Node *node, Str *title, Str *cmd, Str *desc, Icon icon)
 {
     ASSERT(node, ERR_NULL_ARG);
     ASSERT(title, ERR_NULL_ARG);
+    //INFO("creating T:%.*s,C:%s,D:%s\n", STR_F(title), cmd ? cmd->s : "", desc ? desc->s : "");
     if(!str_length(title)) THROW("title can't be empty");
     node_zero(node);
     node->icon = icon;

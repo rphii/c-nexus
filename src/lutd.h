@@ -42,6 +42,7 @@ typedef enum {
 
 #define ERR_LUTD_INIT "failed initializing lookup table"
 #define ERR_LUTD_ADD "failed adding item to lookup table"
+#define ERR_LUTD_FIND "failed finding node in lookup table"
 
 #define LUTD_DEFAULT_SIZE    4
 

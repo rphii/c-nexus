@@ -12,11 +12,12 @@ static inline size_t tnode_hash(Node *node)
 int strcicmp(char const *a, size_t la, char const *b, size_t lb)
 {
     if(la != lb) return -1;
-    for (;; a++, b++) {
-        int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
+    for (size_t i = 0; i < la; ++i) {
+        int d = tolower((unsigned char)a[i]) - tolower((unsigned char)b[i]);
         if (d != 0 || !*a)
             return d;
     }
+    return 0;
 }
 
 

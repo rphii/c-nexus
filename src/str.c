@@ -167,7 +167,7 @@ void str_trimr(Str *str)
 {
     ASSERT(str, ERR_NULL_ARG);
     while(str->last > str->first) {
-        char c = str->s[str->last];
+        char c = str->s[str->last - 1];
         if(!isspace(c)) break;
         --str->last;
     }

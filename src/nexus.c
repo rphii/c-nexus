@@ -3,6 +3,7 @@
 #include "search.h"
 #include "cmd.h"
 #include "content.h"
+#include "str.h"
 
 #if PROC_COUNT /* local threading {{{ */
 #include <pthread.h>
@@ -597,6 +598,8 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(ref, ERR_NULL_ARG);
     ASSERT(title, ERR_NULL_ARG);
+    //ASSERT(desc, ERR_NULL_ARG);
+    //ASSERT(cmd, ERR_NULL_ARG);
     size_t i = 0, j = 0;
     Node find = {
         .title = *title,
@@ -618,7 +621,7 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
         Node node;
         TRY(node_create(&node, title, cmd, desc, icon), ERR_NODE_CREATE);
         TRY(tnode_add(&nexus->nodes, &node), ERR_LUTD_ADD);
-        tnode_find(&nexus->nodes, &find, &i, &j);
+        TRY(tnode_find(&nexus->nodes, &find, &i, &j), ERR_LUTD_FIND);
     }
     *ref = nexus->nodes.buckets[i].items[j];
     return 0;
@@ -786,14 +789,14 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
             Str *file = vsstr_get_at(files, i);
             char *ext = strrchr(file->s, '.');
             if((ext && (ext - file->s > 0)) || !ext) {
-                Str base = STR_LL(file->s, ext - file->s);
+                Str base = STR_LL(file->s, ext ? ext - file->s : file->last);
                 Str content = {0};
                 TRY(file_str_read(file, &content), ERR_FILE_STR_READ);
                 str_trim(&content);
                 Node *node = 0;
+                printf("process: %.*s [%zu]\n", STR_F(&base), str_length(&base));
                 TRY(nexus_insert_node(nexus, &node, &base, CMD_NONE, &content, ICON_NONE), ERR_NEXUS_INSERT_NODE);
-
-                printf("%.*s\n", STR_F(&base));
+                str_free(&content);
             } else {
                 THROW("can't operate on hidden files");
             }
