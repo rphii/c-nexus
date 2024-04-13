@@ -21,7 +21,7 @@ VEC_INCLUDE(Str, str, char, BY_VAL);
 #undef VEC_SETTINGS_DEFAULT_SIZE
 
 #define STR(string)             (Str){.s = string, .last = sizeof(string)/sizeof(*string)-1}
-#define STR_L(string)           (Str){.s = string, .last = string ? strlen(string) : 0}
+#define STR_L(string)           (Str){.s = string, .last = strlen(string ? string : "")}
 #define STR_LL(string, length)  (Str){.s = string, .last = length}
 
 #define STR_F(s)                (int)str_length(s), str_iter_begin(s)
@@ -44,6 +44,9 @@ ErrDecl str_get_str(Str *str);
 int str_cmp(Str *a, Str *b);
 size_t str_count_overlap(Str *a, Str *b, bool ignorecase);
 size_t str_find_substring(Str *str, Str *sub);
+void str_triml(Str *str);
+void str_trimr(Str *str);
+void str_trim(Str *str);
 size_t str_hash(Str *a);
 size_t str_hash_ci(Str *a);
 

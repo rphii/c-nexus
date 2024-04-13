@@ -40,11 +40,11 @@ void nexus_free(Nexus *nexus);
 
 #define ERR_NEXUS_INSERT_NODE "failed insertion of node into nexus"
 //ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
-ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, char *title, char *cmd, char *desc, Icon icon);
+ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, Icon icon);
 
 #define NEXUS_INSERT(nexus, root, ref, icon, cmd, title, description, ...)  do { \
         Node *temp, unused; \
-        TRY(nexus_insert_node(nexus, &temp, title, cmd, description, icon), ERR_NEXUS_INSERT_NODE); \
+        TRY(nexus_insert_node(nexus, &temp, &STR_L(title), &STR_L(cmd), &STR_L(description), icon), ERR_NEXUS_INSERT_NODE); \
         TRY(nexus_link(nexus, root, temp), ERR_NEXUS_LINK); \
         NEXUS_LINKS_EV_STR(nexus, temp, __VA_ARGS__); \
         if(ref != 0) { \
@@ -69,7 +69,7 @@ ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst);
 ErrDecl nexus_userinput(Nexus *nexus, int key);
 
 #define ERR_NEXUS_GET "failed getting nexus node"
-Node *nexus_get(Nexus *nexus, const char *title);
+Node *nexus_get(Nexus *nexus, Str *title);
 
 #define ERR_NEXUS_SEARCH "failed searching nexus"
 ErrDecl nexus_search(Nexus *nexus, Node *anchor, Str *search, Node *results);

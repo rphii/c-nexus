@@ -153,8 +153,37 @@ inline size_t str_find_substring(Str *restrict str, Str *restrict sub)
     return 0;
 }
 
+void str_triml(Str *str)
+{
+    ASSERT(str, ERR_NULL_ARG);
+    while(str->first < str->last) {
+        char c = str->s[str->first];
+        if(!isspace(c)) break;
+        ++str->first;
+    }
+}
+
+void str_trimr(Str *str)
+{
+    ASSERT(str, ERR_NULL_ARG);
+    while(str->last > str->first) {
+        char c = str->s[str->last];
+        if(!isspace(c)) break;
+        --str->last;
+    }
+}
+
+void str_trim(Str *str)
+{
+    ASSERT(str, ERR_NULL_ARG);
+    str_triml(str);
+    str_trimr(str);
+}
+
+
 size_t str_hash(Str *a)
 {
+    ASSERT(a, ERR_NULL_ARG);
     size_t hash = 5381;
     size_t i = 0;
     while(i < str_length(a)) {
@@ -166,6 +195,7 @@ size_t str_hash(Str *a)
 
 size_t str_hash_ci(Str *a)
 {
+    ASSERT(a, ERR_NULL_ARG);
     size_t hash = 5381;
     size_t i = 0;
     while(i < str_length(a)) {

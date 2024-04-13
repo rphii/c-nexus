@@ -157,21 +157,22 @@ int node_copy(Node *restrict dst, Node *restrict src)
 {
     ASSERT(dst, ERR_NULL_ARG);
     ASSERT(src, ERR_NULL_ARG);
-    TRY(node_create(dst, str_iter_begin(&src->title), str_iter_begin(&src->cmd), str_iter_begin(&src->desc), src->icon), ERR_NODE_CREATE);
+    TRY(node_create(dst, &src->title, &src->cmd, &src->desc, src->icon), ERR_NODE_CREATE);
     return 0;
 error:
     return -1;
 }
 
-int node_create(Node *node, const char *title, const char *cmd, const char *desc, Icon icon)
+int node_create(Node *node, Str *title, Str *cmd, Str *desc, Icon icon)
 {
     ASSERT(node, ERR_NULL_ARG);
     ASSERT(title, ERR_NULL_ARG);
+    if(!str_length(title)) THROW("title can't be empty");
     node_zero(node);
     node->icon = icon;
-    TRY(str_fmt(&node->title, "%s", title), ERR_STR_FMT);
-    if(desc) TRY(str_fmt(&node->desc, "%s", desc), ERR_STR_FMT);
-    if(cmd) TRY(str_fmt(&node->cmd, "%s", cmd), ERR_STR_FMT);
+    TRY(str_fmt(&node->title, "%.*s", STR_F(title)), ERR_STR_FMT);
+    if(desc && str_length(desc)) TRY(str_fmt(&node->desc, "%.*s", STR_F(desc)), ERR_STR_FMT);
+    if(cmd && str_length(cmd)) TRY(str_fmt(&node->cmd, "%.*s", STR_F(cmd)), ERR_STR_FMT);
     return 0;
 error:
     return -1;

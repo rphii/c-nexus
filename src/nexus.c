@@ -136,7 +136,7 @@ error:
 
 int nexus_create_by_icon(Nexus *nexus) /* {{{ */
 {
-    TRY(node_create(&nexus->nodeicon, "Browse by icon", 0, 0, ICON_ROOT), ERR_NODE_CREATE);
+    TRY(node_create(&nexus->nodeicon, &STR("Browse by icon"), 0, 0, ICON_ROOT), ERR_NODE_CREATE);
     TRY(tnodeicon_init(&nexus->nodesicon, 6), ERR_LUTD_INIT);
     for(size_t i = 0; i < (1ULL << (nexus->nodes.width - 1)); ++i) {
         size_t N = nexus->nodes.buckets[i].len;
@@ -146,7 +146,7 @@ int nexus_create_by_icon(Nexus *nexus) /* {{{ */
             if(reffind.icon >= 0) reffind.icon = ICON_DATE;
             if(!tnodeicon_has(&nexus->nodesicon, &reffind)) {
                 Node niv = {0};
-                TRY(node_create(&niv, "Group", 0, 0, reffind.icon), ERR_NODE_CREATE);
+                TRY(node_create(&niv, &STR("Group"), 0, 0, reffind.icon), ERR_NODE_CREATE);
                 TRY(tnodeicon_add(&nexus->nodesicon, &niv), ERR_LUTD_ADD);
             }
             size_t ii = 0, jj = 0;
@@ -183,7 +183,7 @@ int nexus_init(Nexus *nexus) //{{{
     view->id = nexus->config.view;
     switch(view->id) {
         case VIEW_NORMAL: {
-            char *title = str_length(&nexus->config.entry) ? str_iter_begin(&nexus->config.entry) : NEXUS_ROOT;
+            Str *title = str_length(&nexus->config.entry) ? &nexus->config.entry : &STR(NEXUS_ROOT);
             TRY(!(view->current = nexus_get(nexus, title)), ERR_NEXUS_GET);
         } break;
         case VIEW_SEARCH_ALL: {
@@ -193,7 +193,7 @@ int nexus_init(Nexus *nexus) //{{{
         case VIEW_SEARCH_SUB: {
             view->edit = true;
             view->current = &nexus->findings;
-            char *title = str_length(&nexus->config.entry) ? str_iter_begin(&nexus->config.entry) : NEXUS_ROOT;
+            Str *title = str_length(&nexus->config.entry) ? &nexus->config.entry : &STR(NEXUS_ROOT);
             TRY(!(view->search_on = nexus_get(nexus, title)), ERR_NEXUS_GET);
         } break;
         case VIEW_ICON: {
@@ -405,7 +405,7 @@ error:
     return -1;
 } /*}}}*/
 
-Node *nexus_get(Nexus *nexus, const char *title) //{{{
+Node *nexus_get(Nexus *nexus, Str *title) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(title, ERR_NULL_ARG);
@@ -592,18 +592,19 @@ error:
 
 } //}}}
 
-int nexus_insert_node(Nexus *nexus, Node **ref, char *title, char *cmd, char *desc, Icon icon) //{{{
+int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, Icon icon) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(ref, ERR_NULL_ARG);
+    ASSERT(title, ERR_NULL_ARG);
     size_t i = 0, j = 0;
     Node find = {
-        .title = STR_L(title),
+        .title = *title,
     };
     bool found = !tnode_find(&nexus->nodes, &find, &i, &j);
     if(found) {
         if(nexus->nodes.buckets[i].count[j]) {
-            THROW("should not insert node with equal title '%s'", title);
+            THROW("should not insert node with equal title '%.*s'", STR_F(title));
         } else {
             /* node was added in nexus_link, via. add_count(0), meaning we should set the proper description etc. */
             Node *node = nexus->nodes.buckets[i].items[j];
@@ -768,13 +769,13 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
     ASSERT(files, ERR_NULL_ARG);
     if (!vsstr_length(files)) {
         Node *root;
-        TRY(nexus_insert_node(nexus, &root, NEXUS_ROOT, CMD_NONE, "Welcome to " F("c-nexus", BOLD) "\n\n"
+        TRY(nexus_insert_node(nexus, &root, &STR(NEXUS_ROOT), CMD_NONE, &STR("Welcome to " F("c-nexus", BOLD) "\n\n"
                     F("basic controls", UL) "\n"
                     "  h : back in history\n"
                     "  j : move arrow down\n"
                     "  k : move arrow up\n"
                     "  l : follow the arrow\n\n"
-                    "more can be found in the " F("controls wiki", UL), ICON_ROOT), ERR_NEXUS_INSERT_NODE);
+                    "more can be found in the " F("controls wiki", UL)), ICON_ROOT), ERR_NEXUS_INSERT_NODE);
 
         NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created");
         NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Note yet to be created", "This note is created after Test!", NODE_LEAF);
@@ -788,8 +789,9 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
                 Str base = STR_LL(file->s, ext - file->s);
                 Str content = {0};
                 TRY(file_str_read(file, &content), ERR_FILE_STR_READ);
+                str_trim(&content);
                 Node *node = 0;
-                TRY(nexus_insert_node(nexus, &node, base.s, CMD_NONE, content.s, ICON_NONE), ERR_NEXUS_INSERT_NODE);
+                TRY(nexus_insert_node(nexus, &node, &base, CMD_NONE, &content, ICON_NONE), ERR_NEXUS_INSERT_NODE);
 
                 printf("%.*s\n", STR_F(&base));
             } else {
