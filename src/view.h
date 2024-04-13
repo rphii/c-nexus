@@ -25,6 +25,11 @@ typedef struct View {
     size_t sub_sel; /* normal & search */
 } View;
 
+#define VIEW_FMT_SEARCH_ACTIVE      F("%*zu", FG_CY_B)
+#define VIEW_FMT_SEARCH_INACTIVE    F("%*zu", FG_YL_B)
+
+#define VIEW_EDITING_CURSOR         "" F("↵", FG_CY_B) //"_"
+
 void view_free(View *view);
 
 #define ERR_VIEW_FMT "failed formatting view"

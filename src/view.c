@@ -16,6 +16,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
         case VIEW_NORMAL: {
             Node *current = view->current;
             TRY(node_fmt(out, current, nexus->config.show_desc, "", 0, 0, false), ERR_NODE_FMT);
+            TRY(str_fmt(out, "\n"), ERR_STR_FMT);
             TRY(node_fmt_sub(out, current, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, view->sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_SEARCH_ALL: {
@@ -33,8 +34,12 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             size_t sub_sel = view->sub_sel;
             size_t sub_max = vrnode_length(&findings->outgoing);
             if(sub_sel >= sub_max) sub_sel = sub_max ? sub_max - 1 : 0;
-            if(view->edit) sub_sel = SIZE_MAX;
-            TRY(str_fmt(out, "Found " F("%4zu", FG_YL_B) " for : %.*s%s\n\n", vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming), STR_F(search), view->edit ? "_" : ""), ERR_STR_FMT);
+            char *fmt = "Found " VIEW_FMT_SEARCH_INACTIVE " for : %.*s%s\n\n";
+            if(view->edit) {
+                fmt = "Found " VIEW_FMT_SEARCH_ACTIVE " for : %.*s%s\n\n";
+                sub_sel = SIZE_MAX;
+            }
+            TRY(str_fmt(out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
             TRY(node_fmt_sub(out, findings, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_SEARCH_SUB: {
@@ -55,13 +60,20 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             size_t sI = vrnode_length(&findings->incoming);
             size_t sub_max = sO+sI;
             if(sub_sel >= sub_max) sub_sel = sub_max ? sub_max - 1 : 0;
-            if(view->edit) sub_sel = SIZE_MAX;
-            TRY(str_fmt(out, "Found " F("%4zu", FG_YL_B) " on '%.*s' for : %.*s%s\n\n", vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming), STR_F(&view->search_on->title), STR_F(search), view->edit ? "_" : ""), ERR_STR_FMT);
+            char *fmt = VIEW_FMT_SEARCH_INACTIVE " %s %.*s : %.*s%s\n\n";
+            if(view->edit) {
+                fmt = VIEW_FMT_SEARCH_ACTIVE " %s %.*s : %.*s%s\n\n";
+                sub_sel = SIZE_MAX;
+            }
+            IconStr iconstr = {0};
+            icon_fmt(iconstr, view->search_on->icon);
+            TRY(str_fmt(out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming), iconstr, STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
             TRY(node_fmt_sub(out, findings, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_ICON: {
             Node *current = &nexus->nodeicon;
             TRY(node_fmt(out, current, nexus->config.show_desc, "", 0, 0, false), ERR_NODE_FMT);
+            TRY(str_fmt(out, "\n"), ERR_STR_FMT);
             TRY(node_fmt_sub(out, current, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, view->sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_NONE: THROW("view id should not be NONE");

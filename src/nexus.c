@@ -101,6 +101,7 @@ int nexus_arg(Nexus *nexus, Arg *arg) /*{{{*/
     ASSERT(nexus, ERR_NULL_ARG);
     nexus->args = arg;
     nexus->config.max_preview = arg->max_list;
+    nexus->config.files = &arg->files;
     TRY(str_copy(&nexus->config.entry, &arg->entry), ERR_STR_COPY);
     switch(arg->view) {
         case SPECIFY_NONE:
@@ -175,7 +176,8 @@ int nexus_init(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     TRY(tnode_init(&nexus->nodes, 12), ERR_LUTD_INIT);
-    TRY(nexus_build(nexus), ERR_NEXUS_BUILD);
+    TRY(nexus_build(nexus, nexus->config.files), ERR_NEXUS_BUILD);
+    tnode_sort_sub(&nexus->nodes);
     /* set up view */
     View *view = &nexus->view;
     view->id = nexus->config.view;
@@ -238,11 +240,15 @@ void nexus_rebuild(Nexus *nexus)
     TRY(str_fmt(&cmd, "make"), ERR_STR_FMT);
 #endif
     int result = cmd_run(&cmd);
-    if(result) THROW(ERR_NEXUS_REBUILD);
+    Str args[5] = {0};
+    if(result) {
+        INFO(ERR_NEXUS_REBUILD);
+        platform_getch();
+        goto clean;
+    }
     ViewList id = nexus->view.id;
 #if defined(PLATFORM_LINUX) || defined(PLATFORM_CYGWIN)
     Node *current = (id == VIEW_SEARCH_SUB) ? nexus->view.search_on : nexus->view.current;
-    Str args[5] = {0};
     Str *title = current ? &current->title : &STR(NEXUS_ROOT);
     TRY(str_fmt(&args[0], "--entry=%.*s", STR_F(title)), ERR_STR_FMT);
     TRY(str_fmt(&args[1], "--view=%s", specify_str(nexus_current_view_arg(nexus))), ERR_STR_FMT);
@@ -288,7 +294,7 @@ clean:
     THROW("rebuild not yet implemented on '%s'", PLATFORM_NAME);
 #endif
     str_free(&cmd);
-    if(!err) exit(0);
+    if(err) exit(0);
     return;
 error:
     platform_getch();
@@ -408,7 +414,16 @@ Node *nexus_get(Nexus *nexus, const char *title) //{{{
     Node find = {0};
     TRY(node_create(&find, title, 0, 0, 0), ERR_NODE_CREATE);
     if(tnode_find(&nexus->nodes, &find, &i0, &j0)) {
-        THROW("node does not exist in nexus: '%.*s'", STR_F(&find.title));
+        Node *alternative = 0;
+        INFO("node does not exist in nexus: '%.*s'", STR_F(&find.title));
+        for(i0 = 0; i0 < (1ULL << (nexus->nodes.width - 1)); ++i0) {
+            for(j0 = 0; j0 < nexus->nodes.buckets[i0].len; ++j0) {
+                alternative = nexus->nodes.buckets[i0].items[j0];
+                goto alt;
+            }
+        }
+alt:
+        if(!alternative) THROW("could not find any node in nexus");
     }
     result = nexus->nodes.buckets[i0].items[j0];
 clean:
@@ -745,24 +760,43 @@ error:
     return -1;
 } //}}}
 
-int nexus_build(Nexus *nexus) //{{{
+#include "file.h"
+
+int nexus_build(Nexus *nexus, VsStr *files) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
+    ASSERT(files, ERR_NULL_ARG);
+    if (!vsstr_length(files)) {
+        Node *root;
+        TRY(nexus_insert_node(nexus, &root, NEXUS_ROOT, CMD_NONE, "Welcome to " F("c-nexus", BOLD) "\n\n"
+                    F("basic controls", UL) "\n"
+                    "  h : back in history\n"
+                    "  j : move arrow down\n"
+                    "  k : move arrow up\n"
+                    "  l : follow the arrow\n\n"
+                    "more can be found in the " F("controls wiki", UL), ICON_ROOT), ERR_NEXUS_INSERT_NODE);
 
-    Node *root;
-    TRY(nexus_insert_node(nexus, &root, NEXUS_ROOT, CMD_NONE, "Welcome to " F("c-nexus", BOLD) "\n\n"
-                F("basic controls", UL) "\n"
-                "  h : back in history\n"
-                "  j : move arrow down\n"
-                "  k : move arrow up\n"
-                "  l : follow the arrow\n\n"
-                "more can be found in the " F("controls wiki", UL), ICON_ROOT), ERR_NEXUS_INSERT_NODE);
+        NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created");
+        NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Note yet to be created", "This note is created after Test!", NODE_LEAF);
 
-    NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created");
-    NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Note yet to be created", "This note is created after Test!", NODE_LEAF);
+        TRY(content_build(nexus, root), ERR_CONTENT_BUILD);
+    } else {
+        for(size_t i = 0; i < vsstr_length(files); ++i) {
+            Str *file = vsstr_get_at(files, i);
+            char *ext = strrchr(file->s, '.');
+            if((ext && (ext - file->s > 0)) || !ext) {
+                Str base = STR_LL(file->s, ext - file->s);
+                Str content = {0};
+                TRY(file_str_read(file, &content), ERR_FILE_STR_READ);
+                Node *node = 0;
+                TRY(nexus_insert_node(nexus, &node, base.s, CMD_NONE, content.s, ICON_NONE), ERR_NEXUS_INSERT_NODE);
 
-    TRY(content_build(nexus, root), ERR_CONTENT_BUILD);
-    tnode_sort_sub(&nexus->nodes);
+                printf("%.*s\n", STR_F(&base));
+            } else {
+                THROW("can't operate on hidden files");
+            }
+        }
+    }
 
     return 0;
 error:
@@ -777,7 +811,7 @@ int nexus_current_view_arg(Nexus *nexus) /* {{{ */
         case VIEW_ICON: return SPECIFY_ICON;
         case VIEW_SEARCH_ALL: return SPECIFY_SEARCH_ALL;
         case VIEW_SEARCH_SUB: return SPECIFY_SEARCH_SUB;
-        default: ABORT("can't translate view id (%i) to argument view id! perhaps it's argument's behavior is missing! (this is stupid)", id);
+        default: ABORT("can't translate view id (%i) to argument view id! perhaps it's argument's behavior is missing! (this is stupid)", id); return SPECIFY_NONE; /* tcc warns me if I don't have this */
     }
 } /* }}} */
 

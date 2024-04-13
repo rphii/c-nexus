@@ -1,5 +1,6 @@
 #include "node.h"
 #include "view.h"
+#include "str.h"
 
 #include "vector.h"
 
@@ -43,5 +44,7 @@ void vrnode_sort(VrNode *vec)
 
 
 VEC_IMPLEMENT(VView, vview, View, BY_VAL, view_free);
+
+VEC_IMPLEMENT(VsStr, vsstr, Str, BY_REF, 0);
 
 

@@ -30,6 +30,9 @@ void vrnode_sort(VrNode *vec);
 struct View;
 VEC_INCLUDE(VView, vview, struct View, BY_VAL);
 
+struct Str;
+VEC_INCLUDE(VsStr, vsstr, struct Str, BY_REF);
+
 #define VECTOR_H
 #endif
 

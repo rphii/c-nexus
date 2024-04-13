@@ -4,6 +4,7 @@
 #include "arg.h"
 #include "nexus.h"
 #include "str.h"
+#include "vector.h"
 
 /* arguments */
 
@@ -280,6 +281,11 @@ int arg_parse(Arg *args, int argc, const char **argv) /* {{{ */
             unknown_arg = false;
             break;
         }
+        if(str_length(&arg) >= 1 && str_get_at(&arg, 0) != '-') {
+            TRY(vsstr_push_back(&args->files, &arg), ERR_VEC_PUSH_BACK);
+            //printf("[%zu] %.*s\n", vsstr_length(&args->files), STR_F(&arg));
+            unknown_arg = false;
+        }
         if(unknown_arg) {
             TRY(arg_static_add_to_unknown(args, &arg), ERR_ARG_ADD_TO_UNKNOWN);
         }
@@ -390,6 +396,7 @@ void arg_free(Arg *arg)
 {
     str_free(&arg->entry);
     str_free(&arg->unknown);
+    vsstr_free(&arg->files);
 }
 
 

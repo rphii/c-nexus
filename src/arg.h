@@ -4,6 +4,7 @@
 
 #include "err.h"
 #include "str.h"
+#include "vector.h"
 
 struct Nexus;
 
@@ -65,6 +66,7 @@ typedef struct Arg {
     SpecifyList show_preview;
     size_t max_list;
     Str entry;
+    VsStr files;
     struct {
         int tiny; /* tiny, because short is reserved */
         int main;

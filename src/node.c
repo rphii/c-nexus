@@ -33,9 +33,8 @@ int node_fmt_desc(Str *out, Node *node)
         if(len_desc) {
             TRY(str_fmt(out, "\n%.*s\n", STR_F(&node->desc)), ERR_STR_FMT);
         }
-        TRY(str_fmt(out, "\n"), ERR_STR_FMT);
     } else {
-        TRY(str_fmt(out, F("\nno description.\n\n", IT)), ERR_STR_FMT);
+        TRY(str_fmt(out, F("\nno description.\n", IT)), ERR_STR_FMT);
     }
     return 0;
 error:
@@ -142,7 +141,7 @@ int node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t
         if(ireal == sub_sel) sub_info = sub;
     }
     if(n > max_preview) {
-        TRY(str_fmt(out, F("... (", IT) F("%4zu", IT FG_YL_B) F(" more)\n", IT), sO+sI - max_preview), ERR_STR_FMT);
+        TRY(str_fmt(out, F("\n... (", IT) F("%4zu", IT FG_YL_B) F(" more)\n", IT), sO+sI - max_preview), ERR_STR_FMT);
     }
     if(show_preview && sub_info) {
         TRY(node_fmt_desc(out, sub_info), ERR_NODE_FMT_DESC);

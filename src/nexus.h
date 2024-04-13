@@ -16,6 +16,7 @@ typedef struct Nexus {
     View view;
     bool quit;
     struct {
+        VsStr *files;
         Str entry;
         ViewList view;
         bool show_desc;
@@ -83,7 +84,7 @@ ErrDecl nexus_change_view(Nexus *nexus, View *view, ViewList id);
 ErrDecl nexus_history_back(Nexus *nexus, View *view);
 
 #define ERR_NEXUS_BUILD "failed building nexus"
-ErrDecl nexus_build(Nexus *nexus);
+ErrDecl nexus_build(Nexus *nexus, VsStr *files);
 
 #define ERR_NEXUS_BUILD_PHYSICS "failed building physics"
 ErrDecl nexus_build_physics(Nexus *nexus, Node *anchor);

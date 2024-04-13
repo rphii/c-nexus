@@ -4,12 +4,12 @@ GIT_VERSION := "$(shell git describe --abbrev=4 --dirty --always --tags)"
 CC      := gcc
 CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   -Wno-unused-parameter \
-		   -O2 -march=native \
-		   ##############\
-		   -Wconversion \
-		   -DPROC_COUNT=$(shell nproc --all) \
 		   -rdynamic -Og -ggdb3 \
 		   -fsanitize=address -rdynamic \
+		   ##############\
+		   -O2 -march=native \
+		   -Wconversion \
+		   -DPROC_COUNT=$(shell nproc --all) \
 		   -pg -rdynamic \
 		   -O3 -march=native \
 		   -DCOLORPRINT_DISABLE \
@@ -27,10 +27,10 @@ CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   ##############\
-		   -rdynamic -Og -ggdb3 \
 		   -rdynamic -ggdb3 \
 		   -fsanitize=address -rdynamic \
+		   ##############\
+		   -rdynamic -Og -ggdb3 \
 		   -pg -rdynamic \
 		   -fsanitize=address \
 		   -pg \
@@ -44,7 +44,7 @@ APPNAME = a
 
 # Path for important files
 # .c and .h files
-SRC_DIR = src
+SRC_DIR = .
 # .o files
 OBJ_DIR = obj
 # target directory
