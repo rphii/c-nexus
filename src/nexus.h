@@ -40,6 +40,7 @@ void nexus_free(Nexus *nexus);
 
 #define ERR_NEXUS_INSERT_NODE "failed insertion of node into nexus"
 //ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
+#define nexus_insert_node_ERR(nexus, ref, title, cmd, desc, icon) "failed insertion of node into nexus"
 ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, Icon icon);
 
 #define NEXUS_INSERT(nexus, root, ref, icon, cmd, title, description, ...)  do { \

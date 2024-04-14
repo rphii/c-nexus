@@ -4,6 +4,7 @@
 #include "cmd.h"
 #include "content.h"
 #include "str.h"
+#include "btw.h"
 
 #if PROC_COUNT /* local threading {{{ */
 #include <pthread.h>
@@ -764,13 +765,12 @@ error:
     return -1;
 } //}}}
 
-#include "file.h"
-#include "btw.h"
-
 int nexus_build(Nexus *nexus, VsStr *files) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(files, ERR_NULL_ARG);
+    int err = 0;
+    Btw parse = {0};
     if (!vsstr_length(files)) {
         Node *root;
         TRY(nexus_insert_node(nexus, &root, &STR(NEXUS_ROOT), CMD_NONE, &STR("Welcome to " F("c-nexus", BOLD) "\n\n"
@@ -786,10 +786,9 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
 
         TRY(content_build(nexus, root), ERR_CONTENT_BUILD);
     } else {
-        Str content = {0};
         for(size_t i = 0; i < vsstr_length(files); ++i) {
             Str *filename = vsstr_get_at(files, i);
-            TRYF(btw_parse_file_nofree, nexus, filename, &content);
+            TRYF(btw_parse_file_nofree, nexus, filename, &parse);
 #if 0
             char *ext = strrchr(file->s, '.');
             if((ext && (ext - file->s > 0)) || !ext) {
@@ -808,9 +807,11 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
         }
     }
 
-    return 0;
+clean:
+    btw_free(&parse);
+    return err;
 error:
-    return -1;
+    ERR_CLEAN;
 } //}}}
 
 int nexus_current_view_arg(Nexus *nexus) /* {{{ */

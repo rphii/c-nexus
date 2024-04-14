@@ -14,8 +14,11 @@ VEC_IMPLEMENT(Str, str, char, BY_VAL, 0);
 
 /* other functions */
 
-void str_pop_back_char(Str *str)
+// basic, no fail, manipulation function {{{
+
+void str_pop_back_char(Str *str) //{{{
 {
+    ASSERT_ARG(str);
     bool next;
     do {
         next = false;
@@ -26,10 +29,11 @@ void str_pop_back_char(Str *str)
             next = (bool)((c & 0xC0) == 0x80);
         }
     } while(next);
-}
+} //}}}
 
-void str_pop_back_word(Str *str)
+void str_pop_back_word(Str *str) //{{{
 {
+    ASSERT_ARG(str);
     size_t len = str_length(str);
     if(len) {
         int ws = isspace(str_get_at(str, --len));
@@ -41,38 +45,43 @@ void str_pop_back_word(Str *str)
         }
     }
     str->last = str->first + len;
-}
+} //}}}
 
-void str_triml(Str *str)
+void str_triml(Str *str) //{{{
 {
-    ASSERT(str, ERR_NULL_ARG);
+    ASSERT_ARG(str);
     while(str->first < str->last) {
         char c = str->s[str->first];
         if(!isspace(c)) break;
         ++str->first;
     }
-}
+} //}}}
 
-void str_trimr(Str *str)
+void str_trimr(Str *str) //{{{
 {
-    ASSERT(str, ERR_NULL_ARG);
+    ASSERT_ARG(str);
     while(str->last > str->first) {
         char c = str->s[str->last - 1];
         if(!isspace(c)) break;
         --str->last;
     }
-}
+} //}}}
 
-void str_trim(Str *str)
+void str_trim(Str *str) //{{{
 {
-    ASSERT(str, ERR_NULL_ARG);
+    ASSERT_ARG(str);
     str_triml(str);
     str_trimr(str);
-}
+} //}}}
 
+// }}}
 
-inline int str_fmt_va(Str *str, char *format, va_list argp)
+// pseudo directory {{{
+
+inline int str_fmt_va(Str *str, char *format, va_list argp) //{{{
 {
+    ASSERT_ARG(str);
+    ASSERT_ARG(format);
     va_list argp2;
     va_copy(argp2, argp);
     size_t len_app = (size_t)vsnprintf(0, 0, format, argp2);
@@ -95,10 +104,12 @@ inline int str_fmt_va(Str *str, char *format, va_list argp)
         return -1;
     }
     return 0;
-}
+} //}}}
 
-int str_fmt(Str *str, char *format, ...)
+int str_fmt(Str *str, char *format, ...) //{{{
 {
+    ASSERT_ARG(str);
+    ASSERT_ARG(format);
     if(!str) return -1;
     if(!format) return -1;
     // calculate length of append string
@@ -107,11 +118,11 @@ int str_fmt(Str *str, char *format, ...)
     int result = str_fmt_va(str, format, argp);
     va_end(argp);
     return result;
-}
+} //}}}
 
-int str_get_str(Str *str)
+int str_get_str(Str *str) //{{{
 {
-    ASSERT(str, ERR_NULL_ARG);
+    ASSERT_ARG(str);
     int err = 0;
     int c = 0;
     while((c = getchar()) != '\n' && c != EOF) {
@@ -124,12 +135,12 @@ clean:
     fflush(stdin);
     return err;
 error: ERR_CLEAN;
-}
+} //}}}
 
-ErrDecl str_fmt_ext(Str *ext, Str *str)
+ErrDecl str_fmt_ext(Str *ext, Str *str) //{{{
 {
-    ASSERT(str, ERR_NULL_ARG);
-    ASSERT(ext, ERR_NULL_ARG);
+    ASSERT_ARG(str);
+    ASSERT_ARG(ext);
     size_t len = str_length(str);
     if(len) {
         size_t i = str_rch(str, '.', 0);
@@ -140,12 +151,12 @@ ErrDecl str_fmt_ext(Str *ext, Str *str)
     return 0;
 error:
     return -1;
-}
+} //}}}
 
-ErrDecl str_fmt_noext(Str *ext, Str *str)
+ErrDecl str_fmt_noext(Str *ext, Str *str) //{{{
 {
-    ASSERT(str, ERR_NULL_ARG);
-    ASSERT(ext, ERR_NULL_ARG);
+    ASSERT_ARG(str);
+    ASSERT_ARG(ext);
     size_t len = str_length(str);
     if(len) {
         size_t iE = str_rch(str, '.', 0);
@@ -154,12 +165,12 @@ ErrDecl str_fmt_noext(Str *ext, Str *str)
     return 0;
 error:
     return -1;
-}
+} //}}}
 
-ErrDecl str_fmt_basename(Str *basename, Str *str)
+ErrDecl str_fmt_basename(Str *basename, Str *str) //{{{
 {
-    ASSERT(str, ERR_NULL_ARG);
-    ASSERT(basename, ERR_NULL_ARG);
+    ASSERT_ARG(str);
+    ASSERT_ARG(basename);
     size_t len = str_length(str);
     if(len) {
         size_t iE = str_rch(str, '.', 0);
@@ -174,13 +185,13 @@ ErrDecl str_fmt_basename(Str *basename, Str *str)
     return 0;
 error:
     return -1;
-}
+} //}}}
 
 // TODO: what if up is larger than the directory string? what should be returned then??
-ErrDecl str_fmt_dir(Str *dir, Str *str, size_t up)
+ErrDecl str_fmt_dir(Str *dir, Str *str, size_t up) //{{{
 {
-    ASSERT(str, ERR_NULL_ARG);
-    ASSERT(dir, ERR_NULL_ARG);
+    ASSERT_ARG(str);
+    ASSERT_ARG(dir);
     size_t len = str_length(str);
     size_t len_dir = str_length(dir);
     if(len) {
@@ -201,12 +212,12 @@ ErrDecl str_fmt_dir(Str *dir, Str *str, size_t up)
     return 0;
 error:
     return -1;
-}
+} //}}}
 
-ErrDecl str_fmt_nodir(Str *nodir, Str *str)
+ErrDecl str_fmt_nodir(Str *nodir, Str *str) //{{{
 {
-    ASSERT(str, ERR_NULL_ARG);
-    ASSERT(nodir, ERR_NULL_ARG);
+    ASSERT_ARG(str);
+    ASSERT_ARG(nodir);
     size_t len = str_length(str);
     if(len) {
         size_t i0 = str_rch(str, '/', 0);
@@ -220,20 +231,28 @@ ErrDecl str_fmt_nodir(Str *nodir, Str *str)
     return 0;
 error:
     return -1;
-}
+} //}}}
 
-int str_cmp(Str *a, Str *b)
+//}}}
+
+// comparing stuff {{{
+
+int str_cmp(Str *a, Str *b) //{{{
 {
+    ASSERT_ARG(a);
+    ASSERT_ARG(b);
     int result = -1;
     if(str_length(a) != str_length(b)) {
         return result;
     }
     result = memcmp(str_iter_begin(a), str_iter_begin(b), str_length(a));
     return result;
-}
+} //}}}
 
-inline size_t str_count_overlap(Str *restrict a, Str *restrict b, bool ignorecase)
+inline size_t str_count_overlap(Str *restrict a, Str *restrict b, bool ignorecase) //{{{
 {
+    ASSERT_ARG(a);
+    ASSERT_ARG(b);
     size_t overlap = 0;
     size_t len = str_length(a) > str_length(b) ? str_length(b) : str_length(a);
     if(!ignorecase) {
@@ -252,10 +271,12 @@ inline size_t str_count_overlap(Str *restrict a, Str *restrict b, bool ignorecas
         }
     }
     return overlap;
-}
+} //}}}
 
-inline size_t str_find_substring(Str *restrict str, Str *restrict sub)
+inline size_t str_find_substring(Str *restrict str, Str *restrict sub) //{{{
 {
+    ASSERT_ARG(str);
+    ASSERT_ARG(sub);
     /* basic checks */
     if(!str_length(sub)) return 1;
     if(str_length(sub) > str_length(str)) {
@@ -276,10 +297,11 @@ inline size_t str_find_substring(Str *restrict str, Str *restrict sub)
     }
     /* restore original */
     return 0;
-}
+} //}}}
 
-size_t str_rch(Str *str, char ch, size_t n)
+size_t str_rch(Str *str, char ch, size_t n) //{{{
 {
+    ASSERT_ARG(str);
     size_t ni = 0;
     for(size_t i = str_length(str); i > 0; --i) {
         char c = str_get_at(str, i - 1);
@@ -289,12 +311,12 @@ size_t str_rch(Str *str, char ch, size_t n)
         }
     }
     return str_length(str);
-}
+} //}}}
 
 
-size_t str_hash(Str *a)
+size_t str_hash(Str *a) //{{{
 {
-    ASSERT(a, ERR_NULL_ARG);
+    ASSERT_ARG(a);
     size_t hash = 5381;
     size_t i = 0;
     while(i < str_length(a)) {
@@ -302,11 +324,11 @@ size_t str_hash(Str *a)
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
     return hash;
-}
+} //}}}
 
-size_t str_hash_ci(Str *a)
+size_t str_hash_ci(Str *a) //{{{
 {
-    ASSERT(a, ERR_NULL_ARG);
+    ASSERT_ARG(a);
     size_t hash = 5381;
     size_t i = 0;
     while(i < str_length(a)) {
@@ -314,6 +336,7 @@ size_t str_hash_ci(Str *a)
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
     return hash;
-}
+} //}}}
 
+//}}}
 
