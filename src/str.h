@@ -36,7 +36,18 @@ void str_pop_back_char(Str *str);
 void str_pop_back_word(Str *str);
 
 ErrDecl str_fmt_va(Str *str, char *format, va_list argp);
+#define ERR_str_fmt(str, format, ...) "failed formatting string"
 ErrDecl str_fmt(Str *str, char *format, ...);
+#define ERR_str_fmt_ext(ext, str) "failed formatting extension"
+ErrDecl str_fmt_ext(Str *ext, Str *str); // extract extension
+#define ERR_str_fmt_noext(ext, str) "failed removing extension"
+ErrDecl str_fmt_noext(Str *ext, Str *str); // remove extension
+#define ERR_str_fmt_dir(dir, str, up) "failed formatting directory"
+ErrDecl str_fmt_dir(Str *dir, Str *str, size_t up); // extract directory
+#define ERR_str_fmt_nodir(nodir, str) "failed formatting without directory"
+ErrDecl str_fmt_nodir(Str *nodir, Str *str); // remove directory
+#define ERR_str_fmt_basename(basename, str) "failed formatting basename"
+ErrDecl str_fmt_basename(Str *basename, Str *str); // remove extention+directory
 
 #define ERR_STR_GET_STR     "failed getting string from user"
 ErrDecl str_get_str(Str *str);
@@ -47,9 +58,9 @@ size_t str_find_substring(Str *str, Str *sub);
 void str_triml(Str *str);
 void str_trimr(Str *str);
 void str_trim(Str *str);
+size_t str_rch(Str *str, char ch, size_t n);
 size_t str_hash(Str *a);
 size_t str_hash_ci(Str *a);
-
 
 #define STR_H
 #endif

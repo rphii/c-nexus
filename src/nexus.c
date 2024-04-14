@@ -765,6 +765,7 @@ error:
 } //}}}
 
 #include "file.h"
+#include "btw.h"
 
 int nexus_build(Nexus *nexus, VsStr *files) //{{{
 {
@@ -785,8 +786,11 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
 
         TRY(content_build(nexus, root), ERR_CONTENT_BUILD);
     } else {
+        Str content = {0};
         for(size_t i = 0; i < vsstr_length(files); ++i) {
-            Str *file = vsstr_get_at(files, i);
+            Str *filename = vsstr_get_at(files, i);
+            TRYF(btw_parse_file_nofree, nexus, filename, &content);
+#if 0
             char *ext = strrchr(file->s, '.');
             if((ext && (ext - file->s > 0)) || !ext) {
                 Str base = STR_LL(file->s, ext ? ext - file->s : file->last);
@@ -800,6 +804,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
             } else {
                 THROW("can't operate on hidden files");
             }
+#endif
         }
     }
 

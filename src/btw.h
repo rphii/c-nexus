@@ -5,8 +5,9 @@
 
 typedef struct Nexus Nexus;
 
-ErrDecl btw_parse_files(struct Nexus *nexus, VsStr *files);
+#define ERR_btw_parse_file_nofree(n, f, c) "failed parsing file '%.*s'", STR_F(filename)
 ErrDecl btw_parse_file_nofree(struct Nexus *nexus, Str *filename, Str *content);
+
 
 #define BTW_H
 #endif
