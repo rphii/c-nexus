@@ -1,0 +1,72 @@
+ICON : #red[title] {
+
+    $ cmd
+    #rd[r]#gn[g]#bl[b]
+    description!
+    links: https://www.gentoo.org
+    - format all you want
+    - sheesh
+    - ANOTHER ICON [what] link to icon-title. icon does nothing / optional
+    - #gn[what] is also okay to link
+    - add images, aligned nicely! ![image.png another.png \\ some.png]
+    - colors start with #FG[TEXT#BG]FLAGS valid colors: red,rd,blue,bl,green,gn, etc. and also 6 hex digits
+    - additionally, immediately after the closing ] you can add one of:
+        - b = bold
+        - i = italic
+        - u = underline
+        - ! = do not link
+
+    ```
+    ignore shit within "code blocks" {{}}
+    ```
+
+    another icon - some title {
+        content!
+    }
+
+    a new thing is registered with {}
+
+}
+
+ICON [title 2] {
+    cmd is optional!
+    description is also optional!
+}
+
+ICON [title 3] {
+}
+
+ANOTHER ICON [what]
+{
+    $ imv
+    long, long description
+}
+
+[icon is optional] { }
+
+stuff outside is basically treated as a description? for the current node. at this level, it'd be the entry node
+insane.
+
+what could be the name of the file format?
+
+inspirations:
+
+- markdown = mark / down
+- japanese words: nexus[ingakankei=igkk]
+- refractory = 耐火物 = taikabutsu = tkb
+- index (in a book) = 索引 = sakuin = skin
+- skill issue = si
+- memo = メモ
+- connection = 接続 = setsuzoku = stzk
+- setsuzoku memo = connection notes
+- se su o u memo = double letters
+-   t  z k       = single letters = tzk
+- s       u m  o = first+last = sumo
+-     u      em  = center letters = uem
+
+- btf = boring text file
+- stf = stupid text file
+- bnf - boring note file
+- snf - stupid node file
+- btw - by the way / boring text wall
+
