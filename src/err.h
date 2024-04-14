@@ -73,8 +73,9 @@ void screen_leave(void);    /* implementation is in "screen.h" */
         (void)screen_leave(); \
         ABORT("assertion of '" ERR_STRINGIFY(stmt) "' failed... " fmt, ##__VA_ARGS__); } \
     } while(0)
+#define ASSERT_ARG(arg)     ASSERT(arg, ERR_NULL_ARG)
 
-#define TRYF(function, ...)  TRY(function(__VA_ARGS__), ERR_##function(__VA_ARGS__))
+#define TRYF(function, ...)  TRY(function(__VA_ARGS__), function##_ERR(__VA_ARGS__))
 
 
 #define ERR_H

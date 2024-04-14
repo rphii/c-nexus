@@ -3,9 +3,9 @@
 
 ErrDecl btw_parse_file_nofree(Nexus *nexus, Str *filename, Str *content)
 {
-    ASSERT(nexus, ERR_NULL_ARG);
-    ASSERT(filename, ERR_NULL_ARG);
-    ASSERT(content, ERR_NULL_ARG);
+    ASSERT_ARG(nexus);
+    ASSERT_ARG(filename);
+    ASSERT_ARG(content);
 
     Str ext = {0};
     TRYF(str_fmt_noext, &ext, filename);

@@ -43,6 +43,34 @@ void str_pop_back_word(Str *str)
     str->last = str->first + len;
 }
 
+void str_triml(Str *str)
+{
+    ASSERT(str, ERR_NULL_ARG);
+    while(str->first < str->last) {
+        char c = str->s[str->first];
+        if(!isspace(c)) break;
+        ++str->first;
+    }
+}
+
+void str_trimr(Str *str)
+{
+    ASSERT(str, ERR_NULL_ARG);
+    while(str->last > str->first) {
+        char c = str->s[str->last - 1];
+        if(!isspace(c)) break;
+        --str->last;
+    }
+}
+
+void str_trim(Str *str)
+{
+    ASSERT(str, ERR_NULL_ARG);
+    str_triml(str);
+    str_trimr(str);
+}
+
+
 inline int str_fmt_va(Str *str, char *format, va_list argp)
 {
     va_list argp2;
@@ -248,33 +276,6 @@ inline size_t str_find_substring(Str *restrict str, Str *restrict sub)
     }
     /* restore original */
     return 0;
-}
-
-void str_triml(Str *str)
-{
-    ASSERT(str, ERR_NULL_ARG);
-    while(str->first < str->last) {
-        char c = str->s[str->first];
-        if(!isspace(c)) break;
-        ++str->first;
-    }
-}
-
-void str_trimr(Str *str)
-{
-    ASSERT(str, ERR_NULL_ARG);
-    while(str->last > str->first) {
-        char c = str->s[str->last - 1];
-        if(!isspace(c)) break;
-        --str->last;
-    }
-}
-
-void str_trim(Str *str)
-{
-    ASSERT(str, ERR_NULL_ARG);
-    str_triml(str);
-    str_trimr(str);
 }
 
 size_t str_rch(Str *str, char ch, size_t n)
