@@ -15,6 +15,7 @@ typedef enum {
     BTW_LEX_STRING,
     BTW_LEX_FORMAT,
     BTW_LEX_LINK,
+    BTW_LEX_SEPARATOR, // mainly { or }
 } BtwLexList;
 
 #define BTW_FLAG_BOLD       (1U<<0)
@@ -27,14 +28,17 @@ typedef unsigned int BtwFlag;
 typedef struct BtwLex {
     BtwLexList id;
     size_t i0; // starting index of current item / end index is start index of next
+    size_t line;
     Str str; // snippet of text
     BtwFlag flag;
 } BtwLex;
 
 typedef struct Btw {
+    Str *filename;
     Str ext;
     Str basename;
     Str content;
+    VBtwLex items;
 } Btw;
 
 /* color strings
@@ -54,11 +58,13 @@ void btwlex_free(BtwLex *lex);
 
 void btw_free(Btw *parse);
 
-#define btw_lex_str_ERR(items, str) "failed lexing string"
-ErrDecl btw_lex_str(VBtwLex *items, Str *str);
+#define btw_lex_ERR(items, str) "failed lexing string"
+ErrDecl btw_lex(VBtwLex *btw, Str *str);
+#define btw_parse_ERR(nexus, items) "failed parsing"
+ErrDecl btw_parse(Nexus *nexus, Btw *btw);
 
-#define btw_parse_file_prepare_ERR(nexus, filename, btw) "failed preparing file '%.*s'", STR_F(filename)
-ErrDecl btw_parse_file_prepare(Nexus *nexus, Str *filename, Btw *btw);
+#define btw_file_prepare_ERR(nexus, filename, btw) "failed preparing file '%.*s'", STR_F(filename)
+ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw);
 #define btw_parse_file_nofree_ERR(nexus, filename, btw) "failed parsing file '%.*s'", STR_F(filename)
 ErrDecl btw_parse_file_nofree(struct Nexus *nexus, Str *filename, Btw *btw);
 

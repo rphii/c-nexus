@@ -23,7 +23,7 @@ valid (b and c link to a, a having the content):
 
 {scope without owner -> description of current note}
 
-[b][c][a]{text}
+[b][c][a]{[text]}
 
 [b]
 [c]
@@ -36,7 +36,6 @@ valid (b and c link to a, a having the content):
     [b] {
         content of b!
     }
-
     [c] {
         insane content of c!
     }
@@ -45,6 +44,7 @@ valid (b and c link to a, a having the content):
 [b] [c] [d]
 [a] {
     content of even more a!
+    it's essentially the same if the links are inside the notes: [b] [c] [d]
 }
 
 [b][c][d]
@@ -63,14 +63,20 @@ what to do.....
     previous followed by a closed note
     [trash] {
         content of trash
-}
+    }[trash 2]{
+        content for trash2
+        [trash 3] {
+            someone is cooking [TRASH 2] (links to trash 2????)
+        }
 
-[test 3] {
-    this is a pain
-    what do?
-{
-        content of trash
-}
+        [test 3] {
+            this is a pain
+            what do?
+            {
+                content of trash
+            }
 
-AHHHHHHHHHH how do I lex the {}?????
+            AHHHHHHHHHH how do I lex the {}?????
+
+#[yep#]
 

@@ -220,6 +220,7 @@ void nexus_free(Nexus *nexus) //{{{
     node_free(&nexus->findings);
     view_free(&nexus->view);
     node_free(&nexus->nodeicon);
+    str_free(&nexus->config.entry);
 } //}}}
 
 /* rebuild yourself {{{ */
@@ -430,7 +431,6 @@ alt:
     result = nexus->nodes.buckets[i0].items[j0];
 clean:
     node_free(&find);
-    str_free(&nexus->config.entry);
     return result;
 error:
     goto clean;

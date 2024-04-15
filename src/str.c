@@ -324,6 +324,30 @@ size_t str_find_any(const Str *str, const Str *any) { //{{{
     return result;
 } //}}}
 
+size_t str_find_nany(const Str *str, const Str *any) { //{{{
+    ASSERT_ARG(str);
+    ASSERT_ARG(any);
+    size_t result = str_length(str);
+    for(size_t i = 0; i < str_length(any); ++i) {
+        size_t temp = str_nch(str, str_get_at(any, i), 0);
+        if(temp < result) result = temp;
+    }
+    return result;
+} //}}}
+
+size_t str_nch(const Str *str, char ch, size_t n) { //{{{
+    ASSERT_ARG(str);
+    size_t ni = 0;
+    for(size_t i = 0; i < str_length(str); ++i) {
+        char c = str_get_at(str, i);
+        if(c != ch) {
+            if(ni == n) return i;
+            ++ni;
+        }
+    }
+    return str_length(str);
+} //}}}
+
 size_t str_ch(const Str *str, char ch, size_t n) { //{{{
     ASSERT_ARG(str);
     size_t ni = 0;
@@ -359,6 +383,15 @@ size_t str_find_ws(const Str *str) { //{{{
     return str_length(str);
 } //}}}
 
+size_t str_find_nws(const Str *str) { //{{{
+    ASSERT_ARG(str);
+    for(size_t i = 0; i < str_length(str); ++i) {
+        char c = str_get_at(str, i);
+        if(!isspace(c)) return i;
+    }
+    return str_length(str);
+} //}}}
+
 size_t str_rch(const Str *str, char ch, size_t n) //{{{
 {
     ASSERT_ARG(str);
@@ -372,6 +405,16 @@ size_t str_rch(const Str *str, char ch, size_t n) //{{{
     }
     return str_length(str);
 } //}}}
+
+size_t str_count_ch(const Str *str, char ch) {/*{{{*/
+    ASSERT_ARG(str);
+    size_t result = 0;
+    for(size_t i = 0; i < str_length(str); ++i) {
+        char c = str_get_at(str, i);
+        if(c == ch) ++result;
+    }
+    return result;
+}/*}}}*/
 
 size_t str_irch(const Str *str, size_t iE, char ch, size_t n) { //{{{
     ASSERT_ARG(str);
