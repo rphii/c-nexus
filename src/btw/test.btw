@@ -1,12 +1,36 @@
-
+[hello]
+{
+    content of hello
+}
 
 
 some description
 
-last line!
+not the last line!
+
+[bold]b|non-bold
+
+[foo] {
+    content of foo
+}
+
+[bold
+text
+that is
+multi line
+]
+
+]b
 
 
 
+some other stuff
 
-
+string:[hello]/1/0
+scope:{/0/1
+string:content of hello/0/1
+scope:}/0/3
+string:some description/0/2
+string:not the last line/0/3
+string:foo/1/0
 

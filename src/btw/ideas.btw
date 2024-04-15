@@ -15,6 +15,7 @@ ICON : #red[title] {
         - i = italic
         - u = underline
         - ! = do not link
+        - | = end flag sequence (use to skip whitespace to next item)
 
     ```
     ignore shit within "code blocks" {{}}

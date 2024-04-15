@@ -133,9 +133,9 @@ typedef enum
     \
     /* common implementation */ \
     void A##_clear(N *vec); \
-    size_t A##_length(N *vec); \
-    size_t A##_capacity(N *vec); \
-    int A##_empty(N *vec); \
+    size_t A##_length(const N *vec); \
+    size_t A##_capacity(const N *vec); \
+    int A##_empty(const N *vec); \
     int A##_resize(N *vec, size_t cap); \
     int A##_shrink(N *vec); \
     /* single item operations */ \
@@ -148,9 +148,9 @@ typedef enum
     void A##_pop_front(N *vec, T *val); \
     void A##_pop_back(N *vec, T *val); \
     void A##_pop_at(N *vec, size_t index, T *val); \
-    VEC_ITEM(T, M) A##_get_front(N *vec); \
-    VEC_ITEM(T, M) A##_get_back(N *vec); \
-    VEC_ITEM(T, M) A##_get_at(N *vec, size_t index); \
+    VEC_ITEM(T, M) A##_get_front(const N *vec); \
+    VEC_ITEM(T, M) A##_get_back(const N *vec); \
+    VEC_ITEM(T, M) A##_get_at(const N *vec, size_t index); \
     /* slice operations */ \
     /* TODO */ int A##_extend_front(N *vec, N *v2, size_t n); \
     /* TODO */ int A##_extend_back(N *vec, N *v2, size_t n); \
@@ -168,15 +168,15 @@ typedef enum
     void A##_swap(N *vec, size_t i1, size_t i2); \
     void A##_reverse(N *vec); \
     /* TODO */ void A##_reverse_slice(N *vec, size_t from, size_t n); \
-    VEC_ITEM(T, M)*A##_iter_begin(N *vec); \
-    VEC_ITEM(T, M)*A##_iter_end(N *vec); \
-    VEC_ITEM(T, M)*A##_iter_at(N *vec, size_t index); \
+    VEC_ITEM(T, M)*A##_iter_begin(const N *vec); \
+    VEC_ITEM(T, M)*A##_iter_end(const N *vec); \
+    VEC_ITEM(T, M)*A##_iter_at(const N *vec, size_t index); \
     /* split implementation */ \
     void A##_free(N *vec); \
     void A##_zero(N *vec); \
-    size_t A##_reserved(N *vec); \
+    size_t A##_reserved(const N *vec); \
     int A##_reserve(N *vec, size_t cap); \
-    int A##_copy(N *dst, N *src); \
+    int A##_copy(N *dst, const N *src); \
 
 /*
  * int A##_cmp(N *a, N *b) -> compare vec
@@ -260,7 +260,7 @@ typedef enum
  * @return pointer to item (by reference) at index
  */
 #define VEC_IMPLEMENT_COMMON_STATIC_GET(N, A, T, F, M) \
-    static inline VEC_ITEM(T, M) *A##_static_get(N *vec, size_t index) \
+    static inline VEC_ITEM(T, M) *A##_static_get(const N *vec, size_t index) \
     { \
         if(!vec || !(index < vec->last) || !(index >= vec->first)) platform_trace(); \
         assert(vec); \
@@ -421,7 +421,7 @@ typedef enum
  * @return length in items
  */
 #define VEC_IMPLEMENT_COMMON_LENGTH(N, A, T, F) \
-    inline size_t A##_length(N *vec) \
+    inline size_t A##_length(const N *vec) \
     { \
         assert(vec); \
         return vec->last - vec->first; \
@@ -433,7 +433,7 @@ typedef enum
  * @return capacity in item spaces
  */
 #define VEC_IMPLEMENT_COMMON_CAPACITY(N, A, T, F) \
-    inline size_t A##_capacity(N *vec) \
+    inline size_t A##_capacity(const N *vec) \
     { \
         assert(vec); \
         return vec->cap; \
@@ -445,7 +445,7 @@ typedef enum
  * @return boolean comparison: true if empty, false if not empty
  */
 #define VEC_IMPLEMENT_COMMON_EMPTY(N, A, T, F) \
-    inline int A##_empty(N *vec) \
+    inline int A##_empty(const N *vec) \
     { \
         assert(vec); \
         return (vec->first == vec->last); \
@@ -489,7 +489,7 @@ typedef enum
  * @return pointer to first item
  */
 #define VEC_IMPLEMENT_COMMON_ITER_BEGIN(N, A, T, F, M) \
-    inline VEC_ITEM(T, M)*A##_iter_begin(N *vec) \
+    inline VEC_ITEM(T, M)*A##_iter_begin(const N *vec) \
     { \
         assert(vec); \
         assert(vec->first <= vec->last); \
@@ -502,7 +502,7 @@ typedef enum
  * @return pointer to one past last item
  */
 #define VEC_IMPLEMENT_COMMON_ITER_END(N, A, T, F, M) \
-    inline VEC_ITEM(T, M)*A##_iter_end(N *vec) \
+    inline VEC_ITEM(T, M)*A##_iter_end(const N *vec) \
     { \
         assert(vec); \
         assert(vec->first <= vec->last); \
@@ -515,7 +515,7 @@ typedef enum
  * @return pointer to one past last item
  */
 #define VEC_IMPLEMENT_COMMON_ITER_AT(N, A, T, F, M) \
-    inline VEC_ITEM(T, M)*A##_iter_at(N *vec, size_t index) \
+    inline VEC_ITEM(T, M)*A##_iter_at(const N *vec, size_t index) \
     { \
         assert(vec); \
         assert(vec->first + index <= vec->last); \
@@ -567,7 +567,7 @@ typedef enum
  * @return item (by value) at index
  */
 #define VEC_IMPLEMENT_COMMON_GET_AT(N, A, T, F, M) \
-    inline VEC_ITEM(T, M) A##_get_at(N *vec, size_t index) \
+    inline VEC_ITEM(T, M) A##_get_at(const N *vec, size_t index) \
     { \
         assert(vec); \
         return *A##_static_get(vec, index + vec->first); \
@@ -579,7 +579,7 @@ typedef enum
  * @return item (by value) at front
  */
 #define VEC_IMPLEMENT_COMMON_GET_FRONT(N, A, T, F, M) \
-    inline VEC_ITEM(T, M) A##_get_front(N *vec) \
+    inline VEC_ITEM(T, M) A##_get_front(const N *vec) \
     { \
         assert(vec); \
         return *A##_static_get(vec, vec->first); \
@@ -591,7 +591,7 @@ typedef enum
  * @return item (by value) at end
  */
 #define VEC_IMPLEMENT_COMMON_GET_BACK(N, A, T, F, M) \
-    inline VEC_ITEM(T, M) A##_get_back(N *vec) \
+    inline VEC_ITEM(T, M) A##_get_back(const N *vec) \
     { \
         assert(vec); \
         return *A##_static_get(vec, vec->last - 1); \
@@ -769,7 +769,7 @@ typedef enum
  * @return allocated size in bytes
  */
 #define VEC_IMPLEMENT_BY_VAL_RESERVED(N, A, T, F) \
-    inline size_t A##_reserved(N *vec) \
+    inline size_t A##_reserved(const N *vec) \
     { \
         assert(vec); \
         size_t result = 0; \
@@ -810,7 +810,7 @@ typedef enum
  * @return zero if succes, non-zero if failure
  */
 #define VEC_IMPLEMENT_BY_VAL_COPY(N, A, T, F) \
-    inline int A##_copy(N *dst, N *src) \
+    inline int A##_copy(N *dst, const N *src) \
     { \
         assert(dst); \
         assert(src); \
@@ -868,7 +868,7 @@ typedef enum
  * @return allocated size in bytes
  */
 #define VEC_IMPLEMENT_BY_REF_RESERVED(N, A, T, F) \
-    inline size_t A##_reserved(N *vec) \
+    inline size_t A##_reserved(const N *vec) \
     { \
         assert(vec); \
         size_t result = 0; \
@@ -913,7 +913,7 @@ typedef enum
  * @return zero if succes, non-zero if failure
  */
 #define VEC_IMPLEMENT_BY_REF_COPY(N, A, T, F) \
-    inline int A##_copy(N *dst, N *src) \
+    inline int A##_copy(N *dst, const N *src) \
     { \
         assert(dst); \
         assert(src); \

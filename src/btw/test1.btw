@@ -1,0 +1,57 @@
+colors
+another
+text
+            on
+            a
+            new
+    line
+
+[]!iub
+[]|!iub
+[]!iub|
+
+#[]
+[#]
+#[#]
+
+#[abc]
+[acb#]
+#[bac#]
+
+#---[lol#---] <== basically a comment (the #-- stuff)
+
+#red[
+sick shit
+#red]
+
+some #red[text] link to text
+some #rd[text]  link to text
+
+some [text#red]  link to text
+some [text#rd]   link to text
+
+some #wt[text#bk]  link to text
+some #wt[text#bk]! no link
+
+string:some
+format:#wt[
+link:text
+format:#bk]!
+
+begin #red [text#red ] end
+begin #red [text#red] end
+begin #red[text#red ] end
+begin # red [text# red ] end
+begin # red[text# red ] end
+begin # red [text# red] end
+begin # red[text# red] end
+
+
+#invalidcolor[text]  => render as text and link
+#invalidcolor[text]! => render as text and don't link
+
+what if [link is] ] this? => render as: what if link is ] this
+if [[link is]] this => render as: if [link is] this
+
+abc
+

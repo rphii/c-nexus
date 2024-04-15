@@ -78,7 +78,7 @@ void str_trim(Str *str) //{{{
 
 // pseudo directory {{{
 
-inline int str_fmt_va(Str *str, char *format, va_list argp) //{{{
+inline int str_fmt_va(Str *str, const char *format, va_list argp) //{{{
 {
     ASSERT_ARG(str);
     ASSERT_ARG(format);
@@ -106,7 +106,7 @@ inline int str_fmt_va(Str *str, char *format, va_list argp) //{{{
     return 0;
 } //}}}
 
-int str_fmt(Str *str, char *format, ...) //{{{
+int str_fmt(Str *str, const char *format, ...) //{{{
 {
     ASSERT_ARG(str);
     ASSERT_ARG(format);
@@ -120,24 +120,7 @@ int str_fmt(Str *str, char *format, ...) //{{{
     return result;
 } //}}}
 
-int str_get_str(Str *str) //{{{
-{
-    ASSERT_ARG(str);
-    int err = 0;
-    int c = 0;
-    while((c = getchar()) != '\n' && c != EOF) {
-        TRY(str_fmt(str, "%c", (char)c), ERR_STR_FMT);  /* append string */
-    }
-    if(!str->last && (!c || c == EOF || c == '\n')) {
-        //THROW("an error"); /* TODO describe this error */
-    }
-clean:
-    fflush(stdin);
-    return err;
-error: ERR_CLEAN;
-} //}}}
-
-ErrDecl str_fmt_ext(Str *ext, Str *str) //{{{
+ErrDecl str_fmt_ext(Str *ext, const Str *str) //{{{
 {
     ASSERT_ARG(str);
     ASSERT_ARG(ext);
@@ -153,7 +136,7 @@ error:
     return -1;
 } //}}}
 
-ErrDecl str_fmt_noext(Str *ext, Str *str) //{{{
+ErrDecl str_fmt_noext(Str *ext, const Str *str) //{{{
 {
     ASSERT_ARG(str);
     ASSERT_ARG(ext);
@@ -167,7 +150,7 @@ error:
     return -1;
 } //}}}
 
-ErrDecl str_fmt_basename(Str *basename, Str *str) //{{{
+ErrDecl str_fmt_basename(Str *basename, const Str *str) //{{{
 {
     ASSERT_ARG(str);
     ASSERT_ARG(basename);
@@ -188,7 +171,7 @@ error:
 } //}}}
 
 // TODO: what if up is larger than the directory string? what should be returned then??
-ErrDecl str_fmt_dir(Str *dir, Str *str, size_t up) //{{{
+ErrDecl str_fmt_dir(Str *dir, const Str *str, size_t up) //{{{
 {
     ASSERT_ARG(str);
     ASSERT_ARG(dir);
@@ -214,7 +197,7 @@ error:
     return -1;
 } //}}}
 
-ErrDecl str_fmt_nodir(Str *nodir, Str *str) //{{{
+ErrDecl str_fmt_nodir(Str *nodir, const Str *str) //{{{
 {
     ASSERT_ARG(str);
     ASSERT_ARG(nodir);
@@ -235,9 +218,40 @@ error:
 
 //}}}
 
+int str_get_str(Str *str) //{{{
+{
+    ASSERT_ARG(str);
+    int err = 0;
+    int c = 0;
+    while((c = getchar()) != '\n' && c != EOF) {
+        TRY(str_fmt(str, "%c", (char)c), ERR_STR_FMT);  /* append string */
+    }
+    if(!str->last && (!c || c == EOF || c == '\n')) {
+        //THROW("an error"); /* TODO describe this error */
+    }
+clean:
+    fflush(stdin);
+    return err;
+error: ERR_CLEAN;
+} //}}}
+
+ErrDecl str_fmt_line(Str *line, const Str *str, size_t *i0) { //{{{
+    ASSERT_ARG(line);
+    ASSERT_ARG(str);
+    ASSERT_ARG(i0);
+    Str fake = *str;
+    fake.first += *i0;
+    size_t i = str_ch(&fake, '\n', 0);
+    TRYF(str_fmt, line, "%.*s", (int)i, str_iter_begin(&fake));
+    *i0 += i + 1; // TODO do I have to/should I check for if i<str_length(str)???
+    return 0;
+error:
+    return -1;
+} //}}}
+
 // comparing stuff {{{
 
-int str_cmp(Str *a, Str *b) //{{{
+int str_cmp(const Str *a, const Str *b) //{{{
 {
     ASSERT_ARG(a);
     ASSERT_ARG(b);
@@ -249,7 +263,7 @@ int str_cmp(Str *a, Str *b) //{{{
     return result;
 } //}}}
 
-inline size_t str_count_overlap(Str *restrict a, Str *restrict b, bool ignorecase) //{{{
+inline size_t str_count_overlap(const Str *restrict a, const Str *restrict b, bool ignorecase) //{{{
 {
     ASSERT_ARG(a);
     ASSERT_ARG(b);
@@ -273,12 +287,12 @@ inline size_t str_count_overlap(Str *restrict a, Str *restrict b, bool ignorecas
     return overlap;
 } //}}}
 
-inline size_t str_find_substring(Str *restrict str, Str *restrict sub) //{{{
+inline size_t str_find_substring(const Str *restrict str, const Str *restrict sub) //{{{
 {
     ASSERT_ARG(str);
     ASSERT_ARG(sub);
     /* basic checks */
-    if(!str_length(sub)) return 1;
+    if(!str_length(sub)) return 0;
     if(str_length(sub) > str_length(str)) {
         return 0;
     }
@@ -299,7 +313,53 @@ inline size_t str_find_substring(Str *restrict str, Str *restrict sub) //{{{
     return 0;
 } //}}}
 
-size_t str_rch(Str *str, char ch, size_t n) //{{{
+size_t str_find_any(const Str *str, const Str *any) { //{{{
+    ASSERT_ARG(str);
+    ASSERT_ARG(any);
+    size_t result = str_length(str);
+    for(size_t i = 0; i < str_length(any); ++i) {
+        size_t temp = str_ch(str, str_get_at(any, i), 0);
+        if(temp < result) result = temp;
+    }
+    return result;
+} //}}}
+
+size_t str_ch(const Str *str, char ch, size_t n) { //{{{
+    ASSERT_ARG(str);
+    size_t ni = 0;
+    for(size_t i = 0; i < str_length(str); ++i) {
+        char c = str_get_at(str, i);
+        if(c == ch) {
+            if(ni == n) return i;
+            ++ni;
+        }
+    }
+    return str_length(str);
+} //}}}
+
+size_t str_ch_pair(const Str *str, char c1) { //{{{
+    ASSERT_ARG(str);
+    size_t level = 1;
+    char c0 = str_get_at(str, 0);
+    for(size_t i = 1; i < str_length(str); ++i) {
+        char c = str_get_at(str, i);
+        if(c == c0) level++;
+        else if(c == c1) level--;
+        if(level <= 0) return i;
+    }
+    return str_length(str);
+} //}}}
+
+size_t str_find_ws(const Str *str) { //{{{
+    ASSERT_ARG(str);
+    for(size_t i = 0; i < str_length(str); ++i) {
+        char c = str_get_at(str, i);
+        if(isspace(c)) return i;
+    }
+    return str_length(str);
+} //}}}
+
+size_t str_rch(const Str *str, char ch, size_t n) //{{{
 {
     ASSERT_ARG(str);
     size_t ni = 0;
@@ -313,8 +373,22 @@ size_t str_rch(Str *str, char ch, size_t n) //{{{
     return str_length(str);
 } //}}}
 
+size_t str_irch(const Str *str, size_t iE, char ch, size_t n) { //{{{
+    ASSERT_ARG(str);
+    if(iE <= str_length(str)) {
+        size_t ni = 0;
+        for(size_t i = iE; i > 0; --i) {
+            char c = str_get_at(str, i - 1);
+            if(c == ch) {
+                if(ni == n) return i - 1;
+                ++ni;
+            }
+        }
+    }
+    return str_length(str);
+} //}}}
 
-size_t str_hash(Str *a) //{{{
+size_t str_hash(const Str *a) //{{{
 {
     ASSERT_ARG(a);
     size_t hash = 5381;
@@ -326,7 +400,7 @@ size_t str_hash(Str *a) //{{{
     return hash;
 } //}}}
 
-size_t str_hash_ci(Str *a) //{{{
+size_t str_hash_ci(const Str *a) //{{{
 {
     ASSERT_ARG(a);
     size_t hash = 5381;

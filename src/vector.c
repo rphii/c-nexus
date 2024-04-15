@@ -1,6 +1,7 @@
 #include "node.h"
 #include "view.h"
 #include "str.h"
+#include "btw.h"
 
 #include "vector.h"
 
@@ -47,4 +48,5 @@ VEC_IMPLEMENT(VView, vview, View, BY_VAL, view_free);
 
 VEC_IMPLEMENT(VsStr, vsstr, Str, BY_REF, 0);
 
+VEC_IMPLEMENT(VBtwLex, vbtwlex, BtwLex, BY_REF, btwlex_free);
 

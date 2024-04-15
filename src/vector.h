@@ -33,6 +33,9 @@ VEC_INCLUDE(VView, vview, struct View, BY_VAL);
 struct Str;
 VEC_INCLUDE(VsStr, vsstr, struct Str, BY_REF);
 
+struct BtwLext;
+VEC_INCLUDE(VBtwLex, vbtwlex, struct BtwLex, BY_REF);
+
 #define VECTOR_H
 #endif
 
