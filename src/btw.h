@@ -17,10 +17,10 @@ typedef enum {
     BTW_LEX_LINK,
 } BtwLexList;
 
-#define BTW_FLAG_BOLD       (1U<0)
-#define BTW_FLAG_ITALIC     (1U<1)
-#define BTW_FLAG_UNDERLINE  (1U<2)
-#define BTW_FLAG_NOLINK     (1U<3)
+#define BTW_FLAG_BOLD       (1U<<0)
+#define BTW_FLAG_ITALIC     (1U<<1)
+#define BTW_FLAG_UNDERLINE  (1U<<2)
+#define BTW_FLAG_NOLINK     (1U<<3)
 
 typedef unsigned int BtwFlag;
 

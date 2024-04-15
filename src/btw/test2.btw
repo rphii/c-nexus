@@ -4,8 +4,11 @@ begin
 
 #[a#]b|c
 
-[r] [g] [b]
-#red[r#blue]#green[g#yellow]#magenta[b#pink]b|sick
+[r]b [g]b [b]b
+#red[r#blue]b#green[g#yellow]i|#magenta[b#pink]!|sick
 
-end
+[a] [b] {
+
+    LOL
+}
 
