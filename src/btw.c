@@ -21,6 +21,7 @@ ErrDecl btw_lex_append(VBtwLex *items, BtwLex *item, size_t i0, size_t line_inde
         return 0;
     }
 #if 1
+    printf(F("%zu", BG_BK_B), vbtwlex_length(items));
     if(item->flag) {
         printf(F("F", BG_WT_B FG_BK));
     }
@@ -70,7 +71,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
         bool handled = false;
         do {
             handled = false;
-            size_t sep0 = str_find_any(&line, &STR("{}"));
+            size_t sep0 = str_find_any(&line, &STR("{}|"));
             size_t f0 = str_ch(&line, '#', 0);
             size_t f1 = str_ch(&line, '[', 0);
             //printf("\n[[sep0 %zu  f0 %zu  f1 %zu:%.*s]]\n", sep0, f0, f1, STR_F(&line));
@@ -127,11 +128,11 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                     }
                     /////printf(F("]", FG_BK BG_YL));
                     size_t fin11 = str_find_ws(&STR_I0(line, f3)) + f3;
-                    size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#{}")) + f3; // TODO: this is shit.. make it less shit. e.g. [a]] -> the ] gets swallowed whole, but we can't put it into here because (again) this is shit
+                    size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#{}|")) + f3; // TODO: this is shit.. make it less shit. e.g. [a]] -> the ] gets swallowed whole, but we can't put it into here because (again) this is shit
                     size_t fin1 = fin11 < fin12 ? fin11 : fin12;
-                    size_t fin2 = str_ch(&STR_I0(line, f3), '|', 0) + f3;
+                    //   size_t fin2 = str_ch(&STR_I0(line, f3), '|', 0) + f3;
                     //size_t fin3 = str_ch(&STR_I0(line, f3), ']', 0) + f3;
-                    size_t done = fin1 < fin2 ? fin1 : fin2;
+                    size_t done = fin1; // < fin2 ? fin1 : fin2;
                     size_t bold = str_ch(&STR_I0(line, f3), 'b', 0) + f3;
                     size_t ital = str_ch(&STR_I0(line, f3), 'i', 0) + f3;
                     size_t undl = str_ch(&STR_I0(line, f3), 'u', 0) + f3;
@@ -152,7 +153,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                         TRYF(str_fmt, &temp.str, "%.*s", (int)(f3-f2+1), str_iter_begin(&STR_I0(line, f2)));
                         TRYF(btw_lex_append, items, &temp, i0, line_index);
                     }
-                    line.first += done + (fin2 == done);
+                    line.first += done; // + (fin2 == done);
                     if(line.first > line.last) line.first = line.last;
                     if(!str_length(&line)) break;
                 }
@@ -232,8 +233,17 @@ size_t btw_parse_is_link(VBtwLex *items, size_t i0) { //{{{
 #endif
     size_t n_pat = sizeof(static_btw_pat_link)/sizeof(*static_btw_pat_link);
     size_t i_pat = btw_parse_match_pattern(items, i0, n_pat, static_btw_pat_link);
+    size_t len_pat = (i_pat < n_pat) ? static_btw_pat_link[i_pat][0] : 0;
+#if 0
+    if(i0 + len_pat < vbtwlex_length(items)) {
+        BtwLex *item = vbtwlex_get_at(items, i0 + len_pat);
+        if(item->id == BTW_LEX_SEPARATOR && !str_cmp(&item->str, &STR("|"))) {
+            len_pat++;
+        }
+    }
+#endif
     //printf("i_pat %zu/%zu\n", i_pat, n_pat);
-    return (i_pat < n_pat) ? static_btw_pat_link[i_pat][0] : 0;
+    return len_pat;
 } //}}}
 
 size_t btw_parse_is_ws(VBtwLex *items, size_t i0, size_t *n_newline) {/*{{{*/
@@ -331,11 +341,11 @@ error:
 }/*}}}*/
 
 #define btw_parse_link_ERR(items, i0, link, iE) "failed parsing link"
-ErrDecl btw_parse_link(VBtwLex *items, size_t i0, Str **link, size_t *iE)
+ErrDecl btw_parse_link(VBtwLex *items, size_t i0, Str **link, size_t *len)
 {
     ASSERT_ARG(items);
     ASSERT_ARG(link);
-    ASSERT_ARG(iE);
+    ASSERT_ARG(len);
     if(i0 >= vbtwlex_length(items)) return 0;
     size_t n_pat = sizeof(static_btw_pat_link)/sizeof(*static_btw_pat_link);
     size_t i_pat = btw_parse_match_pattern(items, i0, n_pat, static_btw_pat_link);
@@ -350,57 +360,98 @@ ErrDecl btw_parse_link(VBtwLex *items, size_t i0, Str **link, size_t *iE)
             //TRYF(str_fmt, link, "%.*s", STR_F(&vbtwlex_get_at(items, 0)->str));
         }
         size_t delta = static_btw_pat_link[i_pat][0];
-        printf("   DELTA %zu\n", delta);
-        *iE += (delta-1); // TODO: I hate this I HATE THIS... why need do minus one???
+        /* filter separator */
+        if(i0 + delta < vbtwlex_length(items)) {
+            BtwLex *item = vbtwlex_get_at(items, i0 + delta);
+            if(item->id == BTW_LEX_SEPARATOR && !str_cmp(&item->str, &STR("|"))) {
+                ++delta;
+            }
+        }
+        //printf("   DELTA %zu\n", delta);
+        /* transfer length to end index */
+        *len = delta; // TODO: I hate this I HATE THIS... why need do minus one???
     }
     return 0;
 error:
     return -1;
 }
 
+#define btw_parse_note_ERR(items, i0, btw, pending, iE) "failed parsing note"
+ErrDecl btw_parse_note(VBtwLex *items, size_t i0, Btw *btw, Str **pending, size_t *len) {/*{{{*/
+    ASSERT_ARG(items);
+    ASSERT_ARG(btw);
+    ASSERT_ARG(pending);
+    ASSERT_ARG(len);
+    if(i0 >= vbtwlex_length(items)) return 0;
+
+    size_t note_len = 0, link_len = 0, n_newline = 0;
+    Str *p = 0;
+    size_t index = i0;
+    size_t link = 0;
+    do {
+        if(link) {
+            TRYF(btw_parse_link, items, index, &p, &link_len);
+            index += link_len;
+            size_t ws = btw_parse_is_ws(items, index, &n_newline);
+            if(ws && n_newline <= 1 && index < vbtwlex_length(items)) {
+                index += ws;
+            }
+        }
+        link = btw_parse_is_link(items, index);
+    } while(link);
+    //size_t ws = btw_parse_is_ws(items, index, &n_newline);
+    //index += ws;
+    if(n_newline <= 1 && index < vbtwlex_length(items)) {
+        BtwLex *item = vbtwlex_get_at(items, index);
+        if(item->id == BTW_LEX_SEPARATOR && !str_cmp(&item->str, &STR("{"))) {
+            ++index;
+        }
+    }
+    if(p) {
+        *len = (index - i0);
+    }
+    TRY(vrstr_push_back(&btw->titles, p), ERR_VEC_PUSH_BACK);
+
+    return 0;
+error:
+    return -1;
+}/*}}}*/
+
 ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     ASSERT_ARG(nexus);
     ASSERT_ARG(btw);
     int err = 0;
     VrStr links = {0};
-    VrStr titles = {0};
+    //VrStr titles = {0};
     VBtwLex *items = &btw->items;
+    //VSize indices = {0};
     //printf("len: %zu\n", vbtwlex_length(&btw->items));
-    TRY(vrstr_push_back(&titles, &btw->basename), ERR_VEC_PUSH_BACK);
+    TRY(vrstr_push_back(&btw->titles, &btw->basename), ERR_VEC_PUSH_BACK);
+    TRY(vsize_push_back(&btw->indices, vbtwlex_length(items)), ERR_VEC_PUSH_BACK);
     size_t index = 0;
-    while(index < vbtwlex_length(items)) {
+    while(vrstr_length(&btw->titles)) {
+        //printf("   INDEX %zu\n", index);
+        if(vrstr_length(&btw->titles) != vsize_length(&btw->indices)) {
+            THROW("vector length titles (%zu) != indices (%zu) mismatch!", vrstr_length(&btw->titles), vsize_length(&btw->indices));
+        }
         Str *pending = 0;
-        size_t note_len = 0;
+        size_t note_len = 0, note_len2 = 0;
         TRYF(btw_parse_is_note, items, index, &note_len, btw);
         if(note_len) {
                 printf(" !!! NOTE (%zu) !!!\n", note_len);
-                index += (note_len - 1);
             // TODO: parse note; update context -> get title; store title+note_end
-#if 0/*{{{*/
-            Str *title = vrstr_get_back(&titles);
-            Node node = {
-                .icon = ICON_NONE,
-                .title = *title,
-            };
-            if(!tnode_has(&nexus->nodes, &node)) {
-                tnode_add(&nexus->nodes, &node);
-                printf("ADDED: %.*s\n", STR_F(&node.title));
-            }
-            size_t i = 0, j = 0;
-            if(tnode_find(&nexus->nodes, &node, &i, &j)) {
-                THROW(ERR_UNREACHABLE);
-            }
-            Node *fill = nexus->nodes.buckets[i].items[j];
-            BtwLex *item = vbtwlex_get_at(&btw->items, index);
-            TRYF(str_fmt, &fill->desc, "%.*s", STR_F(&item->str));
-            printf("FMT(%.*s)%.*s\n", STR_F(&fill->title), STR_F(&item->str));
-#endif/*}}}*/
+            Str *title = 0;
+            TRY(vsize_push_back(&btw->indices, index + note_len - 1), ERR_VEC_PUSH_BACK);
+            TRYF(btw_parse_note, items, index, btw, &title, &note_len2);
+            index += (note_len2 - 1);
         } else {
             size_t link = btw_parse_is_link(items, index);
             if(link) {
                 printf(" !!! LINK !!!\n");
                 // TODO: format colored text -> add to current note (below)
-                TRYF(btw_parse_link, items, index, &pending, &index);
+                size_t link_len = 0;
+                TRYF(btw_parse_link, items, index, &pending, &link_len);
+                index += (link_len - 1);
                 //index += (link - 1);
             } else /* TODO: this else is temporary, until the thing above properly works */ {
                 printf(" !!! DEFAULT !!!\n");
@@ -428,7 +479,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
 #endif
             }
             if(pending) {
-                Str *title = vrstr_get_back(&titles);
+                Str *title = vrstr_get_back(&btw->titles);
                 Node node = {
                     .title = *title
                 };
@@ -448,6 +499,23 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             }
         }
         ++index;
+        if(index >= vsize_get_back(&btw->indices)) {
+                size_t iE = vsize_get_back(&btw->indices);
+            vsize_pop_back(&btw->indices, 0);
+            vrstr_pop_back(&btw->titles, 0);
+            if(vsize_length(&btw->indices)) {
+                //printf("   CONTEXT %.*s\n", STR_F(vrstr_get_back(&btw->titles)));
+                /* post-cleanup for scopes! get rid of '}' */
+                if(iE < vbtwlex_length(&btw->items)) {
+                    BtwLex *item = vbtwlex_get_at(&btw->items, iE);
+                    if(item->id == BTW_LEX_SEPARATOR && !str_cmp(&item->str, &STR("}"))) {
+                        ++index;
+                    } else {
+                        THROW("expected a } ... something went wrong while parsing");
+                    }
+                }
+            }
+        }
 #if 0
         size_t link = btw_parse_is_link(items, index);
         if(link) {
@@ -480,8 +548,6 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
 
     printf("done\n");getchar();
 clean:
-    vrstr_free(&titles);
-    vrstr_free(&links);
     return err;
 error:
     ERR_CLEAN;
@@ -493,6 +559,9 @@ void btw_free(Btw *btw) { //{{{
     str_free(&btw->basename);
     str_free(&btw->ext);
     vbtwlex_free(&btw->items);
+    vsize_free(&btw->indices);
+    vrstr_free(&btw->titles);
+    vrstr_free(&btw->links);
 } //}}}
 
 ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{

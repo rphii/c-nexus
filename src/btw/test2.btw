@@ -41,23 +41,23 @@ valid (b and c link to a, a having the content):
     }
 }
 
-[b] [c] [d]
+[b] [c] [dd]
 [a] {
     content of even more a!
     it's essentially the same if the links are inside the notes: [b] [c] [d]
 }
 
-[b]u[c]i[d]b
+[b]u[c]i[ddd]b
 [a] {
     content of EVEN MORE a!
 }
 
-[b]b[c]u[d]i|
+[b]b[c]u[dddd]i|
 [a]
 
 { content of no one }
 
-[a]|{this belongs to...? probably no one} TODO: this is not done :(
+[a]|{this belongs to...? probably no one!}
 
 [test] {
     not-closed note!

@@ -5,6 +5,8 @@
 
 #include "vector.h"
 
+VEC_IMPLEMENT(VSize, vsize, size_t, BY_VAL, 0);
+
 #if 0
 VEC_IMPLEMENT(Vu8,  vu8,  uint8_t,  BY_VAL, 0);
 VEC_IMPLEMENT(Vu16, vu16, uint16_t, BY_VAL, 0);
