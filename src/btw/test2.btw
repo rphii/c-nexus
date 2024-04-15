@@ -2,13 +2,75 @@ begin
 
 [insane]b!
 
+TODO: what do I do about this?
+#red[#red[][]][[[#gn] I think it works now (although scuffed), too, wtf
+
+TODO: refer to this below: it works.
+#red[#red]#gn]
+
 #[a#]b|c
 
 [r]b [g]b [b]b
 #red[r#blue]b#green[g#yellow]i|#magenta[b#pink]!|sick
 
-[a] [b] {
+valid (b and c link to a, a having the content):
+[b] [c] [a] {
 
     LOL
 }
+
+[just a link to another note]
+
+{scope without owner -> description of current note}
+
+[b][c][a]{text}
+
+[b]
+[c]
+[a]
+{
+    valid... b and c also link to a
+    and now, that we have duplicate [a]'s, join this description
+    with that of the previous [a!]
+
+    [b] {
+        content of b!
+    }
+
+    [c] {
+        insane content of c!
+    }
+}
+
+[b] [c] [d]
+[a] {
+    content of even more a!
+}
+
+[b][c][d]
+[a] {
+    content of EVEN MORE a!
+}
+
+[test] {
+    not-closed note!
+    what to do...
+    count to top note...?!
+
+what to do.....
+
+[test 2] {
+    previous followed by a closed note
+    [trash] {
+        content of trash
+}
+
+[test 3] {
+    this is a pain
+    what do?
+{
+        content of trash
+}
+
+AHHHHHHHHHH how do I lex the {}?????
 

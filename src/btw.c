@@ -62,6 +62,9 @@ ErrDecl btw_lex_str(VBtwLex *items, Str *str) { //{{{
             size_t f1 = str_ch(&line, '[', 0);
             if(f1 < str_length(&line)) {
                 size_t f3 = str_ch_pair(&STR_I0(line, f1), ']') + f1;
+                if(f3 >= str_length(&line)) {
+                    f3 = str_rch(&line, ']', 0);
+                }
                 size_t f2 = str_irch(&line, f3, '#', 0);
                 bool f0b = false;
                 bool f2b = false;
@@ -109,7 +112,7 @@ ErrDecl btw_lex_str(VBtwLex *items, Str *str) { //{{{
                     }
                     /////printf(F("]", FG_BK BG_YL));
                     size_t fin11 = str_find_ws(&STR_I0(line, f3)) + f3;
-                    size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#")) + f3;
+                    size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#{")) + f3;
                     size_t fin1 = fin11 < fin12 ? fin11 : fin12;
                     size_t fin2 = str_ch(&STR_I0(line, f3), '|', 0) + f3;
                     //size_t fin3 = str_ch(&STR_I0(line, f3), ']', 0) + f3;
