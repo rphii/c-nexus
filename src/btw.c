@@ -11,7 +11,7 @@ void btwlex_free(BtwLex *lex) { //{{{
 } //}}}
 
 #define btw_lex_append_ERR(items, item) "failed appending lex item"
-ErrDecl btw_lex_append(VBtwLex *items, BtwLex *item) {
+ErrDecl btw_lex_append(VBtwLex *items, BtwLex *item) { //{{{
     ASSERT_ARG(items);
     ASSERT_ARG(item);
     if(item->id == BTW_LEX_STRING) {
@@ -23,13 +23,14 @@ ErrDecl btw_lex_append(VBtwLex *items, BtwLex *item) {
     if(item->id == BTW_LEX_FORMAT) {
         printf(F("%.*s", FG_RD), STR_F(&item->str));
     }
+    if(item->flag) printf(F("F", FG_WT_B BG_BK));
     //printf(F("APPEND:%u:%.*s\n", FG_BK_B), item->id, STR_F(&item->str));
     TRY(vbtwlex_push_back(items, item), ERR_VEC_PUSH_BACK);
     memset(item, 0, sizeof(*item));
     return 0;
 error:
     return -1;
-}
+} //}}}
 
 ErrDecl btw_lex_str(VBtwLex *items, Str *str) { //{{{
     ASSERT_ARG(items);
@@ -112,17 +113,20 @@ ErrDecl btw_lex_str(VBtwLex *items, Str *str) { //{{{
                     size_t ital = str_ch(&STR_I0(line, f3), 'i', 0) + f3;
                     size_t undl = str_ch(&STR_I0(line, f3), 'u', 0) + f3;
                     size_t nlnk = str_ch(&STR_I0(line, f3), '!', 0) + f3;
+                    // TODO: fix this shit // the mess above :)
+                    printf("\n[[[%zu %zu %zu %zu %zu]]]\n", done, bold, ital, undl, nlnk);
                     if(bold < done) temp.flag |= BTW_FLAG_BOLD;
                     if(ital < done) temp.flag |= BTW_FLAG_ITALIC;
                     if(undl < done) temp.flag |= BTW_FLAG_UNDERLINE;
                     if(nlnk < done) temp.flag |= BTW_FLAG_NOLINK;
+                    if(temp.flag) printf("FLAGS!!!\n");
                     /////printf("%.*s", (int)(done-f3-1), str_iter_begin(&STR_I0(line, f3+1)));
                     temp.id = BTW_LEX_LINK;
                     TRYF(btw_lex_append, items, &temp);
                     /* idk man */
                     if(f2b == true) {
                         temp.id = BTW_LEX_FORMAT;
-                        TRYF(str_fmt, &temp.str, "%.*s", (int)(done-f2), str_iter_begin(&STR_I0(line, f2)));
+                        TRYF(str_fmt, &temp.str, "%.*s", (int)(f3-f2+1), str_iter_begin(&STR_I0(line, f2)));
                         TRYF(btw_lex_append, items, &temp);
                     }
                     line.first += done + (fin2 == done);

@@ -1,7 +1,11 @@
 begin
 
+[insane]b!
+
+#[a#]b|c
+
 [r] [g] [b]
-[r][g][b]
+#red[r#blue]#green[g#yellow]#magenta[b#pink]b|sick
 
 end
 
