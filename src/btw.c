@@ -1,3 +1,4 @@
+#include "lookup.h"
 #include "nexus.h"
 #include "btw.h"
 #include "file.h"
@@ -282,17 +283,30 @@ error:
     return -1;
 }/*}}}*/
 
-size_t btw_parse_is_note(VBtwLex *items, size_t i0) {/*{{{*/
+#define btw_parse_is_note_ERR(items, i0, note, btw) "could not confirm scope"
+ErrDecl btw_parse_is_note(VBtwLex *items, size_t i0, size_t *note, Btw *btw) {/*{{{*/
     ASSERT_ARG(items);
+    ASSERT_ARG(note);
+    ASSERT_ARG(btw);
     size_t index = i0;
+    // TODO icons not handled!!!!!!!! (they get ignored)
     size_t link = btw_parse_is_link(items, index);
     if(link) {
         index += link;
         size_t n_newline = 0;
         size_t ws = btw_parse_is_ws(items, index, &n_newline);
-        index += ws;
+        if(n_newline <= 1) {
+            index += ws;
+            size_t scope = 0;
+            TRYF(btw_parse_is_scope, items, index, &scope, btw);
+            if(scope) {
+                *note = scope;
+            }
+        }
     }
     return 0;
+error:
+    return -1;
 }/*}}}*/
 
 ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
@@ -306,6 +320,58 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     TRY(vrstr_push_back(&titles, &btw->basename), ERR_VEC_PUSH_BACK);
     size_t index = 0;
     while(index < vbtwlex_length(items)) {
+        size_t note_end = 0;
+        TRYF(btw_parse_is_note, items, index, &note_end, btw);
+        if(note_end) {
+            // TODO: parse note; update context -> get title; store title+note_end
+#if 0
+            Str *title = vrstr_get_back(&titles);
+            Node node = {
+                .icon = ICON_NONE,
+                .title = *title,
+            };
+            if(!tnode_has(&nexus->nodes, &node)) {
+                tnode_add(&nexus->nodes, &node);
+                printf("ADDED: %.*s\n", STR_F(&node.title));
+            }
+            size_t i = 0, j = 0;
+            if(tnode_find(&nexus->nodes, &node, &i, &j)) {
+                THROW(ERR_UNREACHABLE);
+            }
+            Node *fill = nexus->nodes.buckets[i].items[j];
+            BtwLex *item = vbtwlex_get_at(&btw->items, index);
+            TRYF(str_fmt, &fill->desc, "%.*s", STR_F(&item->str));
+            printf("FMT(%.*s)%.*s\n", STR_F(&fill->title), STR_F(&item->str));
+#endif
+        } else {
+            size_t link = btw_parse_is_link(items, index);
+            if(link) {
+                // TODO: format colored text -> add to current note (below)
+                index += (link - 1);
+            } else /* TODO: this else is temporary, until the thing above properly works */ {
+                // TODO: add text to current note / title
+
+                Str *title = vrstr_get_back(&titles);
+                Node node = {
+                    .title = *title
+                };
+                if(!tnode_has(&nexus->nodes, &node)) {
+                    TRYF(node_create, &node, title, CMD_NONE, 0, ICON_NONE);
+                    tnode_add(&nexus->nodes, &node);
+                    printf("ADDED: %.*s\n", STR_F(&node.title));
+                }
+                size_t i = 0, j = 0;
+                if(tnode_find(&nexus->nodes, &node, &i, &j)) {
+                    THROW(ERR_UNREACHABLE);
+                }
+                Node *fill = nexus->nodes.buckets[i].items[j];
+                BtwLex *item = vbtwlex_get_at(&btw->items, index);
+                TRYF(str_fmt, &fill->desc, "%.*s", STR_F(&item->str));
+                printf("FMT(%.*s)%.*s\n", STR_F(&fill->title), STR_F(&item->str));
+            }
+        }
+        ++index;
+#if 0
         size_t link = btw_parse_is_link(items, index);
         if(link) {
             size_t i0 = index;
@@ -314,8 +380,8 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             //printf("link %zu : %zu\n", index, link);
             size_t ws = btw_parse_is_ws(items, index, &n_newline);
             //printf("ws %zu : %zu\n", index, link);
-            index += ws;
             if(n_newline <= 1) {
+                index += ws;
                 size_t scope = 0;
                 TRYF(btw_parse_is_scope, items, index, &scope, btw);
                 if(scope) {
@@ -326,6 +392,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         else {
             ++index;
         }
+#endif
         //size_t ws = btw_parse_is_ws(items, index+link);
         //printf("link %zu, ws %zu\n", link, ws);
     }
@@ -333,6 +400,8 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     //    BtwLex *item = vbtwlex_get_at(items, i);
     //    Str *title = vrstr_get_back(&titles);
     //}
+
+    /////printf("done\n");getchar();
 clean:
     vrstr_free(&titles);
     vrstr_free(&links);
@@ -359,6 +428,7 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
     str_clear(&btw->ext);
     str_clear(&btw->content);
     str_clear(&btw->basename);
+    vbtwlex_clear(&btw->items);
     TRYF(str_fmt_basename, &btw->basename, filename);
     TRYF(str_fmt_ext, &btw->ext, filename);
 

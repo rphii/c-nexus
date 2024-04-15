@@ -56,6 +56,7 @@ valid (b and c link to a, a having the content):
     not-closed note!
     what to do...
     count to top note...?!
+///}
 
 what to do.....
 
@@ -75,6 +76,9 @@ what to do.....
             {
                 content of trash
             }
+        ///}
+    ///}
+///}
 
             AHHHHHHHHHH how do I lex the {}?????
 
