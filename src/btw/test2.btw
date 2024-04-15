@@ -47,10 +47,17 @@ valid (b and c link to a, a having the content):
     it's essentially the same if the links are inside the notes: [b] [c] [d]
 }
 
-[b][c][d]
+[b]u[c]i[d]b
 [a] {
     content of EVEN MORE a!
 }
+
+[b]b[c]u[d]i|
+[a]
+
+{ content of no one }
+
+[a]|{this belongs to...? probably no one} TODO: this is not done :(
 
 [test] {
     not-closed note!

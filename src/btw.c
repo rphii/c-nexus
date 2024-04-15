@@ -283,7 +283,10 @@ ErrDecl btw_parse_is_scope(VBtwLex *items, size_t i0, size_t *len, Btw *btw) {/*
         if(level) valid = true;
     } while(level > 0 && index < vbtwlex_length(items));
     if(level > 0) { err_scope = true; THROW("brackets { or } mismatch of %i levels on line %zu:", level, line); }
-    if(valid) *len = index;
+    if(valid) {
+        //printf("  ..scope len %zu (%zu-%zu)\n", index-i0, index, i0);
+        *len = (index - i0);
+    }
     return 0;
 error:
     if(err_scope) {
@@ -295,9 +298,9 @@ error:
 }/*}}}*/
 
 #define btw_parse_is_note_ERR(items, i0, note, btw) "could not confirm scope"
-ErrDecl btw_parse_is_note(VBtwLex *items, size_t i0, size_t *note, Btw *btw) {/*{{{*/
+ErrDecl btw_parse_is_note(VBtwLex *items, size_t i0, size_t *len, Btw *btw) {/*{{{*/
     ASSERT_ARG(items);
-    ASSERT_ARG(note);
+    ASSERT_ARG(len);
     ASSERT_ARG(btw);
     // DONE/TODO: fix [b] [c] [a] { => b an c get "ignored"; only a is counted to the scope
     if(i0 >= vbtwlex_length(items)) return 0;
@@ -306,6 +309,7 @@ ErrDecl btw_parse_is_note(VBtwLex *items, size_t i0, size_t *note, Btw *btw) {/*
     size_t link = btw_parse_is_link(items, index);
     if(link) {
 next:
+        //printf("  ..link %zu\n", index);
         index += link;
         size_t n_newline = 0;
         size_t ws = btw_parse_is_ws(items, index, &n_newline);
@@ -316,7 +320,8 @@ next:
             size_t scope = 0;
             TRYF(btw_parse_is_scope, items, index, &scope, btw);
             if(scope) {
-                *note = scope;
+                index += scope;
+                *len = (index - i0);
             }
         }
     }
@@ -365,10 +370,11 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     size_t index = 0;
     while(index < vbtwlex_length(items)) {
         Str *pending = 0;
-        size_t note_end = 0;
-        TRYF(btw_parse_is_note, items, index, &note_end, btw);
-        if(note_end) {
-                printf(" !!! NOTE (%zu) !!!\n", note_end);
+        size_t note_len = 0;
+        TRYF(btw_parse_is_note, items, index, &note_len, btw);
+        if(note_len) {
+                printf(" !!! NOTE (%zu) !!!\n", note_len);
+                index += (note_len - 1);
             // TODO: parse note; update context -> get title; store title+note_end
 #if 0/*{{{*/
             Str *title = vrstr_get_back(&titles);
