@@ -263,6 +263,17 @@ int str_cmp(const Str *a, const Str *b) //{{{
     return result;
 } //}}}
 
+int str_cmp_ci(const Str *a, const Str *b) {/*{{{*/
+    ASSERT_ARG(a);
+    ASSERT_ARG(b);
+    if(str_length(a) != str_length(b)) return -1;
+    for (size_t i = 0; i < str_length(a); ++i) {
+        int d = tolower(str_get_at(a, i)) - tolower(str_get_at(b, i));
+        if (d != 0) return d;
+    }
+    return 0;
+}/*}}}*/
+
 inline size_t str_count_overlap(const Str *restrict a, const Str *restrict b, bool ignorecase) //{{{
 {
     ASSERT_ARG(a);

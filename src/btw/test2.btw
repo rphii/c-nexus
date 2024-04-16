@@ -13,6 +13,8 @@ TODO: refer to this below: it works.
 [r]b [g]b [b]b
 #red[r#blue]b#green[g#yellow]i|#magenta[b#pink]!|sick
 
+[dd ]
+
 valid (b and c link to a, a having the content):
 [b] [c] [a] {
 
@@ -51,6 +53,8 @@ valid (b and c link to a, a having the content):
 [a] {
     content of EVEN MORE a!
 }
+[b]b[c]u[ddddd]i|
+[a] { content of ... guess it... a! BUT! not ddddd }
 
 [b]b[c]u[dddd]i|
 [a]

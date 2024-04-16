@@ -51,5 +51,6 @@ VEC_IMPLEMENT(VView, vview, View, BY_VAL, view_free);
 VEC_IMPLEMENT(VsStr, vsstr, Str, BY_REF, 0);
 
 VEC_IMPLEMENT(VrStr, vrstr, Str *, BY_VAL, 0);
+VEC_IMPLEMENT(VStr, vstr, Str, BY_REF, str_free);
 VEC_IMPLEMENT(VBtwLex, vbtwlex, BtwLex, BY_REF, btwlex_free);
 

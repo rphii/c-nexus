@@ -643,6 +643,7 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
         TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
         //THROW("node does not exist in nexus: '%.*s'", STR_F(&src->title));
     }
+    if(!str_cmp(&src->title, &dest->title)) return 0;
     if(!tnode_has(&nexus->nodes, dest)) {
         Node temp;
         TRY(node_copy(&temp, dest), ERR_NODE_COPY);
@@ -664,8 +665,20 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
         ev_src = ev_dest;
         ev_dest = temp;
     }
-    TRY(vrnode_push_back(&ev_src->outgoing, ev_dest), ERR_VEC_PUSH_BACK);
-    TRY(vrnode_push_back(&ev_dest->incoming, ev_src), ERR_VEC_PUSH_BACK);
+    /* check for duplicates - we should be fine to only check one half */
+    bool duplicate = false;
+    for(size_t i = 0; i < vrnode_length(&ev_src->outgoing); ++i) {
+        Node *node = vrnode_get_at(&ev_src->outgoing, i);
+        if(!str_cmp_ci(&node->title, &ev_dest->title)) {
+            duplicate = true;
+            break;
+        }
+    }
+    /* finally, add the nodes */
+    if(!duplicate) {
+        TRY(vrnode_push_back(&ev_src->outgoing, ev_dest), ERR_VEC_PUSH_BACK);
+        TRY(vrnode_push_back(&ev_dest->incoming, ev_src), ERR_VEC_PUSH_BACK);
+    }
     return 0;
 error:
     return -1;

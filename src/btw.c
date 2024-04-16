@@ -17,10 +17,19 @@ ErrDecl btw_lex_append(VBtwLex *items, BtwLex *item, size_t i0, size_t line_inde
     ASSERT_ARG(items);
     ASSERT_ARG(item);
     // TODO: if link, to a trim? or somewhere else?
-    if(item->id == BTW_LEX_STRING && !str_length(&item->str)) {
-        return 0;
+    if(item->id == BTW_LEX_STRING) {
+        //str_trim(&item->str);
+        if(!str_length(&item->str)) {
+            return 0;
+        }
     }
-#if 1
+    if(item->id == BTW_LEX_LINK) {
+        str_trim(&item->str);
+        //if(!str_length(&item->str)) {
+        //    return 0;
+        //}
+    }
+#if 0
     printf(F("%zu", BG_BK_B), vbtwlex_length(items));
     if(item->flag) {
         printf(F("F", BG_WT_B FG_BK));
@@ -277,6 +286,7 @@ ErrDecl btw_parse_is_scope(VBtwLex *items, size_t i0, size_t *len, Btw *btw) {/*
     int level = 0;
     bool valid = false;
     do {
+        if(index >= vbtwlex_length(items)) return 0;
         BtwLex *item = vbtwlex_get_at(items, index);
         if(index == i0) {
             line = item->line;
@@ -340,29 +350,39 @@ error:
     return -1;
 }/*}}}*/
 
-#define btw_parse_link_ERR(items, i0, link, iE) "failed parsing link"
-ErrDecl btw_parse_link(VBtwLex *items, size_t i0, Str **link, size_t *len)
+#define btw_parse_link_ERR(btw, i0, link, iE) "failed parsing link"
+ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, size_t *len)
 {
-    ASSERT_ARG(items);
-    ASSERT_ARG(link);
+    ASSERT_ARG(btw);
+    ASSERT_ARG(pending);
     ASSERT_ARG(len);
-    if(i0 >= vbtwlex_length(items)) return 0;
+    if(i0 >= vbtwlex_length(&btw->items)) return 0;
     size_t n_pat = sizeof(static_btw_pat_link)/sizeof(*static_btw_pat_link);
-    size_t i_pat = btw_parse_match_pattern(items, i0, n_pat, static_btw_pat_link);
+    size_t i_pat = btw_parse_match_pattern(&btw->items, i0, n_pat, static_btw_pat_link);
+    BtwLex *item = 0;
+    Str copy = {0};
     if(i_pat < n_pat) {
         if(i_pat == 0 || i_pat == 1) {
-            *link = &vbtwlex_get_at(items, i0+1)->str;
-            //printf(" => LINK1 %.*s\n", STR_F(*link));
-            //TRYF(str_fmt, link, "%.*s", STR_F(&vbtwlex_get_at(items, 1)->str));
+            item = vbtwlex_get_at(&btw->items, i0+1);
         } else if(i_pat == 2 || i_pat == 3) {
-            *link = &vbtwlex_get_at(items, i0+0)->str;
-            //printf(" => LINK2 %.*s\n", STR_F(*link));
-            //TRYF(str_fmt, link, "%.*s", STR_F(&vbtwlex_get_at(items, 0)->str));
+            item = vbtwlex_get_at(&btw->items, i0+0);
+        }
+        if(item) {
+            /* properly format the string (TODO) */
+            Str *p = &item->str;
+            if(str_length(p)) {
+                TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
+                if(!(item->flag & BTW_FLAG_NOLINK)) {
+                    //printf("  LINK: %.*s\n", STR_F(pending));
+                    TRYF(str_copy, &copy, pending);
+                    TRY(vstr_push_back(&btw->links, &copy), ERR_VEC_PUSH_BACK);
+                }
+            }
         }
         size_t delta = static_btw_pat_link[i_pat][0];
         /* filter separator */
-        if(i0 + delta < vbtwlex_length(items)) {
-            BtwLex *item = vbtwlex_get_at(items, i0 + delta);
+        if(i0 + delta < vbtwlex_length(&btw->items)) {
+            BtwLex *item = vbtwlex_get_at(&btw->items, i0 + delta);
             if(item->id == BTW_LEX_SEPARATOR && !str_cmp(&item->str, &STR("|"))) {
                 ++delta;
             }
@@ -376,41 +396,49 @@ error:
     return -1;
 }
 
-#define btw_parse_note_ERR(items, i0, btw, pending, iE) "failed parsing note"
-ErrDecl btw_parse_note(VBtwLex *items, size_t i0, Btw *btw, Str **pending, size_t *len) {/*{{{*/
-    ASSERT_ARG(items);
+#define btw_parse_note_ERR(btw, i0, pending, iE) "failed parsing note"
+ErrDecl btw_parse_note(Btw *btw, size_t i0, Str *pending, size_t *len) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(pending);
     ASSERT_ARG(len);
-    if(i0 >= vbtwlex_length(items)) return 0;
+    if(i0 >= vbtwlex_length(&btw->items)) return 0;
 
-    size_t note_len = 0, link_len = 0, n_newline = 0;
-    Str *p = 0;
+    size_t link_len = 0, n_newline = 0;
+    Str p = {0};
     size_t index = i0;
     size_t link = 0;
     do {
+        str_clear(&p);
         if(link) {
-            TRYF(btw_parse_link, items, index, &p, &link_len);
+            TRYF(btw_parse_link, btw, index, &p, &link_len);
             index += link_len;
-            size_t ws = btw_parse_is_ws(items, index, &n_newline);
-            if(ws && n_newline <= 1 && index < vbtwlex_length(items)) {
+            size_t ws = btw_parse_is_ws(&btw->items, index, &n_newline);
+            if(ws && n_newline <= 1 && index < vbtwlex_length(&btw->items)) {
                 index += ws;
             }
         }
-        link = btw_parse_is_link(items, index);
+        link = btw_parse_is_link(&btw->items, index);
     } while(link);
     //size_t ws = btw_parse_is_ws(items, index, &n_newline);
     //index += ws;
-    if(n_newline <= 1 && index < vbtwlex_length(items)) {
-        BtwLex *item = vbtwlex_get_at(items, index);
+    if(n_newline <= 1 && index < vbtwlex_length(&btw->items)) {
+        BtwLex *item = vbtwlex_get_at(&btw->items, index);
         if(item->id == BTW_LEX_SEPARATOR && !str_cmp(&item->str, &STR("{"))) {
             ++index;
+// TODO get rid of starting newlines...
+// BUT!!! not here... I have to sleep over this....... because it's whack-
+// if I trim it like shown below, then, empty notes will not get created :(
+#if 0
+            size_t ws = btw_parse_is_ws(&btw->items, index, &n_newline);
+            index += ws;
+#endif
         }
     }
-    if(p) {
+    //if(str_length(&p)) { // TODO: do I need this check - or is it bad?
         *len = (index - i0);
-    }
-    TRY(vrstr_push_back(&btw->titles, p), ERR_VEC_PUSH_BACK);
+    //}
+    TRY(vstr_push_back(&btw->titles, &p), ERR_VEC_PUSH_BACK);
+    //printf(" NEW TITLE: %.*s\n", STR_F(&p));
 
     return 0;
 error:
@@ -421,45 +449,52 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     ASSERT_ARG(nexus);
     ASSERT_ARG(btw);
     int err = 0;
-    VrStr links = {0};
+    //VrStr links = {0};
     //VrStr titles = {0};
     VBtwLex *items = &btw->items;
+    Str pending = {0};
     //VSize indices = {0};
     //printf("len: %zu\n", vbtwlex_length(&btw->items));
-    TRY(vrstr_push_back(&btw->titles, &btw->basename), ERR_VEC_PUSH_BACK);
+    TRYF(str_fmt, &pending, "%.*s", STR_F(&btw->basename)); /* to avoid double free; I know, it's a bit stupid */
+    TRY(vstr_push_back(&btw->titles, &pending), ERR_VEC_PUSH_BACK);
+    str_zero(&pending);
     TRY(vsize_push_back(&btw->indices, vbtwlex_length(items)), ERR_VEC_PUSH_BACK);
     size_t index = 0;
-    while(vrstr_length(&btw->titles)) {
+    while(vstr_length(&btw->titles)) {
+        str_clear(&pending);
         //printf("   INDEX %zu\n", index);
-        if(vrstr_length(&btw->titles) != vsize_length(&btw->indices)) {
-            THROW("vector length titles (%zu) != indices (%zu) mismatch!", vrstr_length(&btw->titles), vsize_length(&btw->indices));
+        if(vstr_length(&btw->titles) != vsize_length(&btw->indices)) {
+            THROW("vector length titles (%zu) != indices (%zu) mismatch!", vstr_length(&btw->titles), vsize_length(&btw->indices));
         }
-        Str *pending = 0;
         size_t note_len = 0, note_len2 = 0;
         TRYF(btw_parse_is_note, items, index, &note_len, btw);
         if(note_len) {
-                printf(" !!! NOTE (%zu) !!!\n", note_len);
+                /////printf(" !!! NOTE (%zu) !!!\n", note_len);
             // TODO: parse note; update context -> get title; store title+note_end
-            Str *title = 0;
             TRY(vsize_push_back(&btw->indices, index + note_len - 1), ERR_VEC_PUSH_BACK);
-            TRYF(btw_parse_note, items, index, btw, &title, &note_len2);
+            TRYF(btw_parse_note, btw, index, &pending, &note_len2);
+            str_clear(&pending);
             index += (note_len2 - 1);
         } else {
             size_t link = btw_parse_is_link(items, index);
             if(link) {
-                printf(" !!! LINK !!!\n");
+                /////printf(" !!! LINK !!!\n");
                 // TODO: format colored text -> add to current note (below)
                 size_t link_len = 0;
-                TRYF(btw_parse_link, items, index, &pending, &link_len);
+                TRYF(btw_parse_link, btw, index, &pending, &link_len);
                 index += (link_len - 1);
                 //index += (link - 1);
             } else /* TODO: this else is temporary, until the thing above properly works */ {
-                printf(" !!! DEFAULT !!!\n");
+                /////printf(" !!! DEFAULT !!!\n");
                 // TODO: add text to current note / title
-                pending = &vbtwlex_get_at(&btw->items, index)->str;
+                if(index < vbtwlex_length(&btw->items)) {
+                    Str *p = &vbtwlex_get_at(&btw->items, index)->str;
+                    TRYF(str_fmt, &pending, "%.*s", STR_F(p));
+                }
+        }}{{
 #if 0
 
-                Str *title = vrstr_get_back(&titles);
+                Str *title = vstr_get_back(&titles);
                 Node node = {
                     .title = *title
                 };
@@ -478,33 +513,57 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                 printf("FMT(%.*s)%.*s\n", STR_F(&fill->title), STR_F(&item->str));
 #endif
             }
-            if(pending) {
-                Str *title = vrstr_get_back(&btw->titles);
-                Node node = {
+            /* add pending + link */
+            //printf("  link len1 %zu\n", vstr_length(&btw->links));
+                if(!vstr_length(&btw->titles)) THROW("expecting titles... but have none!");
+                Str *title = vstr_get_back(&btw->titles);
+                //printf(" TITLE: %.*s\n", STR_F(title));
+                if(!str_length(title)) goto notitle;
+                Node tempnode = {
                     .title = *title
                 };
-                if(!tnode_has(&nexus->nodes, &node)) {
-                    TRYF(node_create, &node, title, CMD_NONE, 0, ICON_NONE);
-                    tnode_add(&nexus->nodes, &node);
+                if(!tnode_has(&nexus->nodes, &tempnode)) {
+                    TRYF(node_create, &tempnode, title, CMD_NONE, 0, ICON_NONE);
+                    tnode_add(&nexus->nodes, &tempnode);
                     //printf("ADDED: %.*s\n", STR_F(&node.title));
                 }
                 size_t i = 0, j = 0;
-                if(tnode_find(&nexus->nodes, &node, &i, &j)) {
+                if(tnode_find(&nexus->nodes, &tempnode, &i, &j)) {
                     THROW(ERR_UNREACHABLE);
                 }
                 Node *fill = nexus->nodes.buckets[i].items[j];
                 //BtwLex *item = vbtwlex_get_at(&btw->items, index);
-                TRYF(str_fmt, &fill->desc, "%.*s", STR_F(pending));
-                //printf("FMT(%.*s)%.*s\n", STR_F(&fill->title), STR_F(pending));
+            if(str_length(&pending)) {
+                TRYF(str_fmt, &fill->desc, "%.*s", STR_F(&pending));
             }
+            //printf("  link len2 %zu\n", vstr_length(&btw->links));
+                //str_trim(&fill->desc);
+                //TRYF(str_fmt, &fill->desc, "\n");
+                /* do the links */
+                for(size_t i_link = 0; i_link < vstr_length(&btw->links); ++i_link) {
+                    Str *s_link = vstr_get_at(&btw->links, i_link);
+                    if(str_length(s_link)) {
+                        Node n_link = {
+                            .title = *s_link
+                        };
+                        //printf("LINK %*.s <<>> %.*s\n", STR_F(&fill->title), STR_F(&n_link.title));
+                        TRYF(nexus_link, nexus, fill, &n_link);
+                    }
+                }
+notitle:
+                vstr_clear(&btw->links);
+                //printf("FMT(%.*s)%.*s\n", STR_F(&fill->title), STR_F(pending));
         }
         ++index;
-        if(index >= vsize_get_back(&btw->indices)) {
+        while(index >= vsize_get_back(&btw->indices)) { // TODO: what's cleaner? while or the if?
+        /*if(index >= vsize_get_back(&btw->indices)) {*/
+            // TODO trim the current node... or something... and append a newline??
                 size_t iE = vsize_get_back(&btw->indices);
             vsize_pop_back(&btw->indices, 0);
-            vrstr_pop_back(&btw->titles, 0);
+            vstr_pop_back(&btw->titles, 0);
+            if(!vsize_length(&btw->indices)) break;
             if(vsize_length(&btw->indices)) {
-                //printf("   CONTEXT %.*s\n", STR_F(vrstr_get_back(&btw->titles)));
+                //printf("   CONTEXT %.*s\n", STR_F(vstr_get_back(&btw->titles)));
                 /* post-cleanup for scopes! get rid of '}' */
                 if(iE < vbtwlex_length(&btw->items)) {
                     BtwLex *item = vbtwlex_get_at(&btw->items, iE);
@@ -543,10 +602,11 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     }
     //for(size_t i = 0; i < vbtwlex_length(items); ++i) {
     //    BtwLex *item = vbtwlex_get_at(items, i);
-    //    Str *title = vrstr_get_back(&titles);
+    //    Str *title = vstr_get_back(&titles);
     //}
 
-    printf("done\n");getchar();
+    //printf("done\n");getchar();
+    str_free(&pending);
 clean:
     return err;
 error:
@@ -560,8 +620,8 @@ void btw_free(Btw *btw) { //{{{
     str_free(&btw->ext);
     vbtwlex_free(&btw->items);
     vsize_free(&btw->indices);
-    vrstr_free(&btw->titles);
-    vrstr_free(&btw->links);
+    vstr_free(&btw->titles);
+    vstr_free(&btw->links);
 } //}}}
 
 ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
@@ -580,7 +640,7 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
 
     if(str_cmp(&btw->ext, &STR(".btw"))) {
         // TODO make a flag for this?
-        INFO("incorrect extension '%.*s', parsing '%.*s' anyways", STR_F(&btw->ext), STR_F(filename));
+        //INFO("incorrect extension '%.*s', parsing '%.*s' anyways", STR_F(&btw->ext), STR_F(filename));
     }
 
     TRYF(file_str_read, filename, &btw->content);

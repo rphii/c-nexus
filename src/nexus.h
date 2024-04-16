@@ -54,6 +54,7 @@ ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *d
     } while(0)
 
 #define ERR_NEXUS_LINK "failed linking nodes"
+#define nexus_link_ERR(nexus, src, dst) "failed linking nodes"
 ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst);
 
 #define NEXUS_LINKS_EV_STR(nexus, src, ...)     do { \

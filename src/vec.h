@@ -691,6 +691,7 @@ typedef enum
         if(result) return result; \
         size_t back = vec->last++; \
         T *item = VEC_REF(M) *A##_static_get(vec, back); \
+        /* TODO add a new parameter: clearing function! so we don't free this! => we'll still overwrite 2 linew below... */ \
         if(F != 0) VEC_TYPE_FREE(F, item, T); /* required (?) in case we pop back (but don't free (?)) and then push back again */ \
         vec_memcpy(item, VEC_REF(M) val, sizeof(T)); \
         return VEC_ERROR_NONE; \

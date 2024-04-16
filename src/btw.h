@@ -39,8 +39,8 @@ typedef struct Btw {
     Str basename;
     Str content;
     VBtwLex items;
-    VrStr links;
-    VrStr titles;
+    VStr links;
+    VStr titles;
     VSize indices;
 } Btw;
 

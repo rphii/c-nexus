@@ -34,6 +34,7 @@ VEC_INCLUDE(VView, vview, struct View, BY_VAL);
 
 struct Str;
 VEC_INCLUDE(VsStr, vsstr, struct Str, BY_REF);
+VEC_INCLUDE(VStr, vstr, struct Str, BY_REF);
 VEC_INCLUDE(VrStr, vrstr, struct Str *, BY_VAL);
 
 struct BtwLext;

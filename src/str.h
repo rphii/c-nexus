@@ -33,6 +33,8 @@ VEC_INCLUDE(Str, str, char, BY_VAL);
 #define ERR_STR_FMT         "failed string formatting"
 #define ERR_STR_COPY        "failed copying string"
 
+#define str_copy_ERR(v1, v2) "failed copying string"
+
 /* other functions */
 
 void str_pop_back_char(Str *str);
@@ -63,6 +65,7 @@ ErrDecl str_fmt_line(Str *line, const Str *str, size_t *i0);
 ErrDecl str_get_str(Str *str);
 
 int str_cmp(const Str *a, const Str *b);
+int str_cmp_ci(const Str *a, const Str *b);
 size_t str_count_overlap(const Str *a, const Str *b, bool ignorecase);
 size_t str_find_substring(const Str *str, const Str *sub);
 size_t str_find_any(const Str *str, const Str *any);

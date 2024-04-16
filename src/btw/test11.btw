@@ -1,0 +1,9 @@
+[a]
+[empty] {}
+
+![some text](alinkorsomething)
+
+[a] {
+description of a
+}
+
