@@ -818,6 +818,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
             }
 #endif
         }
+        getchar();
     }
 
 clean:

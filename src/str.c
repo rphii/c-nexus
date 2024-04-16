@@ -78,6 +78,14 @@ void str_trim(Str *str) //{{{
 
 // pseudo directory {{{
 
+char *str_cstr(Str *str) {
+    Str buf = {0};
+    TRYF(str_fmt, &buf, "%.*s", STR_F(str));
+    return str_iter_begin(&buf);
+error:
+    return 0;
+}
+
 inline int str_fmt_va(Str *str, const char *format, va_list argp) //{{{
 {
     ASSERT_ARG(str);

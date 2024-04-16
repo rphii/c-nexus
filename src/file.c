@@ -6,6 +6,28 @@
 /* PUBLIC FUNCTION IMPLEMENTATIONS ********************************************/
 /******************************************************************************/
 
+#if defined(PLATFORM_WINDOWS)
+#else
+#include <sys/stat.h>
+#endif
+
+int file_is_dir(Str *filename)
+{
+#if defined(PLATFORM_WINDOWS)
+    ASSERT("not implemented");
+#else
+    struct stat s;
+    char *path = str_cstr(filename);
+    if(path) {
+        int r = stat(path, &s);
+        free(path);
+        if(r) return 0;
+        return S_ISDIR(s.st_mode);
+    }
+#endif
+    return 0;
+}
+
 int file_fp_read(FILE *file, Str *content)
 {
     if(!file) THROW("invalid filename");

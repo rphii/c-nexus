@@ -11,6 +11,8 @@
 /* PUBLIC FUNCTION PROTOTYPES *************************************************/
 /******************************************************************************/
 
+int file_is_dir(Str *filename);
+
 #define ERR_FILE_STR_READ "failed to read file"
 #define file_str_read_ERR(filename, content) "failed reading file '%.*s'", STR_F(filename)
 ErrDecl file_str_read(Str *filename, Str *content);

@@ -638,13 +638,21 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
     TRYF(str_fmt_basename, &btw->basename, filename);
     TRYF(str_fmt_ext, &btw->ext, filename);
 
-    if(str_cmp(&btw->ext, &STR(".btw"))) {
-        // TODO make a flag for this?
-        //INFO("incorrect extension '%.*s', parsing '%.*s' anyways", STR_F(&btw->ext), STR_F(filename));
+    if(file_is_dir(filename)) {
+        int recursive = 0; // TODO make a flag for this
+        INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
+    } else {
+        bool skip = false;
+        if(str_cmp(&btw->ext, &STR(".btw1"))) {
+            // TODO make a flag for this?
+            skip = true;
+            INFO("incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
+        } 
+        if(!skip) {
+            TRYF(file_str_read, filename, &btw->content);
+            str_trim(&btw->content);
+        }
     }
-
-    TRYF(file_str_read, filename, &btw->content);
-    str_trim(&btw->content);
 
     return 0;
 error:
@@ -658,8 +666,10 @@ ErrDecl btw_parse_file_nofree(Nexus *nexus, Str *filename, Btw *btw) //{{{
     ASSERT_ARG(btw);
 
     TRYF(btw_file_prepare, nexus, filename, btw);
-    TRYF(btw_lex, &btw->items, &btw->content);
-    TRYF(btw_parse, nexus, btw);
+    if(str_length(&btw->content)) {
+        TRYF(btw_lex, &btw->items, &btw->content);
+        TRYF(btw_parse, nexus, btw);
+    }
     /* after prepare we have:
      * - raw content
      * - root note title (basename)
