@@ -824,6 +824,13 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
         }
         //getchar();
     }
+    /* trim all descriptions */
+    for(size_t i = 0; i < (1ULL << (nexus->nodes.width - 1)); ++i) {
+        for(size_t j = 0; j < nexus->nodes.buckets[i].len; ++j) {
+            Node *node = nexus->nodes.buckets[i].items[j];
+            str_trim(&node->desc);
+        }
+    }
 
 clean:
     btw_free(&btw);

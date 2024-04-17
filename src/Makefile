@@ -5,10 +5,10 @@ CC      := gcc
 CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   -Wno-unused-parameter \
 		   -DPROC_COUNT=$(shell nproc --all) \
+		   -O3 -march=native \
+		   ##############\
 		   -rdynamic -Og -ggdb3 \
 		   -fsanitize=address -rdynamic \
-		   ##############\
-		   -O2 -march=native \
 		   -Wconversion \
 		   -pg -rdynamic \
 		   -O3 -march=native \
@@ -27,9 +27,9 @@ CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
+		   ##############\
 		   -rdynamic -ggdb3 \
 		   -fsanitize=address -rdynamic \
-		   ##############\
 		   -rdynamic -Og -ggdb3 \
 		   -pg -rdynamic \
 		   -fsanitize=address \

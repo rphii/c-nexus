@@ -643,8 +643,8 @@ notitle:
         //}
 
         //printf("done\n");getchar();
-        str_free(&pending);
 clean:
+        str_free(&pending);
         return err;
 error:
         ERR_CLEAN;
@@ -682,10 +682,10 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
         //INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
     } else {
         bool skip = false;
-        if(str_cmp(&btw->ext, &STR(".btw1"))) {
+        if(str_cmp(&btw->ext, &STR(".md"))) {
             // TODO make a flag for this?
             skip = true;
-            INFO("incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
+            //INFO("incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
         }
         if(!skip) {
             TRYF(file_str_read, filename, &btw->content);

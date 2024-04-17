@@ -435,6 +435,19 @@ size_t str_rch(const Str *str, char ch, size_t n) //{{{
     return str_length(str);
 } //}}}
 
+size_t str_rnch(const Str *str, char ch, size_t n) {
+    ASSERT_ARG(str);
+    size_t ni = 0;
+    for(size_t i = str_length(str); i > 0; --i) {
+        char c = str_get_at(str, i - 1);
+        if(c != ch) {
+            if(ni == n) return i - 1;
+            ++ni;
+        }
+    }
+    return str_length(str);
+}
+
 size_t str_count_ch(const Str *str, char ch) {/*{{{*/
     ASSERT_ARG(str);
     size_t result = 0;
