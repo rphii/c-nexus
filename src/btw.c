@@ -300,10 +300,10 @@ ErrDecl btw_parse_is_scope(VBtwLex *items, size_t i0, size_t *len, Btw *btw) {/*
             }
         }
         ++index;
-        if(level) valid = true;
+        if(level > 0) valid = true;
     } while(level > 0 && index < vbtwlex_length(items));
     if(level > 0) { err_scope = true; THROW("brackets { or } mismatch of %i levels on line %zu:", level, line); }
-    if(valid) {
+    if(level == 0 && valid) {
         //printf("  ..scope len %zu (%zu-%zu)\n", index-i0, index, i0);
         *len = (index - i0);
     }
@@ -469,7 +469,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         size_t note_len = 0, note_len2 = 0;
         TRYF(btw_parse_is_note, items, index, &note_len, btw);
         if(note_len) {
-                /////printf(" !!! NOTE (%zu) !!!\n", note_len);
+            /////printf(" !!! NOTE (%zu) !!!\n", note_len);
             // TODO: parse note; update context -> get title; store title+note_end
             TRY(vsize_push_back(&btw->indices, index + note_len - 1), ERR_VEC_PUSH_BACK);
             TRYF(btw_parse_note, btw, index, &pending, &note_len2);
@@ -491,7 +491,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                     Str *p = &vbtwlex_get_at(&btw->items, index)->str;
                     TRYF(str_fmt, &pending, "%.*s", STR_F(p));
                 }
-        }}{{
+            }}{{
 #if 0
 
                 Str *title = vstr_get_back(&titles);
@@ -513,55 +513,92 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                 printf("FMT(%.*s)%.*s\n", STR_F(&fill->title), STR_F(&item->str));
 #endif
             }
-            /* add pending + link */
-            //printf("  link len1 %zu\n", vstr_length(&btw->links));
-                if(!vstr_length(&btw->titles)) THROW("expecting titles... but have none!");
-                Str *title = vstr_get_back(&btw->titles);
-                //printf(" TITLE: %.*s\n", STR_F(title));
-                if(!str_length(title)) goto notitle;
-                Node tempnode = {
-                    .title = *title
-                };
-                if(!tnode_has(&nexus->nodes, &tempnode)) {
-                    TRYF(node_create, &tempnode, title, CMD_NONE, 0, ICON_NONE);
-                    tnode_add(&nexus->nodes, &tempnode);
-                    //printf("ADDED: %.*s\n", STR_F(&node.title));
-                }
-                size_t i = 0, j = 0;
-                if(tnode_find(&nexus->nodes, &tempnode, &i, &j)) {
-                    THROW(ERR_UNREACHABLE);
-                }
-                Node *fill = nexus->nodes.buckets[i].items[j];
-                //BtwLex *item = vbtwlex_get_at(&btw->items, index);
-            if(str_length(&pending)) {
-                TRYF(str_fmt, &fill->desc, "%.*s", STR_F(&pending));
-            }
-            //printf("  link len2 %zu\n", vstr_length(&btw->links));
-                //str_trim(&fill->desc);
-                //TRYF(str_fmt, &fill->desc, "\n");
-                /* do the links */
-                for(size_t i_link = 0; i_link < vstr_length(&btw->links); ++i_link) {
-                    Str *s_link = vstr_get_at(&btw->links, i_link);
-                    if(str_length(s_link)) {
-                        Node n_link = {
-                            .title = *s_link
-                        };
-                        //printf("LINK %*.s <<>> %.*s\n", STR_F(&fill->title), STR_F(&n_link.title));
-                        TRYF(nexus_link, nexus, fill, &n_link);
-                    }
-                }
-notitle:
-                vstr_clear(&btw->links);
-                //printf("FMT(%.*s)%.*s\n", STR_F(&fill->title), STR_F(pending));
+        /* add pending + link */
+        //printf("  link len1 %zu\n", vstr_length(&btw->links));
+        if(!vstr_length(&btw->titles)) THROW("expecting titles... but have none!");
+        Str *title = vstr_get_back(&btw->titles);
+        if(!str_length(title)) goto notitle;
+        Node tempnode = {
+            .title = *title
+        };
+        if(!tnode_has(&nexus->nodes, &tempnode)) {
+            TRYF(node_create, &tempnode, title, CMD_NONE, 0, ICON_NONE);
+            tnode_add(&nexus->nodes, &tempnode);
+            //printf("ADDED: %.*s\n", STR_F(&node.title));
         }
+        size_t i = 0, j = 0;
+        if(tnode_find(&nexus->nodes, &tempnode, &i, &j)) {
+            THROW(ERR_UNREACHABLE);
+        }
+        Node *fill = nexus->nodes.buckets[i].items[j];
+        //BtwLex *item = vbtwlex_get_at(&btw->items, index);
+        if(str_length(&pending)) {
+            if(!str_length(&fill->desc)) str_triml(&pending);
+            else {
+#if 0
+                size_t start = str_find_nws(&pending);
+                size_t start2 = str_rch(&STR_IE(pending, start), '\n', 0);
+                pending.first = (start2 < str_length(&STR_IE(pending, start))) ?
+                    start2 : pending.first;
+#endif
+            }
+            {
+                /* trim ending newlines, up to max. 1 */
+                size_t end = str_find_rnws(&fill->desc);
+                size_t end2 = str_ch(&STR_I0(fill->desc, end), '\n', 2) + end;
+                size_t start = str_find_nws(&pending);
+                size_t start2 = str_rch(&STR_IE(pending, start), '\n', 1);
+                if(start2 >= str_length(&STR_IE(pending, start))) start2 = 0;
+                //printf(" start %zu, start2 %zu: [[[%.*s]]]\n", start, start2, STR_F(&STR_IE(pending, start)));
+                //printf(" e %zu/%zu .. s %zu/%zu\n", end2+fill->desc.first, fill->desc.last, start2+pending.first, pending.first);
+                if((fill->desc.last != fill->desc.first + end2) || (start2)) {
+                    fill->desc.last = fill->desc.first + end2;
+                    pending.first += start2;
+                }
+
+                //if(!start2) str_triml(&pending);
+
+                ///fill->desc.last = fill->desc.first + end2;
+                //printf(" fill last %zu <<>> %zu\n", pending.last, pending.first + end2);
+            }
+            TRYF(str_fmt, &fill->desc, "%.*s", STR_F(&pending));
+            //printf(" (%.*s) [%.*s]\n", STR_F(title), STR_F(&pending));
+        }
+        //printf("  link len2 %zu\n", vstr_length(&btw->links));
+        //str_trim(&fill->desc);
+        //TRYF(str_fmt, &fill->desc, "\n");
+        /* do the links */
+        for(size_t i_link = 0; i_link < vstr_length(&btw->links); ++i_link) {
+            Str *s_link = vstr_get_at(&btw->links, i_link);
+            if(str_length(s_link)) {
+                Node n_link = {
+                    .title = *s_link
+                };
+                //printf("LINK %*.s <<>> %.*s\n", STR_F(&fill->title), STR_F(&n_link.title));
+                TRYF(nexus_link, nexus, fill, &n_link);
+            }
+        }
+notitle:
+        vstr_clear(&btw->links);
+        //printf("FMT(%.*s)%.*s\n", STR_F(&fill->title), STR_F(pending));
+            }
         ++index;
         while(index >= vsize_get_back(&btw->indices)) { // TODO: what's cleaner? while or the if?
-        /*if(index >= vsize_get_back(&btw->indices)) {*/
+            /*if(index >= vsize_get_back(&btw->indices)) {*/
             // TODO trim the current node... or something... and append a newline??
-                size_t iE = vsize_get_back(&btw->indices);
+            size_t iE = vsize_get_back(&btw->indices);
+            Str s_child = {0}, *s_parent = 0;
+            Node child = {0}, parent = {0};
             vsize_pop_back(&btw->indices, 0);
-            vstr_pop_back(&btw->titles, 0);
+            vstr_pop_back(&btw->titles, &s_child);
             if(!vsize_length(&btw->indices)) break;
+            if(str_length(&s_child)) {
+                s_parent = vstr_get_back(&btw->titles);
+                child.title = s_child;
+                parent.title = *s_parent;
+                TRYF(nexus_link, nexus, &parent, &child);
+                //printf("  link ... %.*s ... %.*s\n", STR_F(&s_child), STR_F(s_parent));
+            }
             if(vsize_length(&btw->indices)) {
                 //printf("   CONTEXT %.*s\n", STR_F(vstr_get_back(&btw->titles)));
                 /* post-cleanup for scopes! get rid of '}' */
@@ -599,18 +636,18 @@ notitle:
 #endif
         //size_t ws = btw_parse_is_ws(items, index+link);
         //printf("link %zu, ws %zu\n", link, ws);
-    }
-    //for(size_t i = 0; i < vbtwlex_length(items); ++i) {
-    //    BtwLex *item = vbtwlex_get_at(items, i);
-    //    Str *title = vstr_get_back(&titles);
-    //}
+        }
+        //for(size_t i = 0; i < vbtwlex_length(items); ++i) {
+        //    BtwLex *item = vbtwlex_get_at(items, i);
+        //    Str *title = vstr_get_back(&titles);
+        //}
 
-    //printf("done\n");getchar();
-    str_free(&pending);
+        //printf("done\n");getchar();
+        str_free(&pending);
 clean:
-    return err;
+        return err;
 error:
-    ERR_CLEAN;
+        ERR_CLEAN;
 } //}}}
 
 void btw_free(Btw *btw) { //{{{
@@ -622,6 +659,7 @@ void btw_free(Btw *btw) { //{{{
     vsize_free(&btw->indices);
     vstr_free(&btw->titles);
     vstr_free(&btw->links);
+    vstr_free(&btw->dirfiles);
 } //}}}
 
 ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
@@ -640,14 +678,15 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
 
     if(file_is_dir(filename)) {
         int recursive = 0; // TODO make a flag for this
-        INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
+        TRYF(file_dir_read, filename, &btw->dirfiles);
+        //INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
     } else {
         bool skip = false;
         if(str_cmp(&btw->ext, &STR(".btw1"))) {
             // TODO make a flag for this?
             skip = true;
             INFO("incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
-        } 
+        }
         if(!skip) {
             TRYF(file_str_read, filename, &btw->content);
             str_trim(&btw->content);
@@ -659,7 +698,7 @@ error:
     return -1;
 } //}}}
 
-ErrDecl btw_parse_file_nofree(Nexus *nexus, Str *filename, Btw *btw) //{{{
+ErrDecl btw_parse_file(Nexus *nexus, Str *filename, Btw *btw) //{{{
 {
     ASSERT_ARG(nexus);
     ASSERT_ARG(filename);

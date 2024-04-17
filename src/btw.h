@@ -41,6 +41,7 @@ typedef struct Btw {
     VBtwLex items;
     VStr links;
     VStr titles;
+    VStr dirfiles;
     VSize indices;
 } Btw;
 
@@ -68,8 +69,8 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw);
 
 #define btw_file_prepare_ERR(nexus, filename, btw) "failed preparing file '%.*s'", STR_F(filename)
 ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw);
-#define btw_parse_file_nofree_ERR(nexus, filename, btw) "failed parsing file '%.*s'", STR_F(filename)
-ErrDecl btw_parse_file_nofree(struct Nexus *nexus, Str *filename, Btw *btw);
+#define btw_parse_file_ERR(nexus, filename, btw) "failed parsing file '%.*s'", STR_F(filename)
+ErrDecl btw_parse_file(struct Nexus *nexus, Str *filename, Btw *btw);
 
 
 #define BTW_H

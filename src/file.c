@@ -86,3 +86,32 @@ int file_str_write(Str *filename, Str *content)
 }
 #endif
 
+#if defined(PLATFORM_WINDOWS)
+#else
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
+
+ErrDecl file_dir_read(Str *dirname, VStr *files)
+{
+    int err = 0;
+    DIR *dir = 0;
+    struct dirent *dp = 0;
+    if ((dir = opendir(dirname->s)) == NULL) {
+        THROW("can't open directory '%s'", dirname->s);
+    }
+    while ((dp = readdir(dir)) != NULL)
+    {
+        Str filename = {0};
+        if(!str_cmp(&STR_L(dp->d_name), &STR(".")) || !str_cmp(&STR_L(dp->d_name), &STR(".."))) continue;
+        TRYF(str_fmt, &filename, "%s/%s", dirname->s, dp->d_name);
+        //printf("FILE: %.*s\n", STR_F(&filename));
+        TRY(vstr_push_back(files, &filename), ERR_VEC_PUSH_BACK);
+    }
+clean:
+    if(dir) closedir(dir);
+    return err;
+error: ERR_CLEAN;
+}
+

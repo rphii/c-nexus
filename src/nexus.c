@@ -643,7 +643,7 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
         TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
         //THROW("node does not exist in nexus: '%.*s'", STR_F(&src->title));
     }
-    if(!str_cmp(&src->title, &dest->title)) return 0;
+    if(!str_cmp_ci(&src->title, &dest->title)) return 0;
     if(!tnode_has(&nexus->nodes, dest)) {
         Node temp;
         TRY(node_copy(&temp, dest), ERR_NODE_COPY);
@@ -783,7 +783,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(files, ERR_NULL_ARG);
     int err = 0;
-    Btw parse = {0};
+    Btw btw = {0};
     if (!vsstr_length(files)) {
         Node *root;
         TRY(nexus_insert_node(nexus, &root, &STR(NEXUS_ROOT), CMD_NONE, &STR("Welcome to " F("c-nexus", BOLD) "\n\n"
@@ -801,7 +801,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
     } else {
         for(size_t i = 0; i < vsstr_length(files); ++i) {
             Str *filename = vsstr_get_at(files, i);
-            TRYF(btw_parse_file_nofree, nexus, filename, &parse);
+            TRYF(btw_parse_file, nexus, filename, &btw);
 #if 0
             char *ext = strrchr(file->s, '.');
             if((ext && (ext - file->s > 0)) || !ext) {
@@ -818,11 +818,15 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
             }
 #endif
         }
-        getchar();
+        for(size_t i = 0; i < vstr_length(&btw.dirfiles); ++i) {
+            Str *filename = vstr_get_at(&btw.dirfiles, i);
+            TRYF(btw_parse_file, nexus, filename, &btw);
+        }
+        //getchar();
     }
 
 clean:
-    btw_free(&parse);
+    btw_free(&btw);
     return err;
 error:
     ERR_CLEAN;

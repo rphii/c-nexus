@@ -411,6 +411,16 @@ size_t str_find_nws(const Str *str) { //{{{
     return str_length(str);
 } //}}}
 
+// find reverse non-whitespace
+size_t str_find_rnws(const Str *str) { //{{{
+    ASSERT_ARG(str);
+    for(size_t i = str_length(str); i > 0; --i) {
+        char c = str_get_at(str, i - 1);
+        if(!isspace(c)) return i - 1;
+    }
+    return str_length(str);
+} //}}}
+
 size_t str_rch(const Str *str, char ch, size_t n) //{{{
 {
     ASSERT_ARG(str);

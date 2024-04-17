@@ -27,7 +27,7 @@ VEC_INCLUDE(Str, str, char, BY_VAL);
 #define STR_F(s)                (int)str_length(s), str_iter_begin(s)
 
 #define STR_I0(str, i0)         (const Str){.s = (str).s, .first = (str).first + i0, .last = (str).last}
-#define STR_IE(str, iE)         (const Str){.s = (str).s, .first = (str).first, .last = (str).last - iE}
+#define STR_IE(str, iE)         (const Str){.s = (str).s, .first = (str).first, .last = (str).first + iE}
 
 #define ERR_STR_CAT_BACK    "failed appending string to other string"
 #define ERR_STR_FMT         "failed string formatting"
@@ -77,6 +77,7 @@ size_t str_ch(const Str *str, char ch, size_t n);
 size_t str_ch_pair(const Str *str, char c1);
 size_t str_find_ws(const Str *str);
 size_t str_find_nws(const Str *str);
+size_t str_find_rnws(const Str *str);
 size_t str_rch(const Str *str, char ch, size_t n);
 size_t str_count_ch(const Str *str, char ch);
 size_t str_irch(const Str *str, size_t iE, char ch, size_t n);
