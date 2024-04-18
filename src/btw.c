@@ -380,7 +380,7 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, size_t *len)
                     int iconlen = btw->icons.len++;
                     btw->icons.items[iconlen].id = ICON_BUNDLE_STR;
                     TRYF(str_fmt, &btw->icons.items[iconlen].str, F("%.*s", FG_YL_B), STR_F(p));
-                } //else {
+                } //else { /*TODO decide if I want to else this or not*/
                     TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
                     if(!(item->flag & BTW_FLAG_NOLINK)) {
                         //printf("  LINK: %.*s\n", STR_F(p));
@@ -643,12 +643,14 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
         //INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
     } else {
         bool skip = false;
-#if 0
+#if 1
         const Str *ok[] = {
-            &STR(".btw1"), &STR(".md")
+            &STR(".btw1"), &STR(".md"),// &STR(".txt"),
         };
-#endif
+        if(str_cmp_ci_any(&btw->ext, ok, sizeof(ok)/sizeof(*ok))) {
+#else
         if(str_cmp_ci(&btw->ext, &STR(".btw1"))) {
+#endif
             // TODO make a flag for this?
             skip = true;
             INFO("incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));

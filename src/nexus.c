@@ -624,18 +624,21 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
     ASSERT_ARG(nexus);
     ASSERT_ARG(node);
     /* TODO: maybe ... not make this a ... throw ... but ... like ... do it proper */
-    if(node->icons.len >= ICON_BUNDLE_MAX) THROW("too many icons: %u/%u", node->icons.len, ICON_BUNDLE_MAX);
+    if(node->icons.len >= ICON_BUNDLE_MAX) {
+        return 0;
+        THROW("too many icons: %u/%u", node->icons.len, ICON_BUNDLE_MAX);
+    }
     /* do some tagging */
     IconBundle *ib = &node->icons.items[node->icons.len++];
     switch(icon.id) {
         case ICON_BUNDLE_NONE: break;
         case ICON_BUNDLE_STR: {
             TRYF(str_fmt, &ib->str, "%.*s", STR_F(&icon.str));
-            //INFO("Add icon %.*s ... %.*s", STR_F(&ib->str), STR_F(&node->title));
+            INFO("Add icon %.*s ... %.*s", STR_F(&ib->str), STR_F(&node->title));
         } break;
         case ICON_BUNDLE_TIME: {
             ib->time = icon.time;
-            //INFO("Add icon %s ... %.*s", icon_str(ib->time), STR_F(&node->title));
+            INFO("Add icon %s ... %.*s", icon_str(ib->time), STR_F(&node->title));
         } break;
         default: THROW("unknown id: %u", icon.id);
     }
@@ -657,17 +660,17 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
     if(!found) {
         TRY(tnode_add(&nexus->nodes, temp), ERR_LUTD_ADD);
     }
-    //printf("ICONFIND '%.*s' -> %s\n", STR_F(&temp->title), found ? "found" : "new node");
-    //printf("ICONFIND '%.*s' -> %s\n", STR_F(&temp->title), istag ? "istag" : "new icon");
+    printf("ICONFIND '%.*s' -> %s\n", STR_F(&temp->title), found ? "found" : "new node");
+    printf("ICONFIND '%.*s' -> %s\n", STR_F(&temp->title), istag ? "istag" : "new icon");
     TRY(tnode_find(&nexus->nodes, temp, &ii, &jj), ERR_LUTD_FIND ": '%.*s'", STR_F(&temp->title));
     Node *iconfound = nexus->nodes.buckets[ii].items[jj];
     //printf("%zu/%zu\n", ii, jj);
     //printf("%.*s is %s\n", STR_F(&temp->title), istag ? "a tag!" : "no tag");
-    if(!found) {
+    if(!found || !istag) {
         IconBundle ciscool = (IconBundle){.id = ICON_BUNDLE_TIME, .time = ICON_TAG};
         TRYF(nexus_tag_node, nexus, iconfound, temp, ciscool); /* dangerous !*/
     }
-    if(!istag) {
+    if(!istag || !found) {
         //printf("ADD %.*s TO TAGS!\n", STR_F(&iconfound->title));
         TRY(trnode_add(&nexus->icons, iconfound), ERR_LUTD_ADD);
         //if(!(icon.id == ICON_BUNDLE_TIME && icon.time == ICON_TAG)) {

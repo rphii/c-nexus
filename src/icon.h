@@ -30,6 +30,7 @@ typedef int64_t IconTime;
 typedef int64_t Icon;
 
 #define ICON_BUNDLE_MAX     8
+//#define ICON_BUNDLE_MAX     1024
 
 #if 0
 typedef struct IconBundle {
