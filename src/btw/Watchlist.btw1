@@ -8,8 +8,7 @@ An example watchlist
 [dropped]{}
 
 [Series] {
-    [Game of Thrones] {
-        [seen]:
+    [Seen]: [Game of Thrones] {
         I really liked it, the music, story, and characters are all to my liking.
         Except for the last two episodes, bruh
     }
@@ -21,7 +20,7 @@ An example watchlist
 [Anime] {
     Text Above
 
-    [seen]: [One Punch Man] {
+    [Seen]: [One Punch Man] {
         A fun, bingeable anime. Especially the first season, which is 12 episodes (~4 hours, if you're fast)
         The artstyle in the second season threw me off at first, especially having seen the 1st one multiple times.
 

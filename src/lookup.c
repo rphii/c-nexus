@@ -7,6 +7,7 @@
 static inline size_t tnode_hash(Node *node)
 {
     size_t hash = str_hash_ci(&node->title);
+    //printf("Node '%.*s' hash %zx\n", STR_F(&node->title), hash);
     return hash;
 }
 
@@ -46,6 +47,7 @@ static inline int tnodeicon_cmp(Node *a, Node *b)
 }
 
 LUTD_IMPLEMENT(TNode, tnode, Node, BY_REF, tnode_hash, tnode_cmp, node_free);
+LUTD_IMPLEMENT(TrNode, trnode, Node, BY_REF, tnode_hash, tnode_cmp, 0);
 LUTD_IMPLEMENT(TNodeIcon, tnodeicon, Node, BY_REF, tnodeicon_hash, tnodeicon_cmp, node_free);
 
 void tnode_sort_sub(TNode *tnode)

@@ -5,6 +5,8 @@
 #include "str.h"
 #include "err.h"
 
+#define ICON_LEAF_STR   "-"
+
 typedef enum {
     ICON_NONE = INT64_MIN,
     /* !!! icons below !!! */

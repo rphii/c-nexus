@@ -38,7 +38,7 @@ ErrDecl icon_fmt_tag(Str *out, IconBundle icon) {/*{{{*/
             }
         } break;
         case ICON_BUNDLE_STR: {
-            TRYF(str_copy, out, &icon.str);
+            TRYF(str_fmt, out, "%.*s", STR_F(&icon.str));
         } break;
         case ICON_BUNDLE_NONE: break;
         default: THROW("wrong icon id: %u", icon.id);
@@ -64,7 +64,7 @@ ErrDecl icon_fmt(Str *out, char *lpad, IconBundle icon) {/*{{{*/
             }
         } break;
         case ICON_BUNDLE_STR: {
-            TRYF(str_copy, out, &icon.str);
+            TRYF(str_fmt, out, "%s%.*s", pad, STR_F(&icon.str));
         } break;
         case ICON_BUNDLE_NONE: break;
         default: THROW("wrong icon id: %u", icon.id);
@@ -79,13 +79,13 @@ ErrDecl icons_fmt(Str *out, VIcon *icons) {/*{{{*/
     ASSERT_ARG(icons);
     char *pad = "\0 ";
     size_t len = str_length(out);
-    printf("FORMATTING %u icons\n", icons->len);
+    //printf("FORMATTING %u icons\n", icons->len);
     for(size_t i = 0; i < (icons->len < ICON_BUNDLE_MAX ? icons->len : ICON_BUNDLE_MAX); ++i) {
         TRYF(icon_fmt, out, pad, icons->items[i]);
         if(*pad != ' ' && str_length(out) != len) ++pad;
     }
     if(str_length(out) == len) {
-        TRYF(str_fmt, out, "🍃"); // TODO make this not hard coded
+        TRYF(str_fmt, out, "%s", ICON_LEAF_STR);// "🍃");
     }
     return 0;
 error:

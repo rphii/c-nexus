@@ -25,13 +25,14 @@ int main(int argc, const char **argv)
     INFO("Building the Nexus...");
     TRY(nexus_arg(&nexus, &arg), ERR_NEXUS_ARG);
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
+    INFO("Successfully initialized");
     getchar();
     //goto clean;
 
     while(!nexus.quit) {
         str_clear(&p);
-        TRY(view_fmt(&nexus, &p, &nexus.view), ERR_VIEW_FMT);
         platform_clear();
+        TRY(view_fmt(&nexus, &p, &nexus.view), ERR_VIEW_FMT);
         printf("%.*s", STR_F(&p));
         int key = platform_getch();
         TRY(nexus_userinput(&nexus, key), ERR_NEXUS_USERINPUT);

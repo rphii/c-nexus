@@ -10,8 +10,9 @@
 
 typedef struct Nexus {
     TNode nodes;
-    TNodeIcon nodesicon;
-    Node nodeicon;
+    TrNode icons;
+    //TNodeIcon nodesicon;
+    //Node nodeicon;
     VView views;
     View view;
     bool quit;

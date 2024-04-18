@@ -79,7 +79,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             TRY(node_fmt_sub(out, findings, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_ICON: {
-            Node *current = nexus->view.current;
+            Node *current = &nexus->tags;
             TRY(node_fmt(out, current, nexus->config.show_desc, "", 0, 0, false), ERR_NODE_FMT);
             TRY(str_fmt(out, "\n"), ERR_STR_FMT);
             TRY(node_fmt_sub(out, current, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, view->sub_sel), ERR_NODE_FMT_SUB);

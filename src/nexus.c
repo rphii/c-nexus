@@ -196,9 +196,11 @@ int nexus_init(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     TRY(tnode_init(&nexus->nodes, 12), ERR_LUTD_INIT);
+    TRY(trnode_init(&nexus->icons, 8), ERR_LUTD_INIT);
     TRY(nexus_build(nexus, nexus->config.files), ERR_NEXUS_BUILD);
     tnode_sort_sub(&nexus->nodes);
     /* set up view */
+    TRYF(str_fmt, &nexus->tags.title, "List of tags");
     View *view = &nexus->view;
     view->id = nexus->config.view;
     switch(view->id) {
@@ -217,7 +219,7 @@ int nexus_init(Nexus *nexus) //{{{
             TRY(!(view->search_on = nexus_get(nexus, title)), ERR_NEXUS_GET);
         } break;
         case VIEW_ICON: {
-            view->current = &nexus->nodeicon;
+            view->current = &nexus->tags;
         } break;
         case VIEW_NONE: THROW("view id should not be NONE");
         default: THROW("unknown view id: %u", view->id);
@@ -235,12 +237,13 @@ void nexus_free(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     tnode_free(&nexus->nodes);
-    tnodeicon_free(&nexus->nodesicon);
+    trnode_free(&nexus->icons);
+    //tnodeicon_free(&nexus->nodesicon);
     vview_free(&nexus->views);
     node_free(&nexus->findings);
     node_free(&nexus->tags);
     view_free(&nexus->view);
-    node_free(&nexus->nodeicon);
+    //node_free(&nexus->nodeicon);
     str_free(&nexus->config.entry);
 } //}}}
 
@@ -627,10 +630,12 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
     switch(icon.id) {
         case ICON_BUNDLE_NONE: break;
         case ICON_BUNDLE_STR: {
-            TRYF(str_copy, &ib->str, &icon.str);
+            TRYF(str_fmt, &ib->str, "%.*s", STR_F(&icon.str));
+            //INFO("Add icon %.*s ... %.*s", STR_F(&ib->str), STR_F(&node->title));
         } break;
         case ICON_BUNDLE_TIME: {
             ib->time = icon.time;
+            //INFO("Add icon %s ... %.*s", icon_str(ib->time), STR_F(&node->title));
         } break;
         default: THROW("unknown id: %u", icon.id);
     }
@@ -647,31 +652,35 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
     str_clear(&temp->title);
     TRYF(icon_fmt_tag, &temp->title, icon);
     if(!str_length(&temp->title)) return 0;
-    //printf("ICONFIND '%.*s'\n", STR_F(&temp->title));
-    bool found = !tnode_find(&nexus->nodes, temp, &ii, &jj);
+    bool found = !tnode_find(&nexus->nodes, temp, &ii, &jj); /* TODO: this is not a reliable way to check if an icon already exists or not. */
+    bool istag = trnode_has(&nexus->icons, temp);
     if(!found) {
         TRY(tnode_add(&nexus->nodes, temp), ERR_LUTD_ADD);
     }
+    //printf("ICONFIND '%.*s' -> %s\n", STR_F(&temp->title), found ? "found" : "new node");
+    //printf("ICONFIND '%.*s' -> %s\n", STR_F(&temp->title), istag ? "istag" : "new icon");
     TRY(tnode_find(&nexus->nodes, temp, &ii, &jj), ERR_LUTD_FIND ": '%.*s'", STR_F(&temp->title));
-    switch(icon.id) {
-        case ICON_BUNDLE_NONE: break;
-        case ICON_BUNDLE_STR: {
-        } break;
-        case ICON_BUNDLE_TIME: { break; }
-    }
     Node *iconfound = nexus->nodes.buckets[ii].items[jj];
+    //printf("%zu/%zu\n", ii, jj);
+    //printf("%.*s is %s\n", STR_F(&temp->title), istag ? "a tag!" : "no tag");
+    if(!found) {
+        IconBundle ciscool = (IconBundle){.id = ICON_BUNDLE_TIME, .time = ICON_TAG};
+        TRYF(nexus_tag_node, nexus, iconfound, temp, ciscool); /* dangerous !*/
+    }
+    if(!istag) {
+        //printf("ADD %.*s TO TAGS!\n", STR_F(&iconfound->title));
+        TRY(trnode_add(&nexus->icons, iconfound), ERR_LUTD_ADD);
+        //if(!(icon.id == ICON_BUNDLE_TIME && icon.time == ICON_TAG)) {
+        TRY(vrnode_push_back(&nexus->tags.outgoing, iconfound), ERR_VEC_PUSH_BACK);
+        //}
+    }
     if(found) {
         str_clear(&temp->title); // TODO this is a bit whack (clearing AFTER we find?)
     } else {
         str_zero(&temp->title);
-        IconBundle ciscool = (IconBundle){.id = ICON_BUNDLE_TIME, .time = ICON_TAG};
-        if(!(icon.id == ICON_BUNDLE_TIME && icon.time == ICON_TAG)) {
-            TRYF(nexus_tag_node, nexus, iconfound, temp, ciscool); /* dangerous !*/
-            TRY(vrnode_push_back(&nexus->tags.outgoing, iconfound), ERR_VEC_PUSH_BACK);
-        }
     }
     if(!str_length(&iconfound->title)) THROW("i don't want to think about what's better right now; return 0 or throw?"); // TODO
-    //INFO("LINK %.*s ... %.*s", STR_F(&(*ref)->title), STR_F(&iconfound->title));
+    //INFO("Added Icon %.*s ... %.*s", STR_F(&iconfound->title), STR_F(&node->title));
     TRYF(nexus_link, nexus, iconfound, node);
     return 0;
 error:
@@ -713,7 +722,7 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
     }
     *ref = nexus->nodes.buckets[i].items[j];
     /* icon stuff */
-    printf("icons : %u for %.*s\n", icons->len, STR_F(&(*ref)->title));
+    //printf("icons : %u for %.*s\n", icons->len, STR_F(&(*ref)->title));
     for(int i = 0; i < ((icons->len < ICON_BUNDLE_MAX) ? icons->len : ICON_BUNDLE_MAX); ++i) {
         TRYF(nexus_tag_node, nexus, *ref, &iconfind, icons->items[i]);
     }
@@ -775,6 +784,15 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
             break;
         }
     }
+#if 0
+    for(size_t i = 0; i < vrnode_length(&ev_dest->incoming); ++i) {
+        Node *node = vrnode_get_at(&ev_dest->incoming, i);
+        if(!str_cmp_ci(&node->title, &ev_src->title)) {
+            duplicate = true;
+            break;
+        }
+    }
+#endif
     /* finally, add the nodes */
     if(!duplicate) {
         TRY(vrnode_push_back(&ev_src->outgoing, ev_dest), ERR_VEC_PUSH_BACK);
@@ -964,6 +982,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
         if(res > btw.stats.maxres) btw.stats.maxres = res;
         //printf("%zu bytes max. reserved\n", btw.maxres);
         //printf("read %u files\n", n);
+        INFO("Loaded %zu of %zu checked files", btw.stats.success, btw.stats.attempts);
         //getchar();
     }
     /* trim all descriptions */

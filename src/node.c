@@ -89,7 +89,7 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
         //IconStr iconstr = {0};
         //icon_fmt(iconstr, icon->time);
         TRYF(icons_fmt, out, &node->icons);
-        TRYF(str_fmt, out, " %.*s\n", STR_F(&node->title));
+        TRYF(str_fmt, out, " : %.*s\n", STR_F(&node->title));
     //}
     if(show_desc) {
         TRY(node_fmt_desc(out, node), ERR_NODE_FMT_DESC);
@@ -115,21 +115,32 @@ int node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t
     for(size_t i = 0; i < sO; i++) {
         Node *sub = vrnode_get_at(&node->outgoing, i);
         str_clear(&padtest);
+#if (NODE_SHOW_COUNT_IN_OUT)
         TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->outgoing)), ERR_STR_FMT);
         if(str_length(&padtest) > (size_t)paddingr) paddingr = (int)str_length(&padtest);
         str_clear(&padtest);
         TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->incoming)), ERR_STR_FMT);
         if(str_length(&padtest) > (size_t)paddingl) paddingl = (int)str_length(&padtest);
+#else
+        TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->outgoing)+vrnode_length(&sub->incoming)), ERR_STR_FMT);
+        if(str_length(&padtest) > (size_t)paddingl) paddingl = (int)str_length(&padtest);
+#endif
     }
     for(size_t i = 0; i < sI; i++) {
         Node *sub = vrnode_get_at(&node->incoming, i);
         str_clear(&padtest);
+#if (NODE_SHOW_COUNT_IN_OUT)
         TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->outgoing)), ERR_STR_FMT);
         if(str_length(&padtest) > (size_t)paddingr) paddingr = (int)str_length(&padtest);
         str_clear(&padtest);
         TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->incoming)), ERR_STR_FMT);
         if(str_length(&padtest) > (size_t)paddingl) paddingl = (int)str_length(&padtest);
+#else
+        TRY(str_fmt(&padtest, "%zu", vrnode_length(&sub->outgoing)+vrnode_length(&sub->incoming)), ERR_STR_FMT);
+        if(str_length(&padtest) > (size_t)paddingl) paddingl = (int)str_length(&padtest);
+#endif
     }
+    //printf("l %zu, r %zu\n", paddingl, paddingr);
     /* actually format */
     Node *sub_info = 0;
     size_t sub_sel2 = n > max_preview ? sub_sel + max_preview / 2 : 0;

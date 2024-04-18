@@ -380,14 +380,14 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, size_t *len)
                     int iconlen = btw->icons.len++;
                     btw->icons.items[iconlen].id = ICON_BUNDLE_STR;
                     TRYF(str_fmt, &btw->icons.items[iconlen].str, F("%.*s", FG_YL_B), STR_F(p));
-                } else {
+                } //else {
                     TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
                     if(!(item->flag & BTW_FLAG_NOLINK)) {
                         //printf("  LINK: %.*s\n", STR_F(p));
                         TRYF(str_copy, &copy, pending);
                         TRY(vstr_push_back(&btw->links, &copy), ERR_VEC_PUSH_BACK);
                     }
-                }
+                //}
             }
         }
         size_t delta = static_btw_pat_link[i_pat][0];
@@ -438,6 +438,8 @@ ErrDecl btw_parse_note(Btw *btw, size_t i0, Str *pending, size_t *len) {/*{{{*/
     }
     *len = (index - i0);
     TRY(vstr_push_back(&btw->titles, &p), ERR_VEC_PUSH_BACK);
+    //printf("PENDING => %.*s .. %.*s\n", STR_F(pending), STR_F(&p));
+    TRYF(str_fmt, pending, "%.*s", STR_F(&p));
     return 0;
 error:
     return -1;
@@ -469,9 +471,13 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             // TODO: parse note; update context -> get title; store title+note_end
             TRY(vsize_push_back(&btw->indices, index + note_len - 1), ERR_VEC_PUSH_BACK);
             TRYF(btw_parse_note, btw, index, &pending, &note_len2);
-            str_clear(&pending); // TODO: do I need those two clears?
-            str_clear(&pending);
-            index += (note_len2 - 1);
+            /* check if note is empty */
+            if(str_length(&pending)) {
+                index += (note_len2 - 1);
+            } else {
+                index += note_len - 1;
+            }
+            str_clear(&pending); // TODO: do I need this clear?
         } else {
             size_t link = btw_parse_is_link(items, index);
             if(link) {
@@ -480,6 +486,10 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                 size_t link_len = 0;
                 TRYF(btw_parse_link, btw, index, &pending, &link_len);
                 index += (link_len - 1);
+                /* clear tags */
+                for(int i_tag = 0; i_tag < btw->icons.len; ++i_tag) {
+                    str_clear(&btw->icons.items[i_tag].str); // TODO should probably have a function for this
+                }
                 //index += (link - 1);
             } else /* TODO: this else is temporary, until the thing above properly works */ {
                 /////printf(" !!! DEFAULT !!!\n");
@@ -543,6 +553,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             //printf("do tags ... %u\n", btw->icons.len);
             for(int i_tag = 0; i_tag < btw->icons.len; ++i_tag) {
                 TRYF(nexus_tag_node, nexus, fill, &nodeicon, btw->icons.items[i_tag]);
+                str_clear(&btw->icons.items[i_tag].str); // TODO should probably have a function for this
             }
             btw->icons.len = 0;
 notitle:
@@ -604,7 +615,6 @@ void btw_free(Btw *btw) { //{{{
     vsize_free(&btw->indices);
     vstr_free(&btw->titles);
     vstr_free(&btw->links);
-    printf("dirfiles len %zu\n", vstr_length(&btw->dirfiles));
     vstr_free(&btw->dirfiles);
 } //}}}
 
