@@ -67,7 +67,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
                 sub_sel = SIZE_MAX;
             }
             TRYF(str_fmt, out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming));//, iconstr, STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
-            TRYF(icon_fmt, out, view->search_on->icons);
+            TRYF(icons_fmt, out, view->search_on->icons);
 #if 0
             for(size_t i = 0; i < vicon_length(&view->search_on->icons); ++i) {
                 IconBundle icon = vicon_get_at(&view->search_on->icons, i);
@@ -79,7 +79,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             TRY(node_fmt_sub(out, findings, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, sub_sel), ERR_NODE_FMT_SUB);
         } break;
         case VIEW_ICON: {
-            Node *current = &nexus->nodeicon;
+            Node *current = nexus->view.current;
             TRY(node_fmt(out, current, nexus->config.show_desc, "", 0, 0, false), ERR_NODE_FMT);
             TRY(str_fmt(out, "\n"), ERR_STR_FMT);
             TRY(node_fmt_sub(out, current, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, view->sub_sel), ERR_NODE_FMT_SUB);

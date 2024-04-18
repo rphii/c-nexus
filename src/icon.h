@@ -9,6 +9,7 @@ typedef enum {
     ICON_NONE = INT64_MIN,
     /* !!! icons below !!! */
     ICON_ROOT,
+    ICON_TAG,
     ICON_DATE,
     ICON_NOTE,
     ICON_WIKI,
@@ -46,8 +47,13 @@ typedef IconBundle VIcon[ICON_BUNDLE_MAX];
 
 void icon_free(IconBundle *icon);
 
-#define icon_fmt_ERR(out, icons) "failed formatting icon"
-ErrDecl icon_fmt(Str *out, VIcon icons);
+#define icon_fmt_tag_ERR(out, icon) "failed formatting icon (id %u)", icon.id
+ErrDecl icon_fmt_tag(Str *out, IconBundle icon);
+#define icon_fmt_ERR(out, lpad, icon) "failed formatting icon (id %u)", icon.id
+ErrDecl icon_fmt(Str *out, char *lpad, IconBundle icon);
+
+#define icons_fmt_ERR(out, icons) "failed formatting icons"
+ErrDecl icons_fmt(Str *out, VIcon icons);
 
 #define ICON_STR_LEN    48
 typedef char IconStr[ICON_STR_LEN]; // TODO rename this to icondatestr or something

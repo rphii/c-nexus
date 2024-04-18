@@ -23,6 +23,7 @@ typedef struct Nexus {
         bool show_preview;
         size_t max_preview;
     } config;
+    Node tags;
     Node findings;
     bool findings_updated;
     Arg *args;

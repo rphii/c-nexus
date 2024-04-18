@@ -13,6 +13,7 @@ char *icon_str(IconList icon)
 {
     switch(icon) {
         case ICON_ROOT: return F("📚 ROOT", FG_BK_B);
+        case ICON_TAG: return "#tag"; //return "🏷️";
         case ICON_WIKI: return F("📖 WIKI", FG_GN);
         case ICON_MATH: return F("🧮 MATH", FG_MG);
         case ICON_PHYSICS: return F("🌌 PHYS", FG_BL);
@@ -24,27 +25,55 @@ char *icon_str(IconList icon)
     }
 }
 
-ErrDecl icon_fmt(Str *out, VIcon icons) {/*{{{*/
+ErrDecl icon_fmt_tag(Str *out, IconBundle icon) {/*{{{*/
+    ASSERT_ARG(out);
+    switch(icon.id) {
+        case ICON_BUNDLE_TIME: {
+            if(icon.time < 0) {
+                TRYF(str_fmt, out, "%s", icon_str(icon.time));
+            } else {
+                TRYF(str_fmt, out, "%s", icon_str(ICON_DATE));
+            }
+        } break;
+        case ICON_BUNDLE_NONE: break;
+        default: THROW("wrong icon id: %u", icon.id);
+    }
+    return 0;
+error:
+    return -1;
+}/*}}}*/
+
+ErrDecl icon_fmt(Str *out, char *lpad, IconBundle icon) {/*{{{*/
+    ASSERT_ARG(out);
+    char *pad = lpad ? lpad : "";
+    switch(icon.id) {
+        case ICON_BUNDLE_TIME: {
+            if(icon.time < 0) {
+                TRYF(str_fmt, out, "%s%s", pad, icon_str(icon.time));
+            } else {
+                IconStr str = {0};
+                time_t tt = (time_t)icon.time;
+                struct tm *t = localtime(&tt);
+                strftime(str, ICON_STR_LEN, F("📅 %Y-%m-%d", FG_RD), t);
+                TRYF(str_fmt, out, "%s%s", pad, str);
+            }
+        } break;
+        case ICON_BUNDLE_NONE: break;
+        default: THROW("wrong icon id: %u", icon.id);
+    }
+    return 0;
+error:
+    return -1;
+}
+
+ErrDecl icons_fmt(Str *out, VIcon icons) {/*{{{*/
+    ASSERT_ARG(out);
+    ASSERT_ARG(icons);
     char *pad = "\0 ";
     size_t len = str_length(out);
     for(size_t i = 0; i < ICON_BUNDLE_MAX; ++i) {
-        IconBundle icon = icons[i];
-        switch(icon.id) {
-            case ICON_BUNDLE_TIME: {
-                if(icon.time < 0) {
-                    TRYF(str_fmt, out, "%s%s", pad, icon_str(icon.time));
-                } else {
-                    IconStr str = {0};
-                    time_t tt = (time_t)icon.time;
-                    struct tm *t = localtime(&tt);
-                    strftime(str, ICON_STR_LEN, F("📅 %Y-%m-%d", FG_RD), t);
-                    TRYF(str_fmt, out, "%s%s", pad, str);
-                }
-            } break;
-            case ICON_BUNDLE_NONE: continue;
-            default: THROW("wrong icon id: %u", icon.id);
-        }
-        if(*pad != ' ') ++pad;
+        TRYF(icon_fmt, out, pad, icons[i]);
+        if(*pad != ' ' && str_length(out) != len) ++pad;
     }
     if(str_length(out) == len) {
         TRYF(str_fmt, out, "🍃"); // TODO make this not hard coded

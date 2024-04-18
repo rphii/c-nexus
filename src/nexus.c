@@ -13,7 +13,7 @@
 ErrDecl nexus_fmt_search(Str *str, Node *node) {
     ASSERT_ARG(str);
     ASSERT_ARG(node);
-    TRYF(icon_fmt, str, node->icons);
+    TRYF(icons_fmt, str, node->icons);
     TRYF(str_fmt, str, "%.*s %.*s %.*s", STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
     return 0;
 error:
@@ -624,7 +624,11 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
     ASSERT_ARG(icons);
     //ASSERT(desc, ERR_NULL_ARG);
     //ASSERT(cmd, ERR_NULL_ARG);
+    int err = 0;
     size_t i = 0, j = 0;
+    VIcon icontag = {{.id = ICON_BUNDLE_TIME, .time = ICON_TAG}};
+    Node iconfind = {0}; // TODO this is ugly
+    memcpy(iconfind.icons, icontag, sizeof(*icontag) * ICON_BUNDLE_MAX);
     Node find = {
         .title = *title
     };
@@ -648,9 +652,31 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
         TRY(tnode_find(&nexus->nodes, &find, &i, &j), ERR_LUTD_FIND ": '%.*s'", STR_F(&find.title));
     }
     *ref = nexus->nodes.buckets[i].items[j];
-    return 0;
+    /* icon stuff */
+    for(size_t i = 0; i < ICON_BUNDLE_MAX; ++i) {
+        TRYF(icon_fmt_tag, &iconfind.title, icons[i]);
+        if(!str_length(&iconfind.title)) continue;
+        //printf("ICONFIND '%.*s'\n", STR_F(&iconfind.title));
+        bool found = !tnode_find(&nexus->nodes, &iconfind, &i, &j);
+        if(!found) {
+            TRY(tnode_add(&nexus->nodes, &iconfind), ERR_LUTD_ADD);
+        }
+        TRY(tnode_find(&nexus->nodes, &iconfind, &i, &j), ERR_LUTD_FIND ": '%.*s'", STR_F(&iconfind.title));
+        Node *iconfound = nexus->nodes.buckets[i].items[j];
+        if(found) {
+            str_clear(&iconfind.title); // TODO this is a bit whack (clearing AFTER we find?)
+        } else {
+            str_zero(&iconfind.title);
+            TRY(vrnode_push_back(&nexus->tags.outgoing, iconfound), ERR_VEC_PUSH_BACK);
+        }
+        //INFO("LINK %.*s ... %.*s", STR_F(&(*ref)->title), STR_F(&iconfound->title));
+        TRYF(nexus_link, nexus, iconfound, *ref);
+    }
+clean:
+    node_free(&iconfind);
+    return err;
 error:
-    return -1;
+    ERR_CLEAN;
 } //}}}
 
 int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
@@ -782,7 +808,7 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id) /*{{{*/
         } break;
         case VIEW_ICON: {
             view->sub_sel = 0;
-            view->current = &nexus->nodeicon;
+            view->current = &nexus->tags;
         } break;
         case VIEW_NONE: THROW("view id should not be NONE");
         default: THROW("unknown view id: %u", id);

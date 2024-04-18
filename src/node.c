@@ -85,7 +85,7 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
         //IconBundle *icon = vicon_get_at(&node->icons, i);
         //IconStr iconstr = {0};
         //icon_fmt(iconstr, icon->time);
-        TRYF(icon_fmt, out, node->icons);
+        TRYF(icons_fmt, out, node->icons);
         TRYF(str_fmt, out, " %.*s\n", STR_F(&node->title));
     //}
     if(show_desc) {
