@@ -7,6 +7,8 @@
 
 void icon_free(IconBundle *icon) { /*{{{*/
     ASSERT_ARG(icon);
+    str_free(&icon->str);
+    memset(icon, 0, sizeof(*icon));
 }/*{{{*/
 
 char *icon_str(IconList icon)
@@ -35,6 +37,9 @@ ErrDecl icon_fmt_tag(Str *out, IconBundle icon) {/*{{{*/
                 TRYF(str_fmt, out, "%s", icon_str(ICON_DATE));
             }
         } break;
+        case ICON_BUNDLE_STR: {
+            TRYF(str_copy, out, &icon.str);
+        } break;
         case ICON_BUNDLE_NONE: break;
         default: THROW("wrong icon id: %u", icon.id);
     }
@@ -57,6 +62,9 @@ ErrDecl icon_fmt(Str *out, char *lpad, IconBundle icon) {/*{{{*/
                 strftime(str, ICON_STR_LEN, F("📅 %Y-%m-%d", FG_RD), t);
                 TRYF(str_fmt, out, "%s%s", pad, str);
             }
+        } break;
+        case ICON_BUNDLE_STR: {
+            TRYF(str_copy, out, &icon.str);
         } break;
         case ICON_BUNDLE_NONE: break;
         default: THROW("wrong icon id: %u", icon.id);

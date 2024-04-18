@@ -46,7 +46,8 @@ ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *d
 //ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, Icon icon);
 
 // TODO this below because I am losing my mind otherwise
-ErrDecl nexus_tag_node(Nexus *nexus, Node *ref, IconBundle icon);
+#define nexus_tag_node_ERR(nexus, ref, temp, icon) "failed tagging node"
+ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
 
 #define NEXUS_INSERT(nexus, root, ref, icon, cmd, title, description, ...)  do { \
         Node *temp, unused; \

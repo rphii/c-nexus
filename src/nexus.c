@@ -238,6 +238,7 @@ void nexus_free(Nexus *nexus) //{{{
     tnodeicon_free(&nexus->nodesicon);
     vview_free(&nexus->views);
     node_free(&nexus->findings);
+    node_free(&nexus->tags);
     view_free(&nexus->view);
     node_free(&nexus->nodeicon);
     str_free(&nexus->config.entry);
@@ -616,6 +617,67 @@ error:
 
 } //}}}
 
+ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/*{{{*/
+    ASSERT_ARG(nexus);
+    ASSERT_ARG(node);
+    /* TODO: maybe ... not make this a ... throw ... but ... like ... do it proper */
+    if(node->icons.len >= ICON_BUNDLE_MAX) THROW("too many icons: %u/%u", node->icons.len, ICON_BUNDLE_MAX);
+    /* do some tagging */
+    IconBundle *ib = &node->icons.items[node->icons.len++];
+    switch(icon.id) {
+        case ICON_BUNDLE_NONE: break;
+        case ICON_BUNDLE_STR: {
+            TRYF(str_copy, &ib->str, &icon.str);
+        } break;
+        case ICON_BUNDLE_TIME: {
+            ib->time = icon.time;
+        } break;
+        default: THROW("unknown id: %u", icon.id);
+    }
+    ib->id = icon.id;
+    /* TODO maybe don't exit early here, but change nexus->tags to a pointer and
+     * point to the node here,... I've written some long text here before, things
+     * happened and now the text is gone, I think I'll remember what I mean
+     * when I stumble across this comment in 2 weeks (I'll probably forget, eh,
+     * whatever. the text is about the same length now)
+     */
+    if(icon.id == ICON_BUNDLE_TIME && icon.time == ICON_TAG) return 0;
+    /* do some linking */
+    size_t ii, jj;
+    str_clear(&temp->title);
+    TRYF(icon_fmt_tag, &temp->title, icon);
+    if(!str_length(&temp->title)) return 0;
+    //printf("ICONFIND '%.*s'\n", STR_F(&temp->title));
+    bool found = !tnode_find(&nexus->nodes, temp, &ii, &jj);
+    if(!found) {
+        TRY(tnode_add(&nexus->nodes, temp), ERR_LUTD_ADD);
+    }
+    TRY(tnode_find(&nexus->nodes, temp, &ii, &jj), ERR_LUTD_FIND ": '%.*s'", STR_F(&temp->title));
+    switch(icon.id) {
+        case ICON_BUNDLE_NONE: break;
+        case ICON_BUNDLE_STR: {
+        } break;
+        case ICON_BUNDLE_TIME: { break; }
+    }
+    Node *iconfound = nexus->nodes.buckets[ii].items[jj];
+    if(found) {
+        str_clear(&temp->title); // TODO this is a bit whack (clearing AFTER we find?)
+    } else {
+        str_zero(&temp->title);
+        IconBundle ciscool = (IconBundle){.id = ICON_BUNDLE_TIME, .time = ICON_TAG};
+        if(!(icon.id == ICON_BUNDLE_TIME && icon.time == ICON_TAG)) {
+            TRYF(nexus_tag_node, nexus, iconfound, temp, ciscool); /* dangerous !*/
+            TRY(vrnode_push_back(&nexus->tags.outgoing, iconfound), ERR_VEC_PUSH_BACK);
+        }
+    }
+    if(!str_length(&iconfound->title)) THROW("i don't want to think about what's better right now; return 0 or throw?"); // TODO
+    //INFO("LINK %.*s ... %.*s", STR_F(&(*ref)->title), STR_F(&iconfound->title));
+    TRYF(nexus_link, nexus, iconfound, node);
+    return 0;
+error:
+    return -1;
+}/*}}}*/
+
 int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, VIcon *icons) //{{{
 {
     ASSERT_ARG(nexus);
@@ -626,9 +688,7 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
     //ASSERT(cmd, ERR_NULL_ARG);
     int err = 0;
     size_t i = 0, j = 0;
-    VIcon icontag = {.items = {{.id = ICON_BUNDLE_TIME, .time = ICON_TAG}}, .len = 1};
     Node iconfind = {0}; // TODO this is ugly
-    memcpy(iconfind.icons.items, icontag.items, sizeof(*icontag.items) * (1));
     Node find = {
         .title = *title
     };
@@ -655,24 +715,7 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
     /* icon stuff */
     printf("icons : %u for %.*s\n", icons->len, STR_F(&(*ref)->title));
     for(int i = 0; i < ((icons->len < ICON_BUNDLE_MAX) ? icons->len : ICON_BUNDLE_MAX); ++i) {
-        size_t ii, jj;
-        TRYF(icon_fmt_tag, &iconfind.title, icons->items[i]);
-        if(!str_length(&iconfind.title)) continue;
-        //printf("ICONFIND '%.*s'\n", STR_F(&iconfind.title));
-        bool found = !tnode_find(&nexus->nodes, &iconfind, &ii, &jj);
-        if(!found) {
-            TRY(tnode_add(&nexus->nodes, &iconfind), ERR_LUTD_ADD);
-        }
-        TRY(tnode_find(&nexus->nodes, &iconfind, &ii, &jj), ERR_LUTD_FIND ": '%.*s'", STR_F(&iconfind.title));
-        Node *iconfound = nexus->nodes.buckets[ii].items[jj];
-        if(found) {
-            str_clear(&iconfind.title); // TODO this is a bit whack (clearing AFTER we find?)
-        } else {
-            str_zero(&iconfind.title);
-            TRY(vrnode_push_back(&nexus->tags.outgoing, iconfound), ERR_VEC_PUSH_BACK);
-        }
-        //INFO("LINK %.*s ... %.*s", STR_F(&(*ref)->title), STR_F(&iconfound->title));
-        TRYF(nexus_link, nexus, iconfound, *ref);
+        TRYF(nexus_tag_node, nexus, *ref, &iconfind, icons->items[i]);
     }
 clean:
     node_free(&iconfind);

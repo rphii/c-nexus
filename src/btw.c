@@ -1,3 +1,4 @@
+#include "icon.h"
 #include "lookup.h"
 #include "nexus.h"
 #include "btw.h"
@@ -137,7 +138,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                     }
                     /////printf(F("]", FG_BK BG_YL));
                     size_t fin11 = str_find_ws(&STR_I0(line, f3)) + f3;
-                    size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#{}:|")) + f3; // TODO: this is shit.. make it less shit. e.g. [a]] -> the ] gets swallowed whole, but we can't put it into here because (again) this is shit
+                    size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#{}|")) + f3; // TODO: this is shit.. make it less shit. e.g. [a]] -> the ] gets swallowed whole, but we can't put it into here because (again) this is shit
                     size_t fin1 = fin11 < fin12 ? fin11 : fin12;
                     //   size_t fin2 = str_ch(&STR_I0(line, f3), '|', 0) + f3;
                     //size_t fin3 = str_ch(&STR_I0(line, f3), ']', 0) + f3;
@@ -373,12 +374,17 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, size_t *len)
             /* properly format the string (TODO) */
             Str *p = &item->str;
             if(str_length(p)) {
-                TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
-                if(!(item->flag & BTW_FLAG_NOLINK)) {
-                    //printf("  LINK: %.*s\n", STR_F(p));
-                    TRYF(str_copy, &copy, pending);
-                    if(item->flag & BTW_FLAG_TAG) {
-                    } else {
+                if(item->flag & BTW_FLAG_TAG) {
+                    if(btw->icons.len >= ICON_BUNDLE_MAX) THROW("too many icons! %u/%u", btw->icons.len, ICON_BUNDLE_MAX);
+                    /* TODO: properly parse that. check if time etc. */
+                    int iconlen = btw->icons.len++;
+                    btw->icons.items[iconlen].id = ICON_BUNDLE_STR;
+                    TRYF(str_fmt, &btw->icons.items[iconlen].str, F("%.*s", FG_YL_B), STR_F(p));
+                } else {
+                    TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
+                    if(!(item->flag & BTW_FLAG_NOLINK)) {
+                        //printf("  LINK: %.*s\n", STR_F(p));
+                        TRYF(str_copy, &copy, pending);
                         TRY(vstr_push_back(&btw->links, &copy), ERR_VEC_PUSH_BACK);
                     }
                 }
@@ -447,6 +453,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     TRY(vstr_push_back(&btw->titles, &pending), ERR_VEC_PUSH_BACK);
     str_zero(&pending);
     TRY(vsize_push_back(&btw->indices, vbtwlex_length(items)), ERR_VEC_PUSH_BACK);
+    Node nodeicon = {0};
     size_t index = 0;
     while(vstr_length(&btw->titles)) {
         str_clear(&pending);
@@ -532,6 +539,12 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                     TRYF(nexus_link, nexus, &n_link, fill);
                 }
             }
+            /* do the tags */
+            //printf("do tags ... %u\n", btw->icons.len);
+            for(int i_tag = 0; i_tag < btw->icons.len; ++i_tag) {
+                TRYF(nexus_tag_node, nexus, fill, &nodeicon, btw->icons.items[i_tag]);
+            }
+            btw->icons.len = 0;
 notitle:
             vstr_clear(&btw->links);
         }
@@ -572,6 +585,7 @@ notitle:
     }
     ++btw->stats.success;
 clean:
+    node_free(&nodeicon);
     str_free(&pending);
     return err;
 error:
@@ -580,6 +594,9 @@ error:
 
 void btw_free(Btw *btw) { //{{{
     ASSERT_ARG(btw);
+    for(int i = 0; i < ICON_BUNDLE_MAX; ++i) {
+        str_free(&btw->icons.items[i].str);
+    }
     str_free(&btw->content);
     str_free(&btw->basename);
     str_free(&btw->ext);

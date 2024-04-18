@@ -15,6 +15,9 @@ void node_free(Node *node)
 {
     ASSERT(node, ERR_NULL_ARG);
     /* free all things */
+    for(size_t i = 0; i < ICON_BUNDLE_MAX; ++i) {
+        icon_free(&node->icons.items[i]);
+    }
     str_free(&node->title);
     str_free(&node->desc);
     str_free(&node->cmd);
