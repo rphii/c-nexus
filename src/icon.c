@@ -66,13 +66,14 @@ error:
     return -1;
 }
 
-ErrDecl icons_fmt(Str *out, VIcon icons) {/*{{{*/
+ErrDecl icons_fmt(Str *out, VIcon *icons) {/*{{{*/
     ASSERT_ARG(out);
     ASSERT_ARG(icons);
     char *pad = "\0 ";
     size_t len = str_length(out);
-    for(size_t i = 0; i < ICON_BUNDLE_MAX; ++i) {
-        TRYF(icon_fmt, out, pad, icons[i]);
+    printf("FORMATTING %u icons\n", icons->len);
+    for(size_t i = 0; i < (icons->len < ICON_BUNDLE_MAX ? icons->len : ICON_BUNDLE_MAX); ++i) {
+        TRYF(icon_fmt, out, pad, icons->items[i]);
         if(*pad != ' ' && str_length(out) != len) ++pad;
     }
     if(str_length(out) == len) {

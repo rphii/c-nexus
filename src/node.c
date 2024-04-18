@@ -85,7 +85,7 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
         //IconBundle *icon = vicon_get_at(&node->icons, i);
         //IconStr iconstr = {0};
         //icon_fmt(iconstr, icon->time);
-        TRYF(icons_fmt, out, node->icons);
+        TRYF(icons_fmt, out, &node->icons);
         TRYF(str_fmt, out, " %.*s\n", STR_F(&node->title));
     //}
     if(show_desc) {
@@ -166,13 +166,13 @@ int node_copy(Node *restrict dst, Node *restrict src)
 {
     ASSERT(dst, ERR_NULL_ARG);
     ASSERT(src, ERR_NULL_ARG);
-    TRY(node_create(dst, &src->title, &src->cmd, &src->desc, src->icons), ERR_NODE_CREATE);
+    TRY(node_create(dst, &src->title, &src->cmd, &src->desc, &src->icons), ERR_NODE_CREATE);
     return 0;
 error:
     return -1;
 }
 
-int node_create(Node *node, Str *title, Str *cmd, Str *desc, VIcon icons)
+int node_create(Node *node, Str *title, Str *cmd, Str *desc, VIcon *icons)
 {
     ASSERT(node, ERR_NULL_ARG);
     ASSERT(title, ERR_NULL_ARG);
@@ -181,7 +181,8 @@ int node_create(Node *node, Str *title, Str *cmd, Str *desc, VIcon icons)
     node_zero(node);
     //TRY(vicon_reserve(&node->icons, 1), ERR_VEC_RESERVE);
     if(icons) { // TODO maybe get rid of this if and assert icons up top?
-        memcpy(node->icons, icons, sizeof(*icons) * ICON_BUNDLE_MAX);
+        //printf("COPY %zu icons\n", icons->len);
+        memcpy(&node->icons.items, icons->items, sizeof(*icons->items) * ((icons->len < ICON_BUNDLE_MAX) ? icons->len : ICON_BUNDLE_MAX));
         //vicon_copy(&node->icons, icons);
     }
     //node->icons.items[0].time = icon;

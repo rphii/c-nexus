@@ -43,7 +43,10 @@ typedef struct IconBundle {
 } IconBundle;
 #endif
 
-typedef IconBundle VIcon[ICON_BUNDLE_MAX];
+typedef struct VIcon {
+    int len;
+    IconBundle items[ICON_BUNDLE_MAX];
+} VIcon;
 
 void icon_free(IconBundle *icon);
 
@@ -53,7 +56,7 @@ ErrDecl icon_fmt_tag(Str *out, IconBundle icon);
 ErrDecl icon_fmt(Str *out, char *lpad, IconBundle icon);
 
 #define icons_fmt_ERR(out, icons) "failed formatting icons"
-ErrDecl icons_fmt(Str *out, VIcon icons);
+ErrDecl icons_fmt(Str *out, VIcon *icons);
 
 #define ICON_STR_LEN    48
 typedef char IconStr[ICON_STR_LEN]; // TODO rename this to icondatestr or something

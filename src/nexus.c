@@ -13,7 +13,7 @@
 ErrDecl nexus_fmt_search(Str *str, Node *node) {
     ASSERT_ARG(str);
     ASSERT_ARG(node);
-    TRYF(icons_fmt, str, node->icons);
+    TRYF(icons_fmt, str, &node->icons);
     TRYF(str_fmt, str, "%.*s %.*s %.*s", STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
     return 0;
 error:
@@ -616,7 +616,7 @@ error:
 
 } //}}}
 
-int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, VIcon icons) //{{{
+int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, VIcon *icons) //{{{
 {
     ASSERT_ARG(nexus);
     ASSERT_ARG(ref);
@@ -626,9 +626,9 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
     //ASSERT(cmd, ERR_NULL_ARG);
     int err = 0;
     size_t i = 0, j = 0;
-    VIcon icontag = {{.id = ICON_BUNDLE_TIME, .time = ICON_TAG}};
+    VIcon icontag = {.items = {{.id = ICON_BUNDLE_TIME, .time = ICON_TAG}}, .len = 1};
     Node iconfind = {0}; // TODO this is ugly
-    memcpy(iconfind.icons, icontag, sizeof(*icontag) * ICON_BUNDLE_MAX);
+    memcpy(iconfind.icons.items, icontag.items, sizeof(*icontag.items) * (1));
     Node find = {
         .title = *title
     };
@@ -653,16 +653,18 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
     }
     *ref = nexus->nodes.buckets[i].items[j];
     /* icon stuff */
-    for(size_t i = 0; i < ICON_BUNDLE_MAX; ++i) {
-        TRYF(icon_fmt_tag, &iconfind.title, icons[i]);
+    printf("icons : %u for %.*s\n", icons->len, STR_F(&(*ref)->title));
+    for(int i = 0; i < ((icons->len < ICON_BUNDLE_MAX) ? icons->len : ICON_BUNDLE_MAX); ++i) {
+        size_t ii, jj;
+        TRYF(icon_fmt_tag, &iconfind.title, icons->items[i]);
         if(!str_length(&iconfind.title)) continue;
         //printf("ICONFIND '%.*s'\n", STR_F(&iconfind.title));
-        bool found = !tnode_find(&nexus->nodes, &iconfind, &i, &j);
+        bool found = !tnode_find(&nexus->nodes, &iconfind, &ii, &jj);
         if(!found) {
             TRY(tnode_add(&nexus->nodes, &iconfind), ERR_LUTD_ADD);
         }
-        TRY(tnode_find(&nexus->nodes, &iconfind, &i, &j), ERR_LUTD_FIND ": '%.*s'", STR_F(&iconfind.title));
-        Node *iconfound = nexus->nodes.buckets[i].items[j];
+        TRY(tnode_find(&nexus->nodes, &iconfind, &ii, &jj), ERR_LUTD_FIND ": '%.*s'", STR_F(&iconfind.title));
+        Node *iconfound = nexus->nodes.buckets[ii].items[jj];
         if(found) {
             str_clear(&iconfind.title); // TODO this is a bit whack (clearing AFTER we find?)
         } else {
@@ -843,14 +845,15 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
     Btw btw = {0};
     if (!vsstr_length(files)) {
         Node *root;
-        VIcon rooticon = {{.id = ICON_BUNDLE_TIME, .time = ICON_ROOT}};
+        IconBundle iconb = {.id = ICON_BUNDLE_TIME, .time = ICON_ROOT};
+        VIcon rooticons = {.items = {iconb}, .len = 1}; //{.items = &iconb, .len = 1};
         TRY(nexus_insert_node(nexus, &root, &STR(NEXUS_ROOT), CMD_NONE, &STR("Welcome to " F("c-nexus", BOLD) "\n\n"
                     F("basic controls", UL) "\n"
                     "  h : back in history\n"
                     "  j : move arrow down\n"
                     "  k : move arrow up\n"
                     "  l : follow the arrow\n\n"
-                    "more can be found in the " F("controls wiki", UL)), rooticon), ERR_NEXUS_INSERT_NODE);
+                    "more can be found in the " F("controls wiki", UL)), &rooticons), ERR_NEXUS_INSERT_NODE);
 
         NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created", "shit");
         NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Note yet to be created", "This note is created after Test!", NODE_LEAF);
@@ -900,9 +903,9 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
             }
 
 #endif
-            ++btw.direxec;
+            ++btw.stats.direxec;
             size_t res = vstr_reserved(&btw.dirfiles);
-            if(res > btw.maxres) btw.maxres = res;
+            if(res > btw.stats.maxres) btw.stats.maxres = res;
             //printf("%zu bytes max. reserved\n", btw.maxres);
             //if(!(btw.direxec % 64)) {
             //vstr_shrink(&btw.dirfiles);
@@ -915,7 +918,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
 #endif
         }
         size_t res = vstr_reserved(&btw.dirfiles);
-        if(res > btw.maxres) btw.maxres = res;
+        if(res > btw.stats.maxres) btw.stats.maxres = res;
         //printf("%zu bytes max. reserved\n", btw.maxres);
         //printf("read %u files\n", n);
         //getchar();

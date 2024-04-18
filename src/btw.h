@@ -1,5 +1,6 @@
 #ifndef BTW_H
 
+#include "icon.h"
 #include "str.h"
 #include "err.h"
 #include "vector.h"
@@ -22,6 +23,7 @@ typedef enum {
 #define BTW_FLAG_ITALIC     (1U<<1)
 #define BTW_FLAG_UNDERLINE  (1U<<2)
 #define BTW_FLAG_NOLINK     (1U<<3)
+#define BTW_FLAG_TAG        (1U<<4)
 
 typedef unsigned int BtwFlag;
 
@@ -39,13 +41,17 @@ typedef struct Btw {
     Str basename;
     Str content;
     VBtwLex items;
+    VIcon icons;
     VStr links;
     VStr titles;
     VStr dirfiles;
     VSize indices;
-    size_t direxec;
-    size_t success;
-    size_t maxres;
+    struct {
+        size_t direxec;
+        size_t attempts;
+        size_t success;
+        size_t maxres;
+    } stats;
 } Btw;
 
 typedef struct Nexus Nexus;

@@ -137,7 +137,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                     }
                     /////printf(F("]", FG_BK BG_YL));
                     size_t fin11 = str_find_ws(&STR_I0(line, f3)) + f3;
-                    size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#{}|")) + f3; // TODO: this is shit.. make it less shit. e.g. [a]] -> the ] gets swallowed whole, but we can't put it into here because (again) this is shit
+                    size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#{}:|")) + f3; // TODO: this is shit.. make it less shit. e.g. [a]] -> the ] gets swallowed whole, but we can't put it into here because (again) this is shit
                     size_t fin1 = fin11 < fin12 ? fin11 : fin12;
                     //   size_t fin2 = str_ch(&STR_I0(line, f3), '|', 0) + f3;
                     //size_t fin3 = str_ch(&STR_I0(line, f3), ']', 0) + f3;
@@ -146,6 +146,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                     size_t ital = str_ch(&STR_I0(line, f3), 'i', 0) + f3;
                     size_t undl = str_ch(&STR_I0(line, f3), 'u', 0) + f3;
                     size_t nlnk = str_ch(&STR_I0(line, f3), '!', 0) + f3;
+                    size_t ytag = str_ch(&STR_I0(line, f3), ':', 0) + f3;
                     // TODO: fix this shit // the mess above :)
                     // just put it into format->string?
                     //printf("\n[[[fin11:%zu fin12:%zu fin1:%zu fin2:%zu done%zu b%zu i%zu u%zu !%zu]]]\n", fin11, fin12, fin1, fin2, done, bold, ital, undl, nlnk);
@@ -153,6 +154,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                     if(ital < done) temp.flag |= BTW_FLAG_ITALIC;
                     if(undl < done) temp.flag |= BTW_FLAG_UNDERLINE;
                     if(nlnk < done) temp.flag |= BTW_FLAG_NOLINK;
+                    if(ytag < done) temp.flag |= BTW_FLAG_TAG;
                     /////printf("%.*s", (int)(done-f3-1), str_iter_begin(&STR_I0(line, f3+1)));
                     temp.id = BTW_LEX_LINK;
                     TRYF(btw_lex_append, items, &temp, i0, line_index);
@@ -375,7 +377,10 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, size_t *len)
                 if(!(item->flag & BTW_FLAG_NOLINK)) {
                     //printf("  LINK: %.*s\n", STR_F(p));
                     TRYF(str_copy, &copy, pending);
-                    TRY(vstr_push_back(&btw->links, &copy), ERR_VEC_PUSH_BACK);
+                    if(item->flag & BTW_FLAG_TAG) {
+                    } else {
+                        TRY(vstr_push_back(&btw->links, &copy), ERR_VEC_PUSH_BACK);
+                    }
                 }
             }
         }
@@ -565,7 +570,7 @@ notitle:
             }
         }
     }
-    ++btw->success;
+    ++btw->stats.success;
 clean:
     str_free(&pending);
     return err;
@@ -592,6 +597,7 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
     ASSERT_ARG(filename);
     ASSERT_ARG(btw);
 
+    ++btw->stats.attempts;
     btw->filename = filename;
     str_clear(&btw->ext);
     str_clear(&btw->content);
