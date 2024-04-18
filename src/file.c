@@ -9,6 +9,7 @@
 #if defined(PLATFORM_WINDOWS)
 #else
 #include <sys/stat.h>
+#include <sys/sysmacros.h>
 #endif
 
 int file_is_dir(Str *filename)
@@ -17,13 +18,26 @@ int file_is_dir(Str *filename)
     ASSERT("not implemented");
 #else
     struct stat s;
-    char *path = str_cstr(filename);
-    if(path) {
-        int r = stat(path, &s);
-        free(path);
-        if(r) return 0;
-        return S_ISDIR(s.st_mode);
-    }
+    char path[4094];
+    str_cstr(filename, path, FILE_PATH_MAX);
+    int r = lstat(path, &s);
+    if(r) return 0;
+    return S_ISDIR(s.st_mode);
+#endif
+    return 0;
+}
+
+int file_is_file(Str *filename)
+{
+#if defined(PLATFORM_WINDOWS)
+    ASSERT("not implemented");
+#else
+    struct stat s;
+    char path[4094];
+    str_cstr(filename, path, FILE_PATH_MAX);
+    int r = lstat(path, &s);
+    if(r) return 0;
+    return S_ISREG(s.st_mode);
 #endif
     return 0;
 }
@@ -96,21 +110,67 @@ int file_str_write(Str *filename, Str *content)
 #include <sys/types.h>
 #endif
 
-ErrDecl file_dir_read(Str *dirname, VStr *files)
-{
+ErrDecl file_exec(Str *dirname, VStr *subdirs, FileFunc exec, void *args) {
+    ASSERT_ARG(dirname);
+    ASSERT_ARG(subdirs);
+    ASSERT_ARG(exec);
+    int err = 0;
+    DIR *dir = 0;
+    Str subdir = {0};
+    //printf("FILENAME: %.*s\n", STR_F(dirname));
+    if(file_is_dir(dirname)) {
+        size_t len = str_rnch(dirname, PLATFORM_CH_SUBDIR, 0);
+        if(len < str_length(dirname) && str_get_at(dirname, len) != PLATFORM_CH_SUBDIR) ++len;
+        struct dirent *dp = 0;
+        char cdir[FILE_PATH_MAX];
+        str_cstr(dirname, cdir, FILE_PATH_MAX);
+        if((dir = opendir(cdir)) == NULL) {
+            goto clean;
+            THROW("can't open directory '%.*s'", (int)len, cdir);
+        }
+        char filename[FILE_PATH_MAX] = {0};
+        while ((dp = readdir(dir)) != NULL) {
+            if(dp->d_name[0] == '.') continue; // TODO add an argument for this
+            if(!str_cmp(&STR_L(dp->d_name), &STR(".")) || !str_cmp(&STR_L(dp->d_name), &STR(".."))) continue;
+            size_t len2 = snprintf(filename, FILE_PATH_MAX, "%.*s/%s", (int)len, cdir, dp->d_name);
+            if(len2 != strlen(filename)) THROW("should probably have len2!");
+            //--len;
+            Str filename2 = STR_LL(filename, len2);
+            if(file_is_dir(&filename2)) {
+                TRYF(str_fmt, &subdir, "%.*s", STR_F(&filename2));
+                TRY(vstr_push_back(subdirs, &subdir), ERR_VEC_PUSH_BACK);
+                str_zero(&subdir);
+            } else if(file_is_file(&filename2)) {
+                TRY(exec(&filename2, args), "an error occured while executing the function");
+            } else {
+                INFO("skipping '%.*s' since no regular file nor directory", STR_F(dirname));
+            }
+        }
+    } else if(file_is_file(dirname)) {
+        TRY(exec(dirname, args), "an error occured while executing the function");
+    } else {
+        INFO("skipping '%.*s' since no regular file nor directory", STR_F(dirname));
+    }
+clean:
+    str_free(&subdir);
+    if(dir) closedir(dir);
+    return err;
+error: ERR_CLEAN;
+}
+
+ErrDecl file_dir_read(Str *dirname, VStr *files) {
     int err = 0;
     DIR *dir = 0;
     size_t len = str_rnch(dirname, PLATFORM_CH_SUBDIR, 0);
     if(len < str_length(dirname) && str_get_at(dirname, len) != PLATFORM_CH_SUBDIR) ++len;
     struct dirent *dp = 0;
     if ((dir = opendir(dirname->s)) == NULL) {
-        goto clean;
+        //goto clean;
         THROW("can't open directory '%.*s'", (int)len, dirname->s);
     }
-    while ((dp = readdir(dir)) != NULL)
-    {
+    while ((dp = readdir(dir)) != NULL) {
         Str filename = {0};
-        if(dp->d_name[0] == '.') continue;
+        if(dp->d_name[0] == '.') continue; // TODO add an argument for this
         if(!str_cmp(&STR_L(dp->d_name), &STR(".")) || !str_cmp(&STR_L(dp->d_name), &STR(".."))) continue;
         TRYF(str_fmt, &filename, "%.*s/%s", (int)len, dirname->s, dp->d_name);
         //printf("FILE: %.*s\n", STR_F(&filename));

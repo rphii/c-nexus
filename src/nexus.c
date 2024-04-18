@@ -5,6 +5,8 @@
 #include "content.h"
 #include "str.h"
 #include "btw.h"
+#include "file.h"
+#include "vector.h"
 
 #if PROC_COUNT /* local threading {{{ */
 #include <pthread.h>
@@ -782,6 +784,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(files, ERR_NULL_ARG);
     int err = 0;
+    Str filename = {0};
     Btw btw = {0};
     if (!vsstr_length(files)) {
         Node *root;
@@ -799,9 +802,12 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
 
         TRY(content_build(nexus, root), ERR_CONTENT_BUILD);
     } else {
+        BtwExec exec_args = {.nexus = nexus, .btw = &btw};
         for(size_t i = 0; i < vsstr_length(files); ++i) {
             Str *filename = vsstr_get_at(files, i);
-            TRYF(btw_parse_file, nexus, filename, &btw);
+            TRYF(file_exec, filename, &btw.dirfiles, btw_parse_exec, &exec_args);
+            //TRYF(file_exec, filename, &btw.dirfiles, btw_parse_exec, 0);
+            //TRYF(btw_parse_file, nexus, filename, &btw);
 #if 0
             char *ext = strrchr(file->s, '.');
             if((ext && (ext - file->s > 0)) || !ext) {
@@ -818,18 +824,41 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
             }
 #endif
         }
+#if 1
+        while(vstr_length(&btw.dirfiles)) {
+        //for(size_t i = 0; i < vstr_length(&btw.dirfiles); ++i) {
+            //Str *filename = vstr_get_at(&btw.dirfiles, i);
+            vstr_pop_back(&btw.dirfiles, &filename);
+            memset(btw.dirfiles.items[vstr_length(&btw.dirfiles)], 0, sizeof(Str));
+            TRYF(file_exec, &filename, &btw.dirfiles, btw_parse_exec, &exec_args);
+            str_free(&filename);
+#else
         while(vstr_length(&btw.dirfiles)) {
             Str filename = {0};
             vstr_pop_front(&btw.dirfiles, &filename);
-            TRYF(btw_parse_file, nexus, &filename, &btw);
-            //Str *filename = vstr_get_at(&btw.dirfiles, i);
-            //TRYF(btw_parse_file, nexus, filename, &btw, &n);
+            TRYF(file_exec, &filename, &btw.dirfiles, btw_parse_exec, &exec_args);
+            if(!((++btw.direxec) % 256)) {
+                vstr_shrink(&btw.dirfiles);
+            }
+
+#endif
+            ++btw.direxec;
+            size_t res = vstr_reserved(&btw.dirfiles);
+            if(res > btw.maxres) btw.maxres = res;
+            printf("%zu bytes max. reserved\n", btw.maxres);
+            //if(!(btw.direxec % 64)) {
+            //vstr_shrink(&btw.dirfiles);
+            //}
+            //TRYF(btw_parse_file, nexus, &filename, &btw);
 #if 0
             if(!(n % 256)) {
                 vstr_shrink(&btw.dirfiles);
             }
 #endif
         }
+        size_t res = vstr_reserved(&btw.dirfiles);
+        if(res > btw.maxres) btw.maxres = res;
+        printf("%zu bytes max. reserved\n", btw.maxres);
         //printf("read %u files\n", n);
         //getchar();
     }
@@ -842,6 +871,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
     }
 
 clean:
+    str_free(&filename);
     btw_free(&btw);
     return err;
 error:

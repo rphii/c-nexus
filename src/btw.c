@@ -373,7 +373,7 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, size_t *len)
             if(str_length(p)) {
                 TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
                 if(!(item->flag & BTW_FLAG_NOLINK)) {
-                    printf("  LINK: %.*s\n", STR_F(p));
+                    //printf("  LINK: %.*s\n", STR_F(p));
                     TRYF(str_copy, &copy, pending);
                     TRY(vstr_push_back(&btw->links, &copy), ERR_VEC_PUSH_BACK);
                 }
@@ -453,7 +453,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         size_t note_len = 0, note_len2 = 0;
         TRYF(btw_parse_is_note, items, index, &note_len, btw);
         if(note_len) {
-            printf(" !!! NOTE (%zu) !!!\n", note_len);
+            /////printf(" !!! NOTE (%zu) !!!\n", note_len);
             // TODO: parse note; update context -> get title; store title+note_end
             TRY(vsize_push_back(&btw->indices, index + note_len - 1), ERR_VEC_PUSH_BACK);
             TRYF(btw_parse_note, btw, index, &pending, &note_len2);
@@ -463,14 +463,14 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         } else {
             size_t link = btw_parse_is_link(items, index);
             if(link) {
-                printf(" !!! LINK !!!\n");
+                /////printf(" !!! LINK !!!\n");
                 // TODO: format colored text -> add to current note (below)
                 size_t link_len = 0;
                 TRYF(btw_parse_link, btw, index, &pending, &link_len);
                 index += (link_len - 1);
                 //index += (link - 1);
             } else /* TODO: this else is temporary, until the thing above properly works */ {
-                printf(" !!! DEFAULT !!!\n");
+                /////printf(" !!! DEFAULT !!!\n");
                 // TODO: add text to current note / title
                 if(index < vbtwlex_length(&btw->items)) {
                     Str *p = &vbtwlex_get_at(&btw->items, index)->str;
@@ -480,10 +480,10 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         }
         {
             /* add pending + link */
-            printf("  link len1 %zu / titles len %zu\n", vstr_length(&btw->links), vstr_length(&btw->titles));
+            //printf("  link len1 %zu / titles len %zu\n", vstr_length(&btw->links), vstr_length(&btw->titles));
             if(!vstr_length(&btw->titles)) THROW("expecting titles... but have none!");
             Str *title = vstr_get_back(&btw->titles);
-            printf(" GOT A TITLE %.*s\n", STR_F(title));
+            //printf(" GOT A TITLE %.*s\n", STR_F(title));
             if(!str_length(title)) goto notitle;
             Node tempnode = {
                 .title = *title,
@@ -491,14 +491,14 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             if(!tnode_has(&nexus->nodes, &tempnode)) {
                 TRYF(node_create, &tempnode, title, CMD_NONE, 0, ICON_NONE);
                 tnode_add(&nexus->nodes, &tempnode);
-                printf("ADDED: %.*s\n", STR_F(&tempnode.title));
+                //printf("ADDED: %.*s\n", STR_F(&tempnode.title));
             }
             size_t i = 0, j = 0;
             if(tnode_find(&nexus->nodes, &tempnode, &i, &j)) {
                 THROW(ERR_UNREACHABLE);
             }
             Node *fill = nexus->nodes.buckets[i].items[j];
-            printf("FOUND: %.*s\n", STR_F(&fill->title));
+            //printf("FOUND: %.*s\n", STR_F(&fill->title));
             //BtwLex *item = vbtwlex_get_at(&btw->items, index);
             if(str_length(&pending)) {
                 /* trim ending newlines, up to max. 1 */
@@ -547,7 +547,7 @@ notitle:
                 if(str_length(s_parent)) {
                     child.title = s_child;
                     parent.title = *s_parent;
-                    printf("  link ... %.*s ... %.*s\n", STR_F(&s_child), STR_F(s_parent));
+                    //printf("  link ... %.*s ... %.*s\n", STR_F(&s_child), STR_F(s_parent));
                     TRYF(nexus_link, nexus, &parent, &child);
                 }
             }
@@ -565,6 +565,7 @@ notitle:
             }
         }
     }
+    ++btw->success;
 clean:
     str_free(&pending);
     return err;
@@ -581,6 +582,7 @@ void btw_free(Btw *btw) { //{{{
     vsize_free(&btw->indices);
     vstr_free(&btw->titles);
     vstr_free(&btw->links);
+    printf("dirfiles len %zu\n", vstr_length(&btw->dirfiles));
     vstr_free(&btw->dirfiles);
 } //}}}
 
@@ -599,6 +601,7 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
     TRYF(str_fmt_ext, &btw->ext, filename);
 
     if(file_is_dir(filename)) {
+        THROW("don't expect dir!");
         int recursive = 0; // TODO make a flag for this
         TRYF(file_dir_read, filename, &btw->dirfiles);
         //printf("\r%.*s", *n, "");
@@ -642,18 +645,18 @@ ErrDecl btw_parse_file(Nexus *nexus, Str *filename, Btw *btw) //{{{
         TRYF(btw_lex, &btw->items, &btw->content);
         TRYF(btw_parse, nexus, btw);
     }
-    /* after prepare we have:
-     * - raw content
-     * - root note title (basename)
-     * next steps:
-     * - parse sub notes
-     */
-
-    //Node *node = 0;
-    //TRYF(nexus_insert_node, nexus, &node, &btw->basename, CMD_NONE, &btw->content, ICON_NONE);
-    //printf("%.*s\n", STR_F(&btw->content));
     return 0;
 error:
     return -1;
 } //}}}
+
+ErrDecl btw_parse_exec(Str *filename, void *args) {/*{{{*/
+    ASSERT_ARG(filename);
+    ASSERT_ARG(args);
+    BtwExec *a = (BtwExec *)args;
+    TRYF(btw_parse_file, a->nexus, filename, a->btw);
+    return 0;
+error:
+    return -1;
+}/*}}}*/
 

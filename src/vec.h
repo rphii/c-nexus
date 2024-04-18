@@ -288,15 +288,19 @@ typedef enum
         while(required > last) required /= 2; \
         required *= 2; \
         if(required  < vec->cap) { \
-            if(F != 0) { \
-                for(size_t i = required; i < cap; i++) { \
-                    VEC_TYPE_FREE(F, &vec->VEC_STRUCT_ITEMS[i], T); \
+            if(required) { \
+                if(F != 0) { \
+                    for(size_t i = required; i < cap; i++) { \
+                        VEC_TYPE_FREE(F, &vec->VEC_STRUCT_ITEMS[i], T); \
+                    } \
                 } \
+                void *temp = vec_realloc(vec->VEC_STRUCT_ITEMS, sizeof(*vec->VEC_STRUCT_ITEMS) * required); \
+                if(!temp) return VEC_ERROR_REALLOC; \
+                vec->VEC_STRUCT_ITEMS = temp; \
+                vec->cap = required; \
+            } else { \
+                A##_free(vec); \
             } \
-            void *temp = vec_realloc(vec->VEC_STRUCT_ITEMS, sizeof(*vec->VEC_STRUCT_ITEMS) * required); \
-            if(!temp) return VEC_ERROR_REALLOC; \
-            vec->VEC_STRUCT_ITEMS = temp; \
-            vec->cap = required; \
         } \
         return VEC_ERROR_NONE; \
     }
@@ -343,16 +347,21 @@ typedef enum
         while(required > last) required /= 2; \
         required *= 2; \
         if(required < vec->cap) { \
-            for(size_t i = required; i < cap; i++) { \
-                if(F != 0) { \
-                    VEC_TYPE_FREE(F, vec->VEC_STRUCT_ITEMS[i], T); \
+            if(required) { \
+                for(size_t i = required; i < cap; i++) { \
+                    if(F != 0) { \
+                        VEC_TYPE_FREE(F, vec->VEC_STRUCT_ITEMS[i], T); \
+                    } \
+                    free(vec->VEC_STRUCT_ITEMS[i]); \
+                    /*memset(&vec->VEC_STRUCT_ITEMS[i], 0, sizeof(vec->VEC_STRUCT_ITEMS[i]));*/ \
                 } \
-                free(vec->VEC_STRUCT_ITEMS[i]); \
+                void *temp = vec_realloc(vec->VEC_STRUCT_ITEMS, sizeof(*vec->VEC_STRUCT_ITEMS) * required); \
+                if(!temp) return VEC_ERROR_REALLOC; \
+                vec->VEC_STRUCT_ITEMS = temp; \
+                vec->cap = required; \
+            } else { \
+                A##_free(vec); \
             } \
-            void *temp = vec_realloc(vec->VEC_STRUCT_ITEMS, sizeof(*vec->VEC_STRUCT_ITEMS) * required); \
-            if(!temp) return VEC_ERROR_REALLOC; \
-            vec->VEC_STRUCT_ITEMS = temp; \
-            vec->cap = required; \
         } \
         return VEC_ERROR_NONE; \
     }

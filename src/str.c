@@ -79,12 +79,11 @@ void str_trim(Str *str) //{{{
 
 // pseudo directory {{{
 
-char *str_cstr(Str *str) {
-    Str buf = {0};
-    TRYF(str_fmt, &buf, "%.*s", STR_F(str));
-    return str_iter_begin(&buf);
-error:
-    return 0;
+void str_cstr(Str *str, char *cstr, size_t len) {
+    ASSERT_ARG(str);
+    ASSERT_ARG(cstr);
+    cstr[0] = 0;
+    snprintf(cstr, len, "%.*s", STR_F(str));
 }
 
 inline int str_fmt_va(Str *str, const char *format, va_list argp) //{{{
@@ -137,7 +136,11 @@ ErrDecl str_fmt_ext(Str *ext, const Str *str) //{{{
     if(len) {
         size_t i = str_rch(str, '.', 0);
         if(i < len) {
-            TRYF(str_fmt, ext, "%.*s", (int)(len - i), str_iter_at(str, i));
+            /* in case we have something like: file.dir/filename -> / is after . */
+            size_t j = str_rch(str, PLATFORM_CH_SUBDIR, 0);
+            if((j < len && j < i) || (j == len)) {
+                TRYF(str_fmt, ext, "%.*s", (int)(len - i), str_iter_at(str, i));
+            }
         }
     }
     return 0;

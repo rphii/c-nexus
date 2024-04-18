@@ -12,6 +12,13 @@
 /* PUBLIC FUNCTION PROTOTYPES *************************************************/
 /******************************************************************************/
 
+typedef int (*FileFunc)(Str *filename, void *);
+
+#define file_exec_ERR(dirname, subdirs, exec, args) "an error occured executing function on files"
+ErrDecl file_exec(Str *dirname, VStr *subdirs, FileFunc exec, void *args);
+
+#define FILE_PATH_MAX   4096
+
 int file_is_dir(Str *filename);
 
 #define ERR_FILE_STR_READ "failed to read file"

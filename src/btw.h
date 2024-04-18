@@ -43,7 +43,17 @@ typedef struct Btw {
     VStr titles;
     VStr dirfiles;
     VSize indices;
+    size_t direxec;
+    size_t success;
+    size_t maxres;
 } Btw;
+
+typedef struct Nexus Nexus;
+
+typedef struct BtwExec {
+    struct Nexus *nexus;
+    Btw *btw;
+} BtwExec;
 
 /* color strings
  * bk   black       bk-b    black-bright
@@ -56,8 +66,6 @@ typedef struct Btw {
  * wt   white       wt-b    white-bright
  */
 
-typedef struct Nexus Nexus;
-
 void btwlex_free(BtwLex *lex);
 
 void btw_free(Btw *parse);
@@ -66,6 +74,8 @@ void btw_free(Btw *parse);
 ErrDecl btw_lex(VBtwLex *btw, Str *str);
 #define btw_parse_ERR(nexus, items) "failed parsing"
 ErrDecl btw_parse(Nexus *nexus, Btw *btw);
+
+ErrDecl btw_parse_exec(Str *filename, void *args);
 
 #define btw_file_prepare_ERR(nexus, filename, btw) "failed preparing file '%.*s'", STR_F(filename)
 ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw);

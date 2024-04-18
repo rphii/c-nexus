@@ -43,7 +43,7 @@ void str_triml(Str *str);
 void str_trimr(Str *str);
 void str_trim(Str *str);
 
-char *str_cstr(Str *str);
+void str_cstr(Str *str, char *cstr, size_t len);
 
 #define str_fmt_va_ERR(str, format, argp) "failed formatting string"
 ErrDecl str_fmt_va(Str *str, const char *format, va_list argp);
