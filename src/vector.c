@@ -2,6 +2,7 @@
 #include "view.h"
 #include "str.h"
 #include "btw.h"
+#include "icon.h"
 
 #include "vector.h"
 
@@ -28,6 +29,7 @@ VEC_IMPLEMENT(VrNode, vrnode, Node *, BY_VAL, 0);
 void vrnode_sort(VrNode *vec)
 {
     /* shell sort, https://rosettacode.org/wiki/Sorting_algorithms/Shell_sort#C */
+#if 0 // TODO !!!
     size_t h, i, j, n = vrnode_length(vec);
     Node *temp;
     for (h = n; h /= 2;) {
@@ -42,7 +44,8 @@ void vrnode_sort(VrNode *vec)
             //a[j] = t;
             vrnode_set_at(vec, j, temp);
         }
-        }
+    }
+#endif
 }
 
 
@@ -53,4 +56,6 @@ VEC_IMPLEMENT(VsStr, vsstr, Str, BY_REF, 0);
 VEC_IMPLEMENT(VrStr, vrstr, Str *, BY_VAL, 0);
 VEC_IMPLEMENT(VStr, vstr, Str, BY_REF, str_free);
 VEC_IMPLEMENT(VBtwLex, vbtwlex, BtwLex, BY_REF, btwlex_free);
+
+//VEC_IMPLEMENT(VIcon, vicon, IconBundle, BY_VAL, icon_free);
 

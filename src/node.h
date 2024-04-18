@@ -8,7 +8,8 @@
 #include "icon.h"
 
 typedef struct Node {
-    Icon icon;
+    //Icon icon;
+    VIcon icons;
     Str title;
     Str desc;
     Str cmd;
@@ -39,7 +40,7 @@ ErrDecl node_copy(Node *restrict dst, Node *restrict src);
 
 #define ERR_NODE_CREATE "failed creating node"
 #define node_create_ERR(node, title, cmd, desc, icon) "failed creating node"
-int node_create(Node *node, Str *title, Str *cmd, Str *desc, Icon icon);
+ErrDecl node_create(Node *node, Str *title, Str *cmd, Str *desc, VIcon icons);
 
 #define ERR_NODE_FOLLOW "failed following node"
 ErrDecl node_follow(Node **node, size_t *sub_sel);
@@ -53,7 +54,8 @@ ErrDecl node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, si
 Node *node_get_sub_sel(Node *node, size_t sub_sel);
 
 #define ERR_NODE_FMT "failed formatting node"
-int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl, int padr, bool active);
+#define node_fmt_ERR(out, node, show_desc, select, padl, padr, active) "failed formatting '%.*s'", STR_F(&node->title)
+ErrDecl node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl, int padr, bool active);
 
 void node_set_sub(Node *node, size_t *sub_sel, size_t to_set);
 

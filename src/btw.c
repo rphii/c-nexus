@@ -489,7 +489,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                 .title = *title,
             };
             if(!tnode_has(&nexus->nodes, &tempnode)) {
-                TRYF(node_create, &tempnode, title, CMD_NONE, 0, ICON_NONE);
+                TRYF(node_create, &tempnode, title, CMD_NONE, 0, 0);
                 tnode_add(&nexus->nodes, &tempnode);
                 //printf("ADDED: %.*s\n", STR_F(&tempnode.title));
             }

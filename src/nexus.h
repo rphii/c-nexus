@@ -40,12 +40,14 @@ void nexus_free(Nexus *nexus);
 
 #define ERR_NEXUS_INSERT_NODE "failed insertion of node into nexus"
 //ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
-#define nexus_insert_node_ERR(nexus, ref, title, cmd, desc, icon) "failed insertion of node into nexus"
-ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, Icon icon);
+#define nexus_insert_node_ERR(nexus, ref, title, cmd, desc, icons) "failed insertion of node into nexus"
+ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, VIcon icons);
+//ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, Icon icon);
 
 #define NEXUS_INSERT(nexus, root, ref, icon, cmd, title, description, ...)  do { \
         Node *temp, unused; \
-        TRY(nexus_insert_node(nexus, &temp, &STR_L(title), &STR_L(cmd), &STR_L(description), icon), ERR_NEXUS_INSERT_NODE); \
+        VIcon ic = {{.id = ICON_BUNDLE_TIME, .time = icon}}; \
+        TRY(nexus_insert_node(nexus, &temp, &STR_L(title), &STR_L(cmd), &STR_L(description), ic), ERR_NEXUS_INSERT_NODE); \
         TRY(nexus_link(nexus, root, temp), ERR_NEXUS_LINK); \
         NEXUS_LINKS_EV_STR(nexus, temp, __VA_ARGS__); \
         if(ref != 0) { \

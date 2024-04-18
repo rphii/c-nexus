@@ -1,9 +1,13 @@
 #include <time.h>
 
+#include "vector.h"
 #include "str.h"
 #include "icon.h"
 #include "colorprint.h"
 
+void icon_free(IconBundle *icon) { /*{{{*/
+    ASSERT_ARG(icon);
+}/*{{{*/
 
 char *icon_str(IconList icon)
 {
@@ -20,6 +24,37 @@ char *icon_str(IconList icon)
     }
 }
 
+ErrDecl icon_fmt(Str *out, VIcon icons) {/*{{{*/
+    char *pad = "\0 ";
+    size_t len = str_length(out);
+    for(size_t i = 0; i < ICON_BUNDLE_MAX; ++i) {
+        IconBundle icon = icons[i];
+        switch(icon.id) {
+            case ICON_BUNDLE_TIME: {
+                if(icon.time < 0) {
+                    TRYF(str_fmt, out, "%s%s", pad, icon_str(icon.time));
+                } else {
+                    IconStr str = {0};
+                    time_t tt = (time_t)icon.time;
+                    struct tm *t = localtime(&tt);
+                    strftime(str, ICON_STR_LEN, F("📅 %Y-%m-%d", FG_RD), t);
+                    TRYF(str_fmt, out, "%s%s", pad, str);
+                }
+            } break;
+            case ICON_BUNDLE_NONE: continue;
+            default: THROW("wrong icon id: %u", icon.id);
+        }
+        if(*pad != ' ') ++pad;
+    }
+    if(str_length(out) == len) {
+        TRYF(str_fmt, out, "🍃"); // TODO make this not hard coded
+    }
+    return 0;
+error:
+    return -1;
+}/*}}}*/
+
+#if 0
 void icon_fmt(IconStr str, Icon icon)
 {
     if(icon < 0) {
@@ -30,6 +65,7 @@ void icon_fmt(IconStr str, Icon icon)
         strftime(str, ICON_STR_LEN, F("📅 %Y-%m-%d", FG_RD), t);
     }
 }
+#endif
 
 Icon icon_base(int year, int month, int day, int hour, int minute, int second)
 {

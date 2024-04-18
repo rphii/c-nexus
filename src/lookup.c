@@ -31,14 +31,18 @@ static inline int tnode_cmp(Node *a, Node *b)
 static inline size_t tnodeicon_hash(Node *node)
 {
     size_t hash = 0;
+#if 0
     if(node->icon < 0) hash = 99194853094755497ULL * (size_t)node->icon; /* 83rd fibonacci number because why not */
+#endif
     return hash;
 }
 
 static inline int tnodeicon_cmp(Node *a, Node *b)
 {
+#if 0
     if(a->icon >= 0 && b->icon >= 0) return 0;
     else return !(a->icon == b->icon);
+#endif
 }
 
 LUTD_IMPLEMENT(TNode, tnode, Node, BY_REF, tnode_hash, tnode_cmp, node_free);

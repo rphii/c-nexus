@@ -1,7 +1,9 @@
 #include "err.h"
 #include "node.h"
 #include "cmd.h"
+#include "icon.h"
 #include "str.h"
+#include "vector.h"
 
 void node_zero(Node *node)
 {
@@ -65,21 +67,27 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
     ASSERT(select, ERR_NULL_ARG);
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
-    IconStr iconstr = {0};
-    icon_fmt(iconstr, node->icon);
+    //icon_fmt(iconstr, node->icon);
 #if (NODE_SHOW_COUNT_IN_OUT)
     if(!active) {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s%s %.*s \n", padl, sI, padr, sO, select, iconstr, STR_F(&node->title)), ERR_STR_FMT)
+        TRYF(str_fmt, out, "" NODE_FMT_LEN_SUB_INACTIVE " %s", padl, sI, padr, sO, select); //, iconstr, STR_F(&node->title));
     } else {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s%s %.*s \n", padl, sI, padr, sO, select, iconstr, STR_F(&node->title)), ERR_STR_FMT)
+        TRYF(str_fmt, out, "" NODE_FMT_LEN_SUB_ACTIVE " %s", padl, sI, padr, sO, select); //, iconstr, STR_F(&node->title));
     }
 #else
     if(!active) {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s%s %.*s\n", padl > padr ? padl : padr, sI+sO, select, iconstr, STR_F(&node->title)), ERR_STR_FMT);
+        TRYF(str_fmt, out, "" NODE_FMT_LEN_SUB_INACTIVE " %s", padl > padr ? padl : padr, sI+sO, select); //, iconstr, STR_F(&node->title));
     } else {
-        TRY(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s%s %.*s\n", padl > padr ? padl : padr, sI+sO, select, iconstr, STR_F(&node->title)), ERR_STR_FMT);
+        TRYF(str_fmt, out, "" NODE_FMT_LEN_SUB_ACTIVE " %s", padl > padr ? padl : padr, sI+sO, select); //, iconstr, STR_F(&node->title));
     }
 #endif
+    //for(size_t i = 0; i < vicon_length(&node->icons); ++i) {
+        //IconBundle *icon = vicon_get_at(&node->icons, i);
+        //IconStr iconstr = {0};
+        //icon_fmt(iconstr, icon->time);
+        TRYF(icon_fmt, out, node->icons);
+        TRYF(str_fmt, out, " %.*s\n", STR_F(&node->title));
+    //}
     if(show_desc) {
         TRY(node_fmt_desc(out, node), ERR_NODE_FMT_DESC);
     }
@@ -158,20 +166,26 @@ int node_copy(Node *restrict dst, Node *restrict src)
 {
     ASSERT(dst, ERR_NULL_ARG);
     ASSERT(src, ERR_NULL_ARG);
-    TRY(node_create(dst, &src->title, &src->cmd, &src->desc, src->icon), ERR_NODE_CREATE);
+    TRY(node_create(dst, &src->title, &src->cmd, &src->desc, src->icons), ERR_NODE_CREATE);
     return 0;
 error:
     return -1;
 }
 
-int node_create(Node *node, Str *title, Str *cmd, Str *desc, Icon icon)
+int node_create(Node *node, Str *title, Str *cmd, Str *desc, VIcon icons)
 {
     ASSERT(node, ERR_NULL_ARG);
     ASSERT(title, ERR_NULL_ARG);
     //INFO("creating T:%.*s,C:%s,D:%s\n", STR_F(title), cmd ? cmd->s : "", desc ? desc->s : "");
     if(!str_length(title)) THROW("title can't be empty");
     node_zero(node);
-    node->icon = icon;
+    //TRY(vicon_reserve(&node->icons, 1), ERR_VEC_RESERVE);
+    if(icons) { // TODO maybe get rid of this if and assert icons up top?
+        memcpy(node->icons, icons, sizeof(*icons) * ICON_BUNDLE_MAX);
+        //vicon_copy(&node->icons, icons);
+    }
+    //node->icons.items[0].time = icon;
+    //node->icons.items[0].id = ICON_BUNDLE_TIME;
     TRYF(str_copy, &node->title, title);
     if(desc && str_length(desc)) TRY(str_fmt(&node->desc, "%.*s", STR_F(desc)), ERR_STR_FMT);
     if(cmd && str_length(cmd)) TRY(str_fmt(&node->cmd, "%.*s", STR_F(cmd)), ERR_STR_FMT);

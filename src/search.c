@@ -4,6 +4,7 @@
 #include <ctype.h>
 
 #include "search.h"
+#include "icon.h"
 
 #if 0
 #define ERR_SEARCH_STATIC_REMOVE_ESCAPES "failed removing escape sequences"
@@ -46,39 +47,40 @@ error:
 }
 #endif
 
-int search_fmt_nofree(bool ignorecase, Str *nofree_cmd, Str *nofree_content, Str *find, char *format, ...)
+int search_fmt_nofree(bool ignorecase, Str *buf_searchon, Str *buf_formatted, Str *find, char *format, ...)
 {
     /* form format string */
     va_list argp;
     va_start(argp, format);
-    int result = str_fmt_va(nofree_content, format, argp);
+    int result = str_fmt_va(buf_formatted, format, argp);
     va_end(argp);
     /* search */
-    int found = search_nofree(ignorecase, nofree_cmd, find, nofree_content);
+    int found = search_nofree(ignorecase, buf_searchon, find, buf_formatted);
     return (found && !result);
 }
 
-int search_nofree(bool ignorecase, Str *nofree_cleaned, Str *find, Str *nofree_content)
+// *find* string in *content* and *buf_searchon* is allocated by this function. free outside
+int search_nofree(bool ignorecase, Str *buf_searchon, Str *find, Str *content)
 {
-    ASSERT(nofree_cleaned, ERR_NULL_ARG);
-    ASSERT(nofree_content, ERR_NULL_ARG);
+    ASSERT(buf_searchon, ERR_NULL_ARG);
+    ASSERT(content, ERR_NULL_ARG);
     ASSERT(find, ERR_NULL_ARG);
     int found = 0;
 #if 1
-    TRYF(str_remove_escapes, nofree_cleaned, nofree_content);
+    TRYF(str_remove_escapes, buf_searchon, content);
     if(!str_length(find)) {
         found = -1;
     } else {
-        found = (int)((str_find_substring(nofree_cleaned, find)));
+        found = (int)((str_find_substring(buf_searchon, find)));
     }
 #else
-    TRY(str_fmt(nofree_cleaned, "if echo '"), ERR_STR_FMT);
-    TRY(search_static_remove_escapes(nofree_cleaned, nofree_content), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
-    TRY(str_fmt(nofree_cleaned, "' | grep -F %s -q '", ignorecase ? "-i" : ""), ERR_STR_FMT);
-    TRY(search_static_remove_escapes(nofree_cleaned, find), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
-    TRY(str_fmt(nofree_cleaned, "' 2>/dev/null; then exit 0; else exit 1; fi"), ERR_STR_FMT);
-    //printf("CMD:%.*s\n", STR_F(nofree_cleaned));
-    found = !system(nofree_cleaned->s);
+    TRY(str_fmt(buf_searchon, "if echo '"), ERR_STR_FMT);
+    TRY(search_static_remove_escapes(buf_searchon, buf_formatted), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
+    TRY(str_fmt(buf_searchon, "' | grep -F %s -q '", ignorecase ? "-i" : ""), ERR_STR_FMT);
+    TRY(search_static_remove_escapes(buf_searchon, find), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
+    TRY(str_fmt(buf_searchon, "' 2>/dev/null; then exit 0; else exit 1; fi"), ERR_STR_FMT);
+    //printf("CMD:%.*s\n", STR_F(buf_searchon));
+    found = !system(buf_searchon->s);
 #endif
     return found;
 error:
