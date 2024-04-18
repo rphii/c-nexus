@@ -1,6 +1,7 @@
 #include "err.h"
 #include "node.h"
 #include "cmd.h"
+#include "str.h"
 
 void node_zero(Node *node)
 {
@@ -171,7 +172,7 @@ int node_create(Node *node, Str *title, Str *cmd, Str *desc, Icon icon)
     if(!str_length(title)) THROW("title can't be empty");
     node_zero(node);
     node->icon = icon;
-    TRY(str_fmt(&node->title, "%.*s", STR_F(title)), ERR_STR_FMT);
+    TRYF(str_copy, &node->title, title);
     if(desc && str_length(desc)) TRY(str_fmt(&node->desc, "%.*s", STR_F(desc)), ERR_STR_FMT);
     if(cmd && str_length(cmd)) TRY(str_fmt(&node->cmd, "%.*s", STR_F(cmd)), ERR_STR_FMT);
     return 0;

@@ -5,6 +5,7 @@
 
 #include "search.h"
 
+#if 0
 #define ERR_SEARCH_STATIC_REMOVE_ESCAPES "failed removing escape sequences"
 static inline int search_static_remove_escapes(Str *restrict out, Str *restrict in)
 {
@@ -43,6 +44,7 @@ static inline int search_static_remove_escapes(Str *restrict out, Str *restrict 
 error:
     return -1;
 }
+#endif
 
 int search_fmt_nofree(bool ignorecase, Str *nofree_cmd, Str *nofree_content, Str *find, char *format, ...)
 {
@@ -63,7 +65,7 @@ int search_nofree(bool ignorecase, Str *nofree_cleaned, Str *find, Str *nofree_c
     ASSERT(find, ERR_NULL_ARG);
     int found = 0;
 #if 1
-    TRY(search_static_remove_escapes(nofree_cleaned, nofree_content), ERR_SEARCH_STATIC_REMOVE_ESCAPES);
+    TRYF(str_remove_escapes, nofree_cleaned, nofree_content);
     if(!str_length(find)) {
         found = -1;
     } else {

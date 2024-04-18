@@ -39,7 +39,7 @@ ErrDecl node_copy(Node *restrict dst, Node *restrict src);
 
 #define ERR_NODE_CREATE "failed creating node"
 #define node_create_ERR(node, title, cmd, desc, icon) "failed creating node"
-ErrDecl node_create(Node *node, Str *title, Str *cmd, Str *desc, Icon icon);
+int node_create(Node *node, Str *title, Str *cmd, Str *desc, Icon icon);
 
 #define ERR_NODE_FOLLOW "failed following node"
 ErrDecl node_follow(Node **node, size_t *sub_sel);

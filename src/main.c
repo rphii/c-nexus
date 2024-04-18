@@ -25,6 +25,7 @@ int main(int argc, const char **argv)
     INFO("Building the Nexus...");
     TRY(nexus_arg(&nexus, &arg), ERR_NEXUS_ARG);
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
+    //getchar();
     //goto clean;
 
     while(!nexus.quit) {

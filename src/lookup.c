@@ -1,6 +1,7 @@
 #include <ctype.h>
 
 #include "node.h"
+#include "str.h"
 #include "lookup.h"
 
 static inline size_t tnode_hash(Node *node)
@@ -23,7 +24,8 @@ int strcicmp(char const *a, size_t la, char const *b, size_t lb)
 
 static inline int tnode_cmp(Node *a, Node *b)
 {
-    return strcicmp(str_iter_begin(&a->title), str_length(&a->title), str_iter_begin(&b->title), str_length(&b->title));
+    return str_cmp_ci(&a->title, &b->title);
+    //return strcicmp(str_iter_begin(&a->title_link), str_length(&a->title_link), str_iter_begin(&b->title_link), str_length(&b->title_link));
 }
 
 static inline size_t tnodeicon_hash(Node *node)

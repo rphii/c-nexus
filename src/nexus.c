@@ -603,7 +603,7 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
     //ASSERT(cmd, ERR_NULL_ARG);
     size_t i = 0, j = 0;
     Node find = {
-        .title = *title,
+        .title = *title
     };
     bool found = !tnode_find(&nexus->nodes, &find, &i, &j);
     if(found) {
@@ -612,7 +612,7 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
         } else {
             /* node was added in nexus_link, via. add_count(0), meaning we should set the proper description etc. */
             Node *node = nexus->nodes.buckets[i].items[j];
-            str_free(&node->title);
+            str_free(&node->title); /* TODO this is sketchy */
             VrNode in = node->incoming, out = node->outgoing;
             TRY(node_create(node, title, cmd, desc, icon), ERR_NODE_CREATE);
             node->incoming = in;
@@ -622,7 +622,7 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
         Node node;
         TRY(node_create(&node, title, cmd, desc, icon), ERR_NODE_CREATE);
         TRY(tnode_add(&nexus->nodes, &node), ERR_LUTD_ADD);
-        TRY(tnode_find(&nexus->nodes, &find, &i, &j), ERR_LUTD_FIND);
+        TRY(tnode_find(&nexus->nodes, &find, &i, &j), ERR_LUTD_FIND ": '%.*s'", STR_F(&find.title));
     }
     *ref = nexus->nodes.buckets[i].items[j];
     return 0;
@@ -632,10 +632,9 @@ error:
 
 int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
 {
-    ASSERT(nexus, ERR_NULL_ARG);
-    ASSERT(src, ERR_NULL_ARG);
-    ASSERT(dest, ERR_NULL_ARG);
-    //printf("LINK %s ---- %s\n", str_iter_begin(&src->title), str_iter_begin(&dest->title));
+    ASSERT_ARG(nexus);
+    ASSERT_ARG(src);
+    ASSERT_ARG(dest);
     if(!tnode_has(&nexus->nodes, src)) {
         Node temp;
         TRY(node_copy(&temp, src), ERR_NODE_COPY);
@@ -652,8 +651,8 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
         //THROW("node does not exist in nexus: '%.*s'", STR_F(&dest->title));
     }
     size_t i0 = 0, i1 = 0, j0 = 0, j1 = 0;
-    tnode_find(&nexus->nodes, src, &i0, &j0);
-    tnode_find(&nexus->nodes, dest, &i1, &j1);
+    TRY(tnode_find(&nexus->nodes, src, &i0, &j0), "couldn't find '%.*s'", STR_F(&src->title));
+    TRY(tnode_find(&nexus->nodes, dest, &i1, &j1), "couldn't find '%.*s'", STR_F(&src->title));
     Node *ev_src = nexus->nodes.buckets[i0].items[j0];
     Node *ev_dest = nexus->nodes.buckets[i1].items[j1];
     Icon i_src = ev_src->icon;
@@ -794,8 +793,9 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
                     "  l : follow the arrow\n\n"
                     "more can be found in the " F("controls wiki", UL)), ICON_ROOT), ERR_NEXUS_INSERT_NODE);
 
-        NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created");
+        NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created", "shit");
         NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Note yet to be created", "This note is created after Test!", NODE_LEAF);
+        NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Shit", "This note is created after Test!", NODE_LEAF);
 
         TRY(content_build(nexus, root), ERR_CONTENT_BUILD);
     } else {
@@ -818,10 +818,19 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
             }
 #endif
         }
-        for(size_t i = 0; i < vstr_length(&btw.dirfiles); ++i) {
-            Str *filename = vstr_get_at(&btw.dirfiles, i);
-            TRYF(btw_parse_file, nexus, filename, &btw);
+        while(vstr_length(&btw.dirfiles)) {
+            Str filename = {0};
+            vstr_pop_front(&btw.dirfiles, &filename);
+            TRYF(btw_parse_file, nexus, &filename, &btw);
+            //Str *filename = vstr_get_at(&btw.dirfiles, i);
+            //TRYF(btw_parse_file, nexus, filename, &btw, &n);
+#if 0
+            if(!(n % 256)) {
+                vstr_shrink(&btw.dirfiles);
+            }
+#endif
         }
+        //printf("read %u files\n", n);
         //getchar();
     }
     /* trim all descriptions */

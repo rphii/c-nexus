@@ -9,9 +9,9 @@ CFLAGS  := -Wall -Wextra -Wimplicit -std=c99 \
 		   ##############\
 		   -rdynamic -Og -ggdb3 \
 		   -fsanitize=address -rdynamic \
+		   -O3 -march=native \
 		   -Wconversion \
 		   -pg -rdynamic \
-		   -O3 -march=native \
 		   -DCOLORPRINT_DISABLE \
 		   -O0 -g \
 		   -rdynamic -Og -ggdb3 \

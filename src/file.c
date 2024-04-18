@@ -68,7 +68,10 @@ int file_str_read(Str *filename, Str *content)
         THROW("won't open directories");
     }
     file = fopen(filename->s, "r");
-    if(!file || errno) THROW("failed to open file named '%s'", filename->s);
+    if(!file || errno) {
+        //goto clean;
+        THROW("failed to open file named '%s'", filename->s);
+    }
 
     TRY(file_fp_read(file, content), ERR_FILE_FP_READ);
     /* close file */
@@ -98,14 +101,16 @@ ErrDecl file_dir_read(Str *dirname, VStr *files)
     int err = 0;
     DIR *dir = 0;
     size_t len = str_rnch(dirname, PLATFORM_CH_SUBDIR, 0);
-    if(len < str_length(dirname)) ++len;
+    if(len < str_length(dirname) && str_get_at(dirname, len) != PLATFORM_CH_SUBDIR) ++len;
     struct dirent *dp = 0;
     if ((dir = opendir(dirname->s)) == NULL) {
-        THROW("can't open directory '%s'", dirname->s);
+        goto clean;
+        THROW("can't open directory '%.*s'", (int)len, dirname->s);
     }
     while ((dp = readdir(dir)) != NULL)
     {
         Str filename = {0};
+        if(dp->d_name[0] == '.') continue;
         if(!str_cmp(&STR_L(dp->d_name), &STR(".")) || !str_cmp(&STR_L(dp->d_name), &STR(".."))) continue;
         TRYF(str_fmt, &filename, "%.*s/%s", (int)len, dirname->s, dp->d_name);
         //printf("FILE: %.*s\n", STR_F(&filename));

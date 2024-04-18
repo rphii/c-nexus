@@ -3,6 +3,7 @@
 #include <ctype.h>
 
 /* inclusion and configuration of vector */
+#include "vector.h"
 #include "str.h"
 #include "platform.h"
 
@@ -282,6 +283,17 @@ int str_cmp_ci(const Str *a, const Str *b) {/*{{{*/
     return 0;
 }/*}}}*/
 
+int str_cmp_ci_any(const Str *a, const Str **b, size_t len) {/*{{{*/
+    ASSERT_ARG(a);
+    ASSERT_ARG(b);
+    for (size_t i = 0; i < len; ++i) {
+        const Str *bb = b[i];
+        int result = str_cmp_ci(a, bb);
+        if(!result) return 0;
+    }
+    return -1;
+}/*}}}*/
+
 inline size_t str_count_overlap(const Str *restrict a, const Str *restrict b, bool ignorecase) //{{{
 {
     ASSERT_ARG(a);
@@ -445,7 +457,7 @@ size_t str_rnch(const Str *str, char ch, size_t n) {
             ++ni;
         }
     }
-    return str_length(str);
+    return 0; //str_length(str);
 }
 
 size_t str_count_ch(const Str *str, char ch) {/*{{{*/
@@ -498,4 +510,44 @@ size_t str_hash_ci(const Str *a) //{{{
 } //}}}
 
 //}}}
+
+ErrDecl str_remove_escapes(Str *restrict out, Str *restrict in)
+{
+    ASSERT(out, ERR_NULL_ARG);
+    ASSERT(in, ERR_NULL_ARG);
+    bool skip = 0;
+    size_t iX = 0;
+    char c_last = 0;
+    for(size_t i = 0; i < str_length(in); i++) {
+        char c = str_get_at(in, i);
+        if(!skip) {
+            if(c == '\033') {
+                TRY(str_fmt(out, "%.*s", (int)(i - iX), str_iter_at(in, iX)), ERR_STR_FMT);
+                skip = true;
+#if 0
+            } else if(c == '\'') {
+                TRY(str_fmt(out, "%.*s\'\\\'\'", (int)(i - iX), str_iter_at(in, iX)), ERR_STR_FMT);
+                iX = i + 1;
+#endif
+            } else if(!isspace(c_last) && isspace(c)) {
+                TRY(str_fmt(out, "%.*s ", (int)(i - iX), str_iter_at(in, iX)), ERR_STR_FMT);
+                iX = i + 1;
+            } else if(isspace(c_last) && isspace(c)) {
+                iX = i + 1;
+            }
+            if(!skip) c_last = c;
+        } else {
+            if(c == 'm') {
+                iX = i + 1;
+                skip = false;
+            }
+        }
+    }
+    if(!skip) {
+        TRY(str_fmt(out, "%.*s", (int)(str_length(in) - iX), str_iter_at(in, iX)), ERR_STR_FMT);
+    }
+    return 0;
+error:
+    return -1;
+}
 
