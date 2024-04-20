@@ -14,7 +14,8 @@ typedef struct BtwParse {
 
 typedef enum {
     BTW_LEX_STRING,
-    BTW_LEX_FORMAT,
+    BTW_LEX_FORMAT_FG,
+    BTW_LEX_FORMAT_BG,
     BTW_LEX_LINK,
     BTW_LEX_SEPARATOR, // mainly { or }
 } BtwLexList;
@@ -51,6 +52,7 @@ typedef struct Btw {
         size_t attempts;
         size_t success;
         size_t maxres;
+        size_t links;
     } stats;
 } Btw;
 

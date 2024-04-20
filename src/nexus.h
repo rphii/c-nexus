@@ -55,7 +55,7 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
         Node *temp, unused; \
         VIcon ic = {.items = {{.id = ICON_BUNDLE_TIME, .time = icon}}, .len = 1}; \
         TRY(nexus_insert_node(nexus, &temp, &STR_L(title), &STR_L(cmd), &STR_L(description), &ic), ERR_NEXUS_INSERT_NODE); \
-        TRY(nexus_link(nexus, root, temp), ERR_NEXUS_LINK); \
+        TRY(nexus_link(nexus, root, temp, 0), ERR_NEXUS_LINK); \
         NEXUS_LINKS_EV_STR(nexus, temp, __VA_ARGS__); \
         if(ref != 0) { \
             memcpy(ref != 0 ? ref : &unused, temp, sizeof(*temp)); \
@@ -63,8 +63,8 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
     } while(0)
 
 #define ERR_NEXUS_LINK "failed linking nodes"
-#define nexus_link_ERR(nexus, src, dst) "failed linking nodes"
-ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst);
+#define nexus_link_ERR(nexus, src, dst, made_link) "failed linking nodes"
+ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst, bool *made_link);
 
 #define NEXUS_LINKS_EV_STR(nexus, src, ...)     do { \
         char *arr64789[] = {__VA_ARGS__}; \
@@ -72,7 +72,7 @@ ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst);
             char *s = arr64789[i64789]; \
             if(!s) continue; \
             Node e64789 = {.title = STR_L(s)}; \
-            TRY(nexus_link(nexus, src, &e64789), ERR_NEXUS_LINK); \
+            TRY(nexus_link(nexus, src, &e64789, 0), ERR_NEXUS_LINK); \
         } \
     } while(0)
 

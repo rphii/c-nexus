@@ -74,6 +74,7 @@ ErrDecl str_get_str(Str *str);
 
 int str_cmp(const Str *a, const Str *b);
 int str_cmp_ci(const Str *a, const Str *b);
+int str_cmp_esci(const Str *a, const Str *b);
 int str_cmp_ci_any(const Str *a, const Str **b, size_t len);
 size_t str_count_overlap(const Str *a, const Str *b, bool ignorecase);
 size_t str_find_substring(const Str *str, const Str *sub);
@@ -92,6 +93,7 @@ size_t str_count_ch(const Str *str, char ch);
 size_t str_irch(const Str *str, size_t iE, char ch, size_t n);
 size_t str_hash(const Str *a);
 size_t str_hash_ci(const Str *a);
+size_t str_hash_esci(const Str *a);
 
 #define str_remove_escapes_ERR(out, in) "failed removing escape sequences"
 ErrDecl str_remove_escapes(Str *out, Str *in);

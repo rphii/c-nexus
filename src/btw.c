@@ -32,7 +32,7 @@ ErrDecl btw_lex_append(VBtwLex *items, BtwLex *item, size_t i0, size_t line_inde
         //    return 0;
         //}
     }
-#if 1
+#if 0
     printf(F("%zu", BG_BK_B), vbtwlex_length(items));
     if(item->flag) {
         printf(F("F", BG_WT_B FG_BK));
@@ -64,6 +64,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
     ASSERT_ARG(items);
     ASSERT_ARG(str);
     int err = 0;
+    size_t n_emptyline = 0;
     size_t index = 0, line_index = 0, i0 = 0;
     BtwLex temp = {0};
     temp.id = BTW_LEX_STRING;
@@ -80,119 +81,139 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
 #if 1
         /* check format+link */
         /////printf(" => ");
+        //printf("LINE LENGTH: %zu(%.*s)\n", str_length(&line), STR_F(&line));
         bool handled = false;
-        do {
-            handled = false;
-            size_t sep0 = str_find_any(&line, &STR("{}|"));
-            size_t f0 = str_ch(&line, '#', 0);
-            size_t f1 = str_ch(&line, '[', 0);
-            //printf("\n[[sep0 %zu  f0 %zu  f1 %zu:%.*s]]\n", sep0, f0, f1, STR_F(&line));
-            if(f1 < str_length(&line) && (f1 < sep0 || f0 < sep0)) {
-                //printf(" => link\n");
-                size_t f3 = str_ch_pair(&STR_I0(line, f1), ']') + f1;
-                if(f3 >= str_length(&line)) {
-                    f3 = str_rch(&line, ']', 0);
-                }
-                size_t f2 = str_irch(&line, f3, '#', 0);
-                bool f0b = false;
-                bool f2b = false;
-                if(f3 < str_length(&line)) {
-                    /* found [ and matching ] */
-                    handled = true;
-                    if(f0 < f1) {
-                        size_t ws = str_find_ws(&STR_I0(line, f0)) + f0;
-                        if(ws > f1) {
-                            /* valid #color[ found - but first, append previous text */
-                            /////printf(F("#", BG_RD));
-                            f0b = true;
+        if(!str_length(&line)) {
+            handled = true;
+            ++n_emptyline;
+        }
+        if(!handled) {
+            n_emptyline = 0;
+            do {
+                handled = false;
+                size_t sep0 = str_find_any(&line, &STR("{}|"));
+                size_t f0 = str_ch(&line, '#', 0);
+                size_t f1 = str_ch(&line, '[', 0);
+                //printf("\n[[sep0 %zu  f0 %zu  f1 %zu:%.*s]]\n", sep0, f0, f1, STR_F(&line));
+                if(f1 < str_length(&line) && (f1 < sep0 || f0 < sep0)) {
+                    //if(f1 < str_length(&line)) {
+                    //printf(" => link\n");
+                    size_t f3 = str_ch_pair(&STR_I0(line, f1), ']') + f1;
+                    if(f3 >= str_length(&line)) {
+                        f3 = str_rch(&line, ']', 0);
+                    }
+                    size_t f2 = str_irch(&line, f3, '#', 0);
+                    bool f0b = false;
+                    bool f2b = false;
+                    if(f3 < str_length(&line)) {
+                        /* found [ and matching ] */
+                        handled = true;
+                        if(f0 < f1) {
+                            size_t ws = str_find_ws(&STR_I0(line, f0)) + f0;
+                            if(ws > f1) {
+                                /* valid #color[ found - but first, append previous text */
+                                /////printf(F("#", BG_RD));
+                                f0b = true;
+                            }
                         }
-                    }
-                    if(f0b) {
-                        size_t until = f0 < f1 ? f0 : f1;
-                        temp.id = BTW_LEX_STRING;
-                        TRYF(str_fmt, &temp.str, "%.*s", (int)(until), str_iter_begin(&line));
-                        TRYF(btw_lex_append, items, &temp, i0, line_index);
-                        /* append actual color */
-                        temp.id = BTW_LEX_FORMAT;
-                        TRYF(str_fmt, &temp.str, "%.*s", (int)(f1-f0+1), str_iter_begin(&STR_I0(line, f0)));
-                        TRYF(btw_lex_append, items, &temp, i0, line_index);
-                    } else {
-                        size_t until = f1;
-                        temp.id = BTW_LEX_STRING;
-                        TRYF(str_fmt, &temp.str, "%.*s", (int)(until), str_iter_begin(&line));
-                        TRYF(btw_lex_append, items, &temp, i0, line_index);
-                    }
-                    /////printf(F("[", FG_BK BG_GN));
-                    //printf("{f0 %zu, f2 %zu, f3 %zu}", f0, f2, f3);
-                    if(f2 > f1 && f2 < f3) {
-                        size_t ws = str_find_ws(&STR_I0(line, f2)) + f2;
-                        if(ws > f3) {
-                            f2b = true;
+                        if(f0b) {
+                            size_t until = f0 < f1 ? f0 : f1;
+                            temp.id = BTW_LEX_STRING;
+                            TRYF(str_fmt, &temp.str, "%.*s", (int)(until), str_iter_begin(&line));
+                            TRYF(btw_lex_append, items, &temp, i0, line_index);
+                            /* append actual color */
+                            temp.id = BTW_LEX_FORMAT_FG;
+                            TRYF(str_fmt, &temp.str, "%.*s", (int)(f1-f0+1), str_iter_begin(&STR_I0(line, f0)));
+                            TRYF(btw_lex_append, items, &temp, i0, line_index);
+                        } else {
+                            size_t until = f1;
+                            temp.id = BTW_LEX_STRING;
+                            TRYF(str_fmt, &temp.str, "%.*s", (int)(until), str_iter_begin(&line));
+                            TRYF(btw_lex_append, items, &temp, i0, line_index);
                         }
-                    }
-                    if(f2b == true) {
-                        TRYF(str_fmt, &temp.str, "%.*s", (int)(f2-f1-1), str_iter_begin(&STR_I0(line, f1+1)));
-                        /////printf("%.*s", (int)(f2-f1-1), str_iter_begin(&STR_I0(line, f1+1)));
-                        /////printf(F("#", BG_BL));
-                    } else {
-                        TRYF(str_fmt, &temp.str, "%.*s", (int)(f3-f1-1), str_iter_begin(&STR_I0(line, f1+1)));
-                        /////printf("%.*s", (int)(f3-f1-1), str_iter_begin(&STR_I0(line, f1+1)));
-                    }
-                    /////printf(F("]", FG_BK BG_YL));
-                    size_t fin11 = str_find_ws(&STR_I0(line, f3)) + f3;
-                    size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#{}|")) + f3; // TODO: this is shit.. make it less shit. e.g. [a]] -> the ] gets swallowed whole, but we can't put it into here because (again) this is shit
-                    size_t fin1 = fin11 < fin12 ? fin11 : fin12;
-                    //   size_t fin2 = str_ch(&STR_I0(line, f3), '|', 0) + f3;
-                    //size_t fin3 = str_ch(&STR_I0(line, f3), ']', 0) + f3;
-                    size_t done = fin1; // < fin2 ? fin1 : fin2;
-                    size_t bold = str_ch(&STR_I0(line, f3), 'b', 0) + f3;
-                    size_t ital = str_ch(&STR_I0(line, f3), 'i', 0) + f3;
-                    size_t undl = str_ch(&STR_I0(line, f3), 'u', 0) + f3;
-                    size_t nlnk = str_ch(&STR_I0(line, f3), '!', 0) + f3;
-                    size_t ytag = str_ch(&STR_I0(line, f3), ':', 0) + f3;
-                    // TODO: fix this shit // the mess above :)
-                    // just put it into format->string?
-                    //printf("\n[[[fin11:%zu fin12:%zu fin1:%zu fin2:%zu done%zu b%zu i%zu u%zu !%zu]]]\n", fin11, fin12, fin1, fin2, done, bold, ital, undl, nlnk);
-                    if(bold < done) temp.flag |= BTW_FLAG_BOLD;
-                    if(ital < done) temp.flag |= BTW_FLAG_ITALIC;
-                    if(undl < done) temp.flag |= BTW_FLAG_UNDERLINE;
-                    if(nlnk < done) temp.flag |= BTW_FLAG_NOLINK;
-                    if(ytag < done) temp.flag |= BTW_FLAG_TAG;
-                    /////printf("%.*s", (int)(done-f3-1), str_iter_begin(&STR_I0(line, f3+1)));
-                    temp.id = BTW_LEX_LINK;
-                    TRYF(btw_lex_append, items, &temp, i0, line_index);
-                    /* idk man */
-                    if(f2b == true) {
-                        temp.id = BTW_LEX_FORMAT;
-                        TRYF(str_fmt, &temp.str, "%.*s", (int)(f3-f2+1), str_iter_begin(&STR_I0(line, f2)));
+                        /////printf(F("[", FG_BK BG_GN));
+                        //printf("{f0 %zu, f2 %zu, f3 %zu}", f0, f2, f3);
+                        if(f2 > f1 && f2 < f3) {
+                            size_t ws = str_find_ws(&STR_I0(line, f2)) + f2;
+                            if(ws > f3) {
+                                f2b = true;
+                            }
+                        }
+                        if(f2b == true) {
+                            TRYF(str_fmt, &temp.str, "%.*s", (int)(f2-f1-1), str_iter_begin(&STR_I0(line, f1+1)));
+                            /////printf("%.*s", (int)(f2-f1-1), str_iter_begin(&STR_I0(line, f1+1)));
+                            /////printf(F("#", BG_BL));
+                        } else {
+                            TRYF(str_fmt, &temp.str, "%.*s", (int)(f3-f1-1), str_iter_begin(&STR_I0(line, f1+1)));
+                            /////printf("%.*s", (int)(f3-f1-1), str_iter_begin(&STR_I0(line, f1+1)));
+                        }
+                        /////printf(F("]", FG_BK BG_YL));
+                        size_t fin11 = str_find_ws(&STR_I0(line, f3)) + f3;
+                        size_t fin12 = str_find_any(&STR_I0(line, f3), &STR("[#{}|")) + f3; // TODO: this is shit.. make it less shit. e.g. [a]] -> the ] gets swallowed whole, but we can't put it into here because (again) this is shit
+                        size_t fin1 = fin11 < fin12 ? fin11 : fin12;
+                        //   size_t fin2 = str_ch(&STR_I0(line, f3), '|', 0) + f3;
+                        //size_t fin3 = str_ch(&STR_I0(line, f3), ']', 0) + f3;
+                        size_t done = fin1; // < fin2 ? fin1 : fin2;
+                        size_t bold = str_ch(&STR_I0(line, f3), 'b', 0) + f3;
+                        size_t ital = str_ch(&STR_I0(line, f3), 'i', 0) + f3;
+                        size_t undl = str_ch(&STR_I0(line, f3), 'u', 0) + f3;
+                        size_t nlnk = str_ch(&STR_I0(line, f3), '!', 0) + f3;
+                        size_t ytag = str_ch(&STR_I0(line, f3), ':', 0) + f3;
+                        // TODO: fix this shit // the mess above :)
+                        // just put it into format->string?
+                        //printf("\n[[[fin11:%zu fin12:%zu fin1:%zu fin2:%zu done%zu b%zu i%zu u%zu !%zu]]]\n", fin11, fin12, fin1, fin2, done, bold, ital, undl, nlnk);
+                        if(bold < done) temp.flag |= BTW_FLAG_BOLD;
+                        if(ital < done) temp.flag |= BTW_FLAG_ITALIC;
+                        if(undl < done) temp.flag |= BTW_FLAG_UNDERLINE;
+                        if(nlnk < done) temp.flag |= BTW_FLAG_NOLINK;
+                        if(ytag < done) temp.flag |= BTW_FLAG_TAG;
+                        /////printf("%.*s", (int)(done-f3-1), str_iter_begin(&STR_I0(line, f3+1)));
+                        temp.id = BTW_LEX_LINK;
                         TRYF(btw_lex_append, items, &temp, i0, line_index);
-                    }
-                    line.first += done; // + (fin2 == done);
-                    if(line.first > line.last) line.first = line.last;
-                    if(!str_length(&line)) break;
-                }
-            } else if(sep0 < str_length(&line)) {
-                //printf(" => sep\n");
-                /* push back previously found string */
-                handled = true;
-                size_t until = sep0;
-                temp.id = BTW_LEX_STRING;
-                TRYF(str_fmt, &temp.str, "%.*s", (int)(until), str_iter_begin(&line));
-                TRYF(btw_lex_append, items, &temp, i0, line_index);
-                /* push back current separators */
-                temp.id = BTW_LEX_SEPARATOR;
-                TRYF(str_fmt, &temp.str, "%.*s", 1, str_iter_begin(&STR_I0(line, sep0)));
-                TRYF(btw_lex_append, items, &temp, i0, line_index);
-                line.first += until + 1;
-            }
-            if(!handled) {
-                TRYF(str_fmt, &temp.str, "%.*s", STR_F(&line));
-            }
-            //printf("LINE:%.*s\n", STR_F(&line));
-        } while(handled);
-        TRYF(str_fmt, &temp.str, "\n");
+                        /* idk man */
+                        if(f2b == true) {
+                            temp.id = BTW_LEX_FORMAT_BG;
+                            TRYF(str_fmt, &temp.str, "%.*s", (int)(f3-f2+1), str_iter_begin(&STR_I0(line, f2)));
+                            TRYF(btw_lex_append, items, &temp, i0, line_index);
+                        }
+#if 0
+                        if(f0b || f2b) {
+                            temp.id = BTW_LEX_SEPARATOR;
+                            TRYF(str_fmt, &temp.str, "|");
+                            TRYF(btw_lex_append, items, &temp, i0, line_index);
+                        }
 #endif
-        /////printf("\n");
+                        line.first += done; // + (fin2 == done);
+                        if(line.first > line.last) line.first = line.last;
+                        if(!str_length(&line)) break;
+                    }
+                } else if(sep0 < str_length(&line)) {
+                    //printf(" => sep\n");
+                    /* push back previously found string */
+                    handled = true;
+                    size_t until = sep0;
+                    temp.id = BTW_LEX_STRING;
+                    TRYF(str_fmt, &temp.str, "%.*s", (int)(until), str_iter_begin(&line));
+                    TRYF(btw_lex_append, items, &temp, i0, line_index);
+                    /* push back current separators */
+                    temp.id = BTW_LEX_SEPARATOR;
+                    TRYF(str_fmt, &temp.str, "%.*s", 1, str_iter_begin(&STR_I0(line, sep0)));
+                    TRYF(btw_lex_append, items, &temp, i0, line_index);
+                    line.first += until + 1;
+                }
+                if(!handled) {
+                    TRYF(str_fmt, &temp.str, "%.*s", STR_F(&line));
+                }
+#if 0
+                printf("LINE:%.*s\n", STR_F(&line));
+#endif
+                } while(handled);
+            }
+            if(n_emptyline < 2) {
+                TRYF(str_fmt, &temp.str, "\n");
+            }
+#endif
+            /////printf("\n");
     }
     TRYF(btw_lex_append, items, &temp, i0, line_index);
 clean:
@@ -252,9 +273,9 @@ next:;
 }
 
 static const BtwLexList *static_btw_pat_link[] = {
-    (BtwLexList []){3, BTW_LEX_FORMAT, BTW_LEX_LINK, BTW_LEX_FORMAT},  // #[#]
-    (BtwLexList []){2, BTW_LEX_FORMAT, BTW_LEX_LINK},                  // #[ ]
-    (BtwLexList []){2, BTW_LEX_LINK, BTW_LEX_FORMAT},                  //  [#]
+    (BtwLexList []){3, BTW_LEX_FORMAT_FG, BTW_LEX_LINK, BTW_LEX_FORMAT_BG},  // #[#]
+    (BtwLexList []){2, BTW_LEX_FORMAT_FG, BTW_LEX_LINK},                  // #[ ]
+    (BtwLexList []){2, BTW_LEX_LINK, BTW_LEX_FORMAT_BG},                  //  [#]
     (BtwLexList []){1, BTW_LEX_LINK},                                  //  [ ]
 };
 
@@ -424,7 +445,7 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, BtwFlag *flags, size_t
                     bool bold = ((item->flag & BTW_FLAG_BOLD));
                     bool it = ((item->flag & BTW_FLAG_ITALIC));
                     bool ul = ((item->flag & BTW_FLAG_UNDERLINE));
-                    INFO(" %.*s ->%s%s", STR_F(&item->str), has_fg ? " fg" : "", has_bg ? " bg" : "");
+                    //INFO(" %.*s ->%s%s", STR_F(&item->str), has_fg ? " fg" : "", has_bg ? " bg" : "");
                     TRYF(str_fmt_fgbg, pending, p, has_fg ? fg : 0, has_bg ? bg : 0, bold, it, ul);
                     //TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
                     if(!(item->flag & BTW_FLAG_NOLINK)) {
@@ -583,6 +604,9 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                     pending.first += start2;
                 }
                 TRYF(str_fmt, &fill->desc, "%.*s", STR_F(&pending));
+                if(str_ch(title, '\033', 0) < str_length(title)) {
+                    TRYF(str_copy, &fill->title, title);
+                }
                 //printf(" (%.*s) [%.*s]\n", STR_F(title), STR_F(&pending));
             }
             /* do the links */
@@ -593,7 +617,10 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                         .title = *s_link,
                     };
                     //printf("LINK %.*s <<>> %.*s\n", STR_F(&fill->title_link), STR_F(&n_link.title_link));
-                    TRYF(nexus_link, nexus, &n_link, fill);
+                    INFO("  link ... %.*s ... %.*s", STR_F(title), STR_F(s_link));
+                    bool linked = false;
+                    TRYF(nexus_link, nexus, &n_link, fill, &linked);
+                    if(linked) ++btw->stats.links;
                 }
             }
             /* do the tags */
@@ -623,8 +650,10 @@ notitle:
                 if(str_length(s_parent)) {
                     child.title = s_child;
                     parent.title = *s_parent;
-                    //printf("  link ... %.*s ... %.*s\n", STR_F(&s_child), STR_F(s_parent));
-                    TRYF(nexus_link, nexus, &parent, &child);
+                    INFO("  link ... %.*s ... %.*s", STR_F(&s_child), STR_F(s_parent));
+                    bool linked = false;
+                    TRYF(nexus_link, nexus, &parent, &child, &linked);
+                    if(linked) ++btw->stats.links;
                 }
             }
             if(vsize_length(&btw->indices)) {

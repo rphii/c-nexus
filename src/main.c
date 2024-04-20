@@ -15,12 +15,14 @@ int main(int argc, const char **argv)
 {
     int err = 0;
 #if 0
-    Str out = {0};
+    Str out = {0}, out2 = {0};
     V3u8 fg = {0xFF, 0xFF, 0xFF};
     V3u8 bg = {0xFF, 0xFF, 0x00};
     Str in = STR("shit");
-    TRYF(str_fmt_fgbg, &out, &in, fg, bg, true, true, true);
-    printf("%.*s\n", STR_F(&out));
+    TRYF(str_fmt_fgbg, &out, &in, 0, 0, false, false, false);
+    TRYF(str_fmt_fgbg, &out2, &in, 0, 0, false, false, false);
+    int result = str_cmp_esci(&out, &out2);
+    printf("%.*s[%zu] %s %.*s[%zu] (%i)\n", STR_F(&out), str_length(&out), result ? "!=" : "==", STR_F(&out2), str_length(&out2), result);
     str_free(&out);
     return 0;
 #endif

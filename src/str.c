@@ -315,6 +315,91 @@ int str_cmp_ci(const Str *a, const Str *b) {/*{{{*/
     return 0;
 }/*}}}*/
 
+int str_cmp_esci(const Str *a, const Str *b) {/*{{{*/
+    ASSERT_ARG(a);
+    ASSERT_ARG(b);
+#if 1
+    size_t ia = 0, ioff = 0; /* I am abusing this as signed even tho it's unsigned - trust me it'll 100% work! */
+    int sa = 0, sb = 0;
+    char ca = 0, cb = 0;
+    while(true) {
+        /* breaking condition - are we at the end of the string? */
+        if(ia >= str_length(a) && ia+ioff >= str_length(b)) break;
+        /* get chars at current pos */
+        if(ia < str_length(a)) {
+            ca = str_get_at(a, ia);
+        }
+        if(ia+ioff < str_length(b)) {
+            cb = str_get_at(b, ia+ioff);
+        }
+        //printf("ia %zu, ioff %zi, ca '%c', cb '%c'\n", ia, ioff, ca, cb);
+        /* check state */
+        if(!sa && !sb) {
+            if(ca == '\033') ++sa;
+            if(cb == '\033') ++sb;
+            if(!sa && !sb) {
+                /* is one string at the end? */
+                if(ia >= str_length(a) && ia+ioff >= str_length(b)) return -1;
+                /* both chars can be compared normally */
+                int d = tolower(ca) - tolower(cb);
+                if (d != 0) return d;
+            }
+            /* next indices */
+            if((!sa && !sb) || (sa && sb)) {
+                ia++;
+            } else if(sa && !sb) {
+                ia++;
+                ioff--;
+            } else if(!sa && sb) {
+                ioff++;
+            }
+        } else {
+            /* next indices */
+            if((!sa && !sb) || (sa && sb)) {
+                ia++;
+            } else if(sa && !sb) {
+                ia++;
+                ioff--;
+            } else if(!sa && sb) {
+                ioff++;
+            }
+            /* we can't compare */
+            if(sa == 1 && ca == '[') ++sa;
+            else if(sa == 2 && ca == 'm') sa = 0;
+            if(sb == 1 && cb == '[') ++sb;
+            else if(sb == 2 && cb == 'm') sb = 0;
+        }
+    }
+    /* strings were not equally long */
+    if(ia < str_length(a) || (ia+ioff < str_length(b))) {
+        return -1;
+    }
+
+#else
+    size_t ia = 0, ib = 0;
+    int sa = 0, sb = 0;
+    char ca = 0, cb = 0;
+    while(true) {
+        if(!sa && !sb) {
+            if(ca == '\033') ++sa;
+            else ca = str_get_at(a, ia++);
+            if(cb == '\033') ++sb;
+            else cb = str_get_at(b, ib++);
+            if(!sa && !sb) {
+                int d = tolower(str_get_at(a, ia)) - tolower(str_get_at(b, ib));
+                if (d != 0) return d;
+            }
+        }
+        if(sa == 1 && ca == '[') ++sa;
+        else if(sa == 2 && ca == 'm') sa = 0;
+        if(sb == 1 && cb == '[') ++sb;
+        else if(sb == 2 && cb == 'm') sb = 0;
+    }
+    if(ia != str_length(a) || ib != str_length(b)) return -1;
+#endif
+    return 0;
+}/*}}}*/
+
 int str_cmp_ci_any(const Str *a, const Str **b, size_t len) {/*{{{*/
     ASSERT_ARG(a);
     ASSERT_ARG(b);
@@ -390,7 +475,6 @@ size_t str_find_any(const Str *str, const Str *any) { //{{{
 size_t str_find_nany(const Str *str, const Str *any) { //{{{
     ASSERT_ARG(str);
     ASSERT_ARG(any);
-    size_t result = str_length(str);
     for(size_t i = 0; i < str_length(str); ++i) {
         size_t temp = str_ch(any, str_get_at(str, i), 0);
         if(temp >= str_length(any)) return i;
@@ -541,6 +625,23 @@ size_t str_hash_ci(const Str *a) //{{{
     return hash;
 } //}}}
 
+size_t str_hash_esci(const Str *a) {/*{{{*/
+    ASSERT_ARG(a);
+    size_t hash = 5381;
+    size_t i = 0;
+    int stage = 0;
+    while(i < str_length(a)) {
+        unsigned char c = (unsigned char)tolower(str_get_at(a, i++));
+        if(!stage) {
+            if(c == '\033') ++stage;
+            else hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+        }
+        else if(stage == 1 && c == '[') ++stage;
+        else if(stage == 2 && c == 'm') stage = 0;
+    }
+    return hash;
+}/*}}}*/
+
 //}}}
 
 ErrDecl str_remove_escapes(Str *restrict out, Str *restrict in)
@@ -582,4 +683,5 @@ ErrDecl str_remove_escapes(Str *restrict out, Str *restrict in)
 error:
     return -1;
 }
+
 

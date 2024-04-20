@@ -671,8 +671,8 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
     if(!found) {
         TRY(tnode_add(&nexus->nodes, temp), ERR_LUTD_ADD);
     }
-    printf("ICONFIND '%.*s' -> %s\n", STR_F(&temp->title), found ? "found" : "new node");
-    printf("ICONFIND '%.*s' -> %s\n", STR_F(&temp->title), istag ? "istag" : "new icon");
+    //INFO("ICONFIND '%.*s' -> %s", STR_F(&temp->title), found ? "found" : "new node");
+    //INFO("ICONFIND '%.*s' -> %s", STR_F(&temp->title), istag ? "istag" : "new icon");
     TRY(tnode_find(&nexus->nodes, temp, &ii, &jj), ERR_LUTD_FIND ": '%.*s'", STR_F(&temp->title));
     Node *iconfound = nexus->nodes.buckets[ii].items[jj];
     //printf("%zu/%zu\n", ii, jj);
@@ -695,7 +695,7 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
     }
     if(!str_length(&iconfound->title)) THROW("i don't want to think about what's better right now; return 0 or throw?"); // TODO
     //INFO("Added Icon %.*s ... %.*s", STR_F(&iconfound->title), STR_F(&node->title));
-    TRYF(nexus_link, nexus, iconfound, node);
+    TRYF(nexus_link, nexus, iconfound, node, 0);
     return 0;
 error:
     return -1;
@@ -747,7 +747,7 @@ error:
     ERR_CLEAN;
 } //}}}
 
-int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
+int nexus_link(Nexus *nexus, Node *src, Node *dest, bool *made_link) //{{{
 {
     ASSERT_ARG(nexus);
     ASSERT_ARG(src);
@@ -762,7 +762,7 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
         TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
         //THROW("node does not exist in nexus: '%.*s'", STR_F(&src->title));
     }
-    if(!str_cmp_ci(&src->title, &dest->title)) return 0;
+    if(!str_cmp_esci(&src->title, &dest->title)) return 0;
     if(!tnode_has(&nexus->nodes, dest)) {
         Node temp;
         TRY(node_copy(&temp, dest), ERR_NODE_COPY);
@@ -793,7 +793,14 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
     bool duplicate = false;
     for(size_t i = 0; i < vrnode_length(&ev_src->outgoing); ++i) {
         Node *node = vrnode_get_at(&ev_src->outgoing, i);
-        if(!str_cmp_ci(&node->title, &ev_dest->title)) {
+        if(!str_cmp_esci(&node->title, &ev_dest->title)) {
+            duplicate = true;
+            break;
+        }
+    }
+    for(size_t i = 0; i < vrnode_length(&ev_src->incoming); ++i) {
+        Node *node = vrnode_get_at(&ev_src->incoming, i);
+        if(!str_cmp_esci(&node->title, &ev_dest->title)) {
             duplicate = true;
             break;
         }
@@ -801,16 +808,20 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest) //{{{
 #if 0
     for(size_t i = 0; i < vrnode_length(&ev_dest->incoming); ++i) {
         Node *node = vrnode_get_at(&ev_dest->incoming, i);
-        if(!str_cmp_ci(&node->title, &ev_src->title)) {
+        printf("  in  %.*s ... %.*s =", STR_F(&node->title), STR_F(&ev_src->title));
+        if(!str_cmp_esci(&node->title, &ev_src->title)) {
             duplicate = true;
+            printf(" do match\n");
             break;
         }
+        printf("\n");
     }
 #endif
     /* finally, add the nodes */
     if(!duplicate) {
         TRY(vrnode_push_back(&ev_src->outgoing, ev_dest), ERR_VEC_PUSH_BACK);
         TRY(vrnode_push_back(&ev_dest->incoming, ev_src), ERR_VEC_PUSH_BACK);
+        if(made_link) *made_link = true;
     }
     return 0;
 error:
@@ -996,7 +1007,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
         if(res > btw.stats.maxres) btw.stats.maxres = res;
         //printf("%zu bytes max. reserved\n", btw.maxres);
         //printf("read %u files\n", n);
-        INFO("Loaded %zu of %zu checked files", btw.stats.success, btw.stats.attempts);
+        INFO("Loaded %zu of %zu checked files and established %zu links", btw.stats.success, btw.stats.attempts, btw.stats.links);
         //getchar();
     }
     /* trim all descriptions */
