@@ -14,6 +14,8 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
+typedef u8 V3u8[3];
+
 VEC_INCLUDE(VSize, vsize, size_t, BY_VAL);
 
 #if 0

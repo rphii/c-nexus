@@ -332,9 +332,11 @@ error:
 int nexus_userinput(Nexus *nexus, int key) /*{{{*/
 {
     ASSERT(nexus, ERR_NULL_ARG);
+    int err = 0;
     View *view = &nexus->view;
     bool disable_default = false;
     ASSERT(view, "view is 0!\n");
+    Str reenter = {0};
     switch(view->id) {
         case VIEW_NORMAL: {
         } break;
@@ -370,6 +372,13 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
             case 'C': {
                 Node *sub = node_get_sub_sel(view->current, view->sub_sel);
                 if(sub) cmd_run(&sub->cmd);
+            } break;
+            case 'r': {
+                TRYF(str_copy, &reenter, &nexus->view.current->title);
+                nexus_free(nexus);
+                nexus->config.entry = reenter;
+                str_zero(&reenter);
+                TRYF(nexus_init, nexus);
             } break;
                       /* TODO : jump to random note! */
             default: break;
@@ -427,9 +436,11 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
         } break;
         default: THROW("unknown view id: %u", view->id);
     }
-    return 0;
+clean:
+    str_free(&reenter);
+    return err;
 error:
-    return -1;
+    ERR_CLEAN;
 } /*}}}*/
 
 Node *nexus_get(Nexus *nexus, Str *title) //{{{

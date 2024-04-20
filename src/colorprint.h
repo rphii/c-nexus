@@ -3,6 +3,15 @@
 #ifndef COLORPRINT_DISABLE
 #define F(msg,fmt) "\033[" fmt "m" msg "\033[0m"
 
+#define FG3(r,g,b)  ";38;2;" r ";" g ";" b
+#define BG3(r,g,b)  ";48;2;" r ";" g ";" b
+
+#define FS_BEG  "\033["
+#define FS_FG3  ";38;2;%u;%u;%u"
+#define FS_BG3  ";48;2;%u;%u;%u"
+#define FS_FMT  "%s"
+#define FS_END  "m%.*s\033[0m"
+
 #define BOLD    ";1"     /* bold */
 #define IT      ";3"     /* italic */
 #define UL      ";4"     /* underline */

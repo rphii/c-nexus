@@ -1,3 +1,5 @@
+#include <ctype.h>
+
 #include "icon.h"
 #include "lookup.h"
 #include "nexus.h"
@@ -30,7 +32,7 @@ ErrDecl btw_lex_append(VBtwLex *items, BtwLex *item, size_t i0, size_t line_inde
         //    return 0;
         //}
     }
-#if 0
+#if 1
     printf(F("%zu", BG_BK_B), vbtwlex_length(items));
     if(item->flag) {
         printf(F("F", BG_WT_B FG_BK));
@@ -202,6 +204,29 @@ error:
     ERR_CLEAN;
 } //}}}
 
+bool btw_parse_color(Btw *btw, const Str *str, V3u8 col) {
+    ASSERT_ARG(btw);
+    ASSERT_ARG(str);
+    ASSERT_ARG(col);
+    if(!str_length(str)) return false;
+    /* maybe it's a number */
+    if(str_length(str) == 7) {
+        int n = str_find_nany(&STR_I0(*str, 1), &STR("0123456789abcdefABCDEF"));
+        if(n == 6) { /* got 6 valid digits */
+            char *endptr = 0;
+            uint32_t val = strtoul(str_iter_begin(&STR_I0(*str, 1)), &endptr, 16);
+            printf(" val:%06x\n", val);
+            col[0] = ((val >> 16) & 0xFF);
+            col[1] = ((val >>  8) & 0xFF);
+            col[2] = ((val >>  0) & 0xFF);
+            printf(" 0x%02x%02x%02x <- %.*s\n", col[0], col[1], col[2], STR_F(str));
+            return true;
+        }
+    }
+    /* check in lookup table for possible colors TODO */
+    return false;
+}
+
 size_t btw_parse_match_pattern(VBtwLex *items, size_t i0, size_t n_pat, const BtwLexList **pat)
 {
     ASSERT_ARG(items);
@@ -353,26 +378,41 @@ error:
     return -1;
 }/*}}}*/
 
-#define btw_parse_link_ERR(btw, i0, formatted, iE) "failed parsing link"
-ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, size_t *len)
+#define btw_parse_link_ERR(btw, i0, formatted, flags, iE) "failed parsing link"
+ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, BtwFlag *flags, size_t *len)
 {
     ASSERT_ARG(btw);
     ASSERT_ARG(pending);
     ASSERT_ARG(len);
+    ASSERT_ARG(flags);
     if(i0 >= vbtwlex_length(&btw->items)) return 0;
     size_t n_pat = sizeof(static_btw_pat_link)/sizeof(*static_btw_pat_link);
     size_t i_pat = btw_parse_match_pattern(&btw->items, i0, n_pat, static_btw_pat_link);
-    BtwLex *item = 0;
+    BtwLex *item = 0, *item_fg = 0, *item_bg = 0;
+    V3u8 fg = {0}, bg = {0};
+    bool has_fg = false, has_bg = false;
     Str copy = {0};
     if(i_pat < n_pat) {
         if(i_pat == 0 || i_pat == 1) {
+            if(i_pat == 0) item_bg = vbtwlex_get_at(&btw->items, i0+2);
+            item_fg = vbtwlex_get_at(&btw->items, i0+0);
             item = vbtwlex_get_at(&btw->items, i0+1);
         } else if(i_pat == 2 || i_pat == 3) {
+            if(i_pat == 2) item_bg = vbtwlex_get_at(&btw->items, i0+1);
             item = vbtwlex_get_at(&btw->items, i0+0);
+        }
+        if(item_fg && str_length(&item_fg->str)) {
+            Str pat = STR_IE(item_fg->str, str_length(&item_fg->str) - 1); /* trim [ */
+            has_fg = btw_parse_color(btw, &pat, fg);
+        }
+        if(item_bg && str_length(&item_bg->str)) {
+            Str pat = STR_IE(item_bg->str, str_length(&item_bg->str) - 1); /* trim ] */
+            has_bg = btw_parse_color(btw, &pat, bg);
         }
         if(item) {
             /* properly format the string (TODO) */
             Str *p = &item->str;
+            *flags = item->flag;
             if(str_length(p)) {
                 if(item->flag & BTW_FLAG_TAG) {
                     if(btw->icons.len >= ICON_BUNDLE_MAX) THROW("too many icons! %u/%u", btw->icons.len, ICON_BUNDLE_MAX);
@@ -381,7 +421,12 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, size_t *len)
                     btw->icons.items[iconlen].id = ICON_BUNDLE_STR;
                     TRYF(str_fmt, &btw->icons.items[iconlen].str, F("%.*s", FG_YL_B), STR_F(p));
                 } //else { /*TODO decide if I want to else this or not*/
-                    TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
+                    bool bold = ((item->flag & BTW_FLAG_BOLD));
+                    bool it = ((item->flag & BTW_FLAG_ITALIC));
+                    bool ul = ((item->flag & BTW_FLAG_UNDERLINE));
+                    INFO(" %.*s ->%s%s", STR_F(&item->str), has_fg ? " fg" : "", has_bg ? " bg" : "");
+                    TRYF(str_fmt_fgbg, pending, p, has_fg ? fg : 0, has_bg ? bg : 0, bold, it, ul);
+                    //TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
                     if(!(item->flag & BTW_FLAG_NOLINK)) {
                         //printf("  LINK: %.*s\n", STR_F(p));
                         TRYF(str_copy, &copy, pending);
@@ -414,6 +459,7 @@ ErrDecl btw_parse_note(Btw *btw, size_t i0, Str *pending, size_t *len) {/*{{{*/
     ASSERT_ARG(len);
     if(i0 >= vbtwlex_length(&btw->items)) return 0;
 
+    BtwFlag flags = {0};
     size_t link_len = 0, n_newline = 0;
     Str p = {0};
     size_t index = i0;
@@ -421,7 +467,7 @@ ErrDecl btw_parse_note(Btw *btw, size_t i0, Str *pending, size_t *len) {/*{{{*/
     do {
         str_clear(&p);
         if(i_link) {
-            TRYF(btw_parse_link, btw, index, &p, &link_len);
+            TRYF(btw_parse_link, btw, index, &p, &flags, &link_len);
             index += link_len;
             size_t ws = btw_parse_is_ws(&btw->items, index, &n_newline);
             if(ws && n_newline <= 1 && index < vbtwlex_length(&btw->items)) {
@@ -457,6 +503,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     TRY(vsize_push_back(&btw->indices, vbtwlex_length(items)), ERR_VEC_PUSH_BACK);
     Node nodeicon = {0};
     size_t index = 0;
+    BtwFlag flags = 0;
     while(vstr_length(&btw->titles)) {
         str_clear(&pending);
         str_clear(&pending);
@@ -484,7 +531,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                 /////printf(" !!! LINK !!!\n");
                 // TODO: format colored text -> add to current note (below)
                 size_t link_len = 0;
-                TRYF(btw_parse_link, btw, index, &pending, &link_len);
+                TRYF(btw_parse_link, btw, index, &pending, &flags, &link_len);
                 index += (link_len - 1);
                 /* clear tags */
                 for(int i_tag = 0; i_tag < btw->icons.len; ++i_tag) {

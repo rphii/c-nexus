@@ -76,6 +76,8 @@ void btwlex_free(BtwLex *lex);
 
 void btw_free(Btw *parse);
 
+bool btw_parse_color(Btw *btw, const Str *str, V3u8 col);
+
 #define btw_lex_ERR(items, str) "failed lexing string"
 ErrDecl btw_lex(VBtwLex *btw, Str *str);
 #define btw_parse_ERR(nexus, items) "failed parsing"
@@ -87,7 +89,6 @@ ErrDecl btw_parse_exec(Str *filename, void *args);
 ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw);
 #define btw_parse_file_ERR(nexus, filename, btw) "failed parsing file '%.*s'", STR_F(filename)
 ErrDecl btw_parse_file(struct Nexus *nexus, Str *filename, Btw *btw);
-
 
 #define BTW_H
 #endif

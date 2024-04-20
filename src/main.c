@@ -7,10 +7,23 @@
 #include "nexus.h"
 #include "arg.h"
 //#include "screen.h"
+#include "colorprint.h"
+#include "str.h"
+#include <ctype.h>
 
 int main(int argc, const char **argv)
 {
     int err = 0;
+#if 0
+    Str out = {0};
+    V3u8 fg = {0xFF, 0xFF, 0xFF};
+    V3u8 bg = {0xFF, 0xFF, 0x00};
+    Str in = STR("shit");
+    TRYF(str_fmt_fgbg, &out, &in, fg, bg, true, true, true);
+    printf("%.*s\n", STR_F(&out));
+    str_free(&out);
+    return 0;
+#endif
 
     Str p = {0};
     Arg arg = {0};

@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <ctype.h>
 
-/* inclusion and configuration of vector */
+#include "colorprint.h"
 #include "vector.h"
+
+/* inclusion and configuration of vector */
 #include "str.h"
 #include "platform.h"
 
@@ -261,6 +263,33 @@ error:
     return -1;
 } //}}}
 
+ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bool bold, bool italic, bool underline) {
+    ASSERT_ARG(out);
+    ASSERT_ARG(text);
+    bool do_fmt = ((fg || bg || bold || italic || underline));
+    if(!do_fmt) {
+        TRYF(str_fmt, out, "%.*s", STR_F(text));
+        return 0;
+    }
+    char fmt[64] = {0}; /* theoretically 52 would be enough? */
+    int len = sizeof(fmt)/sizeof(*fmt);
+    int offs = 0;
+    offs += snprintf(fmt, len, "%s", FS_BEG);
+    if(fg) offs += snprintf(fmt + offs, len - offs, "%s", FS_FG3);
+    if(bg) offs += snprintf(fmt + offs, len - offs, "%s", FS_BG3);
+    if(bold) offs += snprintf(fmt + offs, len - offs, "%s", BOLD);
+    if(italic) offs += snprintf(fmt + offs, len - offs, "%s", IT);
+    if(underline) offs += snprintf(fmt + offs, len - offs, "%s", UL);
+    snprintf(fmt + offs, len - offs, "%s", FS_END);
+    if(fg && bg) { TRYF(str_fmt, out, fmt, fg[0], fg[1], fg[2], bg[0], bg[1], bg[2], STR_F(text)); }
+    else if(fg) {  TRYF(str_fmt, out, fmt, fg[0], fg[1], fg[2], STR_F(text)); }
+    else if(bg) {  TRYF(str_fmt, out, fmt, bg[0], bg[1], bg[2], STR_F(text)); }
+    else {         TRYF(str_fmt, out, fmt, STR_F(text)); }
+    return 0;
+error:
+    return -1;
+}
+
 // comparing stuff {{{
 
 int str_cmp(const Str *a, const Str *b) //{{{
@@ -362,11 +391,11 @@ size_t str_find_nany(const Str *str, const Str *any) { //{{{
     ASSERT_ARG(str);
     ASSERT_ARG(any);
     size_t result = str_length(str);
-    for(size_t i = 0; i < str_length(any); ++i) {
-        size_t temp = str_nch(str, str_get_at(any, i), 0);
-        if(temp < result) result = temp;
+    for(size_t i = 0; i < str_length(str); ++i) {
+        size_t temp = str_ch(any, str_get_at(str, i), 0);
+        if(temp >= str_length(any)) return i;
     }
-    return result;
+    return str_length(str);
 } //}}}
 
 size_t str_nch(const Str *str, char ch, size_t n) { //{{{

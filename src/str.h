@@ -4,8 +4,11 @@
 
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "err.h"
+
+typedef uint8_t V3u8[3];
 
 /* configuration, inclusion and de-configuration of vector */
 
@@ -63,6 +66,9 @@ ErrDecl str_fmt_basename(Str *basename, const Str *str); // remove extention+dir
 #define str_fmt_line_ERR(line, str, i0) "failed getting line (index %zu / length %zu)", *i0, str_length(str)
 ErrDecl str_fmt_line(Str *line, const Str *str, size_t *i0);
 
+#define str_fmt_fgbg_ERR(out, text, ...) "failed applying foreground/background to string '%.*s'", STR_F(text)
+ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bool bold, bool italic, bool underline);
+
 #define ERR_STR_GET_STR     "failed getting string from user"
 ErrDecl str_get_str(Str *str);
 
@@ -88,7 +94,7 @@ size_t str_hash(const Str *a);
 size_t str_hash_ci(const Str *a);
 
 #define str_remove_escapes_ERR(out, in) "failed removing escape sequences"
-ErrDecl str_remove_escapes(Str *restrict out, Str *restrict in);
+ErrDecl str_remove_escapes(Str *out, Str *in);
 
 #define STR_H
 #endif

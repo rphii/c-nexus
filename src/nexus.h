@@ -31,6 +31,7 @@ typedef struct Nexus {
 } Nexus;
 
 #define ERR_NEXUS_INIT "failed initialization of nexus"
+#define nexus_init_ERR(nexus) "failed initialization of nexus"
 ErrDecl nexus_init(Nexus *nexus);
 
 #define ERR_NEXUS_ARG "failed applying arguments"
