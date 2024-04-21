@@ -14,7 +14,7 @@ ErrDecl nexus_fmt_search(Str *str, Node *node) {
     ASSERT_ARG(str);
     ASSERT_ARG(node);
     TRYF(icons_fmt, str, &node->icons);
-    TRYF(str_fmt, str, "%.*s %.*s %.*s", STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
+    TRYF(str_fmt, str, " : %.*s %.*s %.*s", STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
     return 0;
 error:
     return -1;
@@ -634,38 +634,49 @@ error:
 ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/*{{{*/
     ASSERT_ARG(nexus);
     ASSERT_ARG(node);
-    /* TODO: maybe ... not make this a ... throw ... but ... like ... do it proper */
-    if(node->icons.len >= ICON_BUNDLE_MAX) {
-        return 0;
-        THROW("too many icons: %u/%u", node->icons.len, ICON_BUNDLE_MAX);
-    }
-    /* do some tagging */
-    IconBundle *ib = &node->icons.items[node->icons.len++];
-    switch(icon.id) {
-        case ICON_BUNDLE_NONE: break;
-        case ICON_BUNDLE_STR: {
-            TRYF(str_fmt, &ib->str, "%.*s", STR_F(&icon.str));
-            INFO("Add icon %.*s ... %.*s", STR_F(&ib->str), STR_F(&node->title));
-        } break;
-        case ICON_BUNDLE_TIME: {
-            ib->time = icon.time;
-            INFO("Add icon %s ... %.*s", icon_str(ib->time), STR_F(&node->title));
-        } break;
-        default: THROW("unknown id: %u", icon.id);
-    }
-    ib->id = icon.id;
     /* TODO maybe don't exit early here, but change nexus->tags to a pointer and
      * point to the node here,... I've written some long text here before, things
      * happened and now the text is gone, I think I'll remember what I mean
      * when I stumble across this comment in 2 weeks (I'll probably forget, eh,
      * whatever. the text is about the same length now)
      */
-    if(icon.id == ICON_BUNDLE_TIME && icon.time == ICON_TAG) return 0;
-    /* do some linking */
+    /* check if we want to tag or not*/
     size_t ii, jj;
     str_clear(&temp->title);
     TRYF(icon_fmt_tag, &temp->title, icon);
     if(!str_length(&temp->title)) return 0;
+    /* TODO: maybe ... not make this a ... throw ... but ... like ... do it proper */
+    if(node->icons.len >= ICON_BUNDLE_MAX) {
+        return 0;
+        THROW("too many icons: %u/%u", node->icons.len, ICON_BUNDLE_MAX);
+    }
+    /* do some tagging */
+    //printf(" cmp '%.*s'[%zu] .. '%.*s'[%zu]\n", STR_F(&temp->title), str_length(&temp->title), STR_F(&node->title), str_length(&node->title));
+    if(str_cmp_esci(&temp->title, &node->title)) { //return 0;
+    //printf(" tag '%.*s'      != '%.*s'\n", STR_F(&temp->title), STR_F(&node->title));
+        IconBundle *ib = &node->icons.items[node->icons.len++];
+        if(icon.id == ICON_BUNDLE_TIME && icon.time == ICON_TAG) {
+            /* move tag icon to the front */
+            ib = &node->icons.items[0];
+            memmove(ib + 1, ib, sizeof(*ib) * (node->icons.len - 1));
+            memset(ib, 0, sizeof(*ib));
+        }
+        switch(icon.id) {
+            case ICON_BUNDLE_NONE: break;
+            case ICON_BUNDLE_STR: {
+                TRYF(str_fmt, &ib->str, "%.*s", STR_F(&icon.str));
+                INFO("Add icon %.*s ... %.*s", STR_F(&ib->str), STR_F(&node->title));
+            } break;
+            case ICON_BUNDLE_TIME: {
+                ib->time = icon.time;
+                INFO("Add icon %s ... %.*s", icon_str(ib->time), STR_F(&node->title));
+            } break;
+            default: THROW("unknown id: %u", icon.id);
+        }
+        ib->id = icon.id;
+    }
+    /* do some linking */
+    if(icon.id == ICON_BUNDLE_TIME && icon.time == ICON_TAG) return 0;
     bool found = !tnode_find(&nexus->nodes, temp, &ii, &jj); /* TODO: this is not a reliable way to check if an icon already exists or not. */
     bool istag = trnode_has(&nexus->icons, temp);
     if(!found) {

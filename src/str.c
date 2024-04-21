@@ -322,6 +322,7 @@ int str_cmp_esci(const Str *a, const Str *b) {/*{{{*/
     size_t ia = 0, ioff = 0; /* I am abusing this as signed even tho it's unsigned - trust me it'll 100% work! */
     int sa = 0, sb = 0;
     char ca = 0, cb = 0;
+    //printf("COMPARE: %.*s[%zu] .. %.*s[%zu]\n", STR_F(a), str_length(a), STR_F(b), str_length(b));
     while(true) {
         /* breaking condition - are we at the end of the string? */
         if(ia >= str_length(a) && ia+ioff >= str_length(b)) break;

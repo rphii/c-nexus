@@ -435,18 +435,22 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, BtwFlag *flags, size_t
             Str *p = &item->str;
             *flags = item->flag;
             if(str_length(p)) {
+                bool bold = ((item->flag & BTW_FLAG_BOLD));
+                bool it = ((item->flag & BTW_FLAG_ITALIC));
+                bool ul = ((item->flag & BTW_FLAG_UNDERLINE));
+#if 1
                 if(item->flag & BTW_FLAG_TAG) {
                     if(btw->icons.len >= ICON_BUNDLE_MAX) THROW("too many icons! %u/%u", btw->icons.len, ICON_BUNDLE_MAX);
                     /* TODO: properly parse that. check if time etc. */
                     int iconlen = btw->icons.len++;
                     btw->icons.items[iconlen].id = ICON_BUNDLE_STR;
-                    TRYF(str_fmt, &btw->icons.items[iconlen].str, F("%.*s", FG_YL_B), STR_F(p));
+
+                    TRYF(str_fmt_fgbg, &btw->icons.items[iconlen].str, p, has_fg ? fg : 0, has_bg ? bg : 0, bold, it, ul);
+                    //TRYF(str_fmt, &btw->icons.items[iconlen].str, F("%.*s", FG_YL_B), STR_F(p));
                 } //else { /*TODO decide if I want to else this or not*/
-                    bool bold = ((item->flag & BTW_FLAG_BOLD));
-                    bool it = ((item->flag & BTW_FLAG_ITALIC));
-                    bool ul = ((item->flag & BTW_FLAG_UNDERLINE));
+#endif
                     //INFO(" %.*s ->%s%s", STR_F(&item->str), has_fg ? " fg" : "", has_bg ? " bg" : "");
-                    TRYF(str_fmt_fgbg, pending, p, has_fg ? fg : 0, has_bg ? bg : 0, bold, it, ul);
+                    TRYF(str_fmt_fgbg, pending, p, has_fg ? fg : 0, has_bg ? bg : 0, bold, it, ul); /* TODO only do this once in this function */
                     //TRYF(str_fmt, pending, F("%.*s", FG_YL_B), STR_F(p));
                     if(!(item->flag & BTW_FLAG_NOLINK)) {
                         //printf("  LINK: %.*s\n", STR_F(p));
@@ -479,8 +483,7 @@ ErrDecl btw_parse_note(Btw *btw, size_t i0, Str *pending, size_t *len) {/*{{{*/
     ASSERT_ARG(pending);
     ASSERT_ARG(len);
     if(i0 >= vbtwlex_length(&btw->items)) return 0;
-
-    BtwFlag flags = {0};
+    BtwFlag flags = 0;
     size_t link_len = 0, n_newline = 0;
     Str p = {0};
     size_t index = i0;
@@ -503,8 +506,17 @@ ErrDecl btw_parse_note(Btw *btw, size_t i0, Str *pending, size_t *len) {/*{{{*/
             ++index;
         }
     }
+#if 0
+    if(flags & BTW_FLAG_TAG) {
+        size_t i = 0, j = 0;
+        Node find = { .title = p };
+        TRY(tnode_find(&nexus->nodes, &find, &i, &j), ERR_LUTD_FIND);
+        TRYF(nexus_tag_node, nexus, &find, &btw->temp.iconnode, 0);
+    }
+#endif
     *len = (index - i0);
     TRY(vstr_push_back(&btw->titles, &p), ERR_VEC_PUSH_BACK);
+    TRY(vsize_push_back(&btw->flags, flags), ERR_VEC_PUSH_BACK);
     //printf("PENDING => %.*s .. %.*s\n", STR_F(pending), STR_F(&p));
     TRYF(str_fmt, pending, "%.*s", STR_F(&p));
     return 0;
@@ -592,6 +604,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             //BtwLex *item = vbtwlex_get_at(&btw->items, index);
             if(str_length(&pending)) {
                 /* trim ending newlines, up to max. 1 */
+#if 1
                 size_t end = str_find_rnws(&fill->desc);
                 size_t end2 = str_ch(&STR_I0(fill->desc, end), '\n', 2) + end;
                 size_t start = str_find_nws(&pending);
@@ -603,7 +616,12 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                     fill->desc.last = fill->desc.first + end2;
                     pending.first += start2;
                 }
+#endif
+                //printf(" => append to '%.*s' : %.*s .. %.*s\n", STR_F(&fill->title), STR_F(&fill->desc), STR_F(&pending));
+                //printf(" => append %.*s\n", STR_F(&pending));
+                //printf(" append to %.*s : %.*s\n", STR_F(&title), STR_F(&pending));
                 TRYF(str_fmt, &fill->desc, "%.*s", STR_F(&pending));
+                //printf(" => %.*s\n", STR_F(&fill->desc));
                 if(str_ch(title, '\033', 0) < str_length(title)) {
                     TRYF(str_copy, &fill->title, title);
                 }
@@ -626,6 +644,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             /* do the tags */
             //printf("do tags ... %u\n", btw->icons.len);
             for(int i_tag = 0; i_tag < btw->icons.len; ++i_tag) {
+                //printf("TAG: %.*s[%zu]\n", STR_F(&fill->title), str_length(&fill->title));
                 TRYF(nexus_tag_node, nexus, fill, &nodeicon, btw->icons.items[i_tag]);
                 str_clear(&btw->icons.items[i_tag].str); // TODO should probably have a function for this
             }
@@ -644,16 +663,24 @@ notitle:
             vsize_pop_back(&btw->indices, 0);
             vstr_pop_back(&btw->titles, &s_child);
             //printf(" decreased titles len %zu / last %*.s\n", vstr_length(&btw->titles), STR_F(vstr_get_back(&btw->titles)));
-            if(!vsize_length(&btw->indices)) break;
+            if(!vstr_length(&btw->titles)) break;
             if(str_length(&s_child)) {
                 s_parent = vstr_get_back(&btw->titles);
-                if(str_length(s_parent)) {
+                flags = vsize_get_back(&btw->flags);
+                if(str_length(s_parent) && !(flags & BTW_FLAG_NOLINK)) {
                     child.title = s_child;
                     parent.title = *s_parent;
                     INFO("  link ... %.*s ... %.*s", STR_F(&s_child), STR_F(s_parent));
                     bool linked = false;
                     TRYF(nexus_link, nexus, &parent, &child, &linked);
                     if(linked) ++btw->stats.links;
+#if 0
+                    size_t ii = 0, jj = 0;
+                    TRY(tnode_find(&nexus->nodes, &child, &ii, &jj), ERR_LUTD_FIND);
+                    Node *p_child = nexus->nodes.buckets[ii].items[jj];
+                    //printf(" add a newline for: %.*s: [%.*s]\n", STR_F(&p_child->title), STR_F(&child.desc));
+                    TRYF(str_fmt, &p_child->desc, "\n");
+#endif
                 }
             }
             if(vsize_length(&btw->indices)) {
@@ -689,6 +716,7 @@ void btw_free(Btw *btw) { //{{{
     str_free(&btw->ext);
     vbtwlex_free(&btw->items);
     vsize_free(&btw->indices);
+    vsize_free(&btw->flags);
     vstr_free(&btw->titles);
     vstr_free(&btw->links);
     vstr_free(&btw->dirfiles);

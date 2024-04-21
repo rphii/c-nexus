@@ -47,6 +47,7 @@ typedef struct Btw {
     VStr titles;
     VStr dirfiles;
     VSize indices;
+    VSize flags;
     struct {
         size_t direxec;
         size_t attempts;
