@@ -1,0 +1,50 @@
+[Link]
+
+Markdown Way:
+[Text](Link)
+
+My Way:
+[Link]
+[Text](Path)
+
+[Link](Icon) {
+    What the fuck?
+}
+
+[Icon]:[Link] {
+    What the fuck?
+}
+
+[PDF](path/to/another/pdf)
+
+[PDF] {
+    PDF is a file format. Typically used to display documents, such as data sheets, books or a restaurant's menu.
+}
+
+[image]
+[img] {}
+
+[PDF]:(path/to/pdf)
+[TLC5926IWDR Datasheet] {
+    [image]:(path/to/image)
+}
+
+[Blättern]:
+[Blätter]:
+[Blatt] {
+    Ein Blatt is in der Regel Grün.
+}
+
+[Bäume]: [Baum] {
+    Ein [Baum]u ist eine Art [Pflanze]u, welche aus [Holz]u und [Blättern]u wächst.
+}
+
+[Baum]
+
+
+[Link to date](2024-04-14)
+
+[2024-04-14] { Description of date }
+
+[Icon]: [Note] { Description }
+

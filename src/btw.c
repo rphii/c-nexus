@@ -619,7 +619,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                     //printf("LINK %.*s <<>> %.*s\n", STR_F(&fill->title_link), STR_F(&n_link.title_link));
                     INFO("  link ... %.*s ... %.*s", STR_F(title), STR_F(s_link));
                     bool linked = false;
-                    TRYF(nexus_link, nexus, &n_link, fill, &linked);
+                    TRYF(nexus_link, nexus, fill, &n_link, &linked);
                     if(linked) ++btw->stats.links;
                 }
             }

@@ -1,0 +1,31 @@
+[priority 0]!bu
+Fix duplicate links going in+out...
+
+[priority 0]!bu
+Fix if we have something like [abc]{text} and [abc]{another text} those two sould not connect the abc text like they do.. maybe add a new line
+
+[priority 1]!bu
+Make hashing functions for the table that hash without color formatting
+
+[priority 2]!bu
+Make so that if it's the following, don't link to the parent note!
+    [Title don't link]! { Description }
+
+As opposed to this, which shall link to (this) #ff0000[Title do link] note.
+    #00ff00[Title do link] { Description }
+
+And also fix the whitespace above..
+
+[priority 3]!bu
+Implement log level and log the bitch
+
+[priority 4]!bu
+How do I do dates? custom dates??? Through tags (again) ???
+
+[priority 5]!bu
+Sort tags/icons
+
+[priority 6]!bu
+Fix long description in notes
+
+

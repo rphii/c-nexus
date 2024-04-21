@@ -13,6 +13,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(out, ERR_NULL_ARG);
     ASSERT(view, ERR_NULL_ARG);
+    Str iconstr = {0};
     switch(view->id) {
         case VIEW_NORMAL: {
             Node *current = view->current;
@@ -61,13 +62,15 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             size_t sI = vrnode_length(&findings->incoming);
             size_t sub_max = sO+sI;
             if(sub_sel >= sub_max) sub_sel = sub_max ? sub_max - 1 : 0;
-            char *fmt = VIEW_FMT_SEARCH_INACTIVE;// " %s %.*s : %.*s%s\n\n";
+            char *fmt = VIEW_FMT_SEARCH_INACTIVE " %.*s %.*s : %.*s%s\n\n";
             if(view->edit) {
-                fmt = VIEW_FMT_SEARCH_ACTIVE;// " %s %.*s : %.*s%s\n\n";
+                fmt = VIEW_FMT_SEARCH_ACTIVE " %.*s %.*s : %.*s%s\n\n";
                 sub_sel = SIZE_MAX;
             }
-            TRYF(str_fmt, out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming));//, iconstr, STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
-            TRYF(icons_fmt, out, &view->search_on->icons);
+            TRYF(icons_fmt, &iconstr, &view->search_on->icons);
+            TRY(str_fmt(out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming), STR_F(&iconstr), STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
+            str_free(&iconstr);
+            //TRYF(str_fmt, out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming));//, iconstr, STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
 #if 0
             for(size_t i = 0; i < vicon_length(&view->search_on->icons); ++i) {
                 IconBundle icon = vicon_get_at(&view->search_on->icons, i);
@@ -89,6 +92,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
     }
     return 0;
 error:
+    str_free(&iconstr);
     return -1;
 }
 
