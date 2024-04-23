@@ -10,6 +10,27 @@
 Searching should include searching the tag's content!
 
 [priority 0]!bu
+New flag! make = apply the link to all childen too? maybe? (there's still a problem... not all QoL cases are handled with this)
+
+maybe don't parse / or throw error if invalid flags detected... -> don't accidentally "delete" text
+
+abc should not be the tag for XYZ
+[XYZ]{
+    [ABC]:[BLA][]{
+        Content
+    }
+}
+
+
+duplicate icons! don't do that!
+e.g. [A]:[A]:[A]:[B]{}
+e.g. [A]:[B]{} [A]:[B]{} [A]:[B]{} [A]:[B]{}
+
+
+
+
+
+[priority 0]!bu
 Fix if we have something like [abc]{text} and [abc]{another text} those two sould not connect the abc text like they do.. maybe add a new line
 
 
