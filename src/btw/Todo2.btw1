@@ -1,0 +1,28 @@
+Commands...!
+
+maybe $[command]
+or    [command]$
+
+      $[command](description)
+      [command]$(description)
+
+[link](description)
+
+and expand for one file to have multiple commands...?
+
+types of commands!
+
+- open file/url /// xdg-open (linux) / windows: just execute it
+    - images
+    - videos
+    - URLs
+    - through MIME types (stackoverflow)[https://stackoverflow.com/questions/2227182/how-can-i-find-out-a-files-mime-type-content-type]$
+- execute command
+- open specified path as new root of nexus
+
+(could be done through command duh)
+- execute silently
+- execute, display output, wait
+
+I NEED A WAY TO RENAME STUFF
+

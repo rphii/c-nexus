@@ -12,12 +12,20 @@
 /* PUBLIC FUNCTION PROTOTYPES *************************************************/
 /******************************************************************************/
 
+typedef enum {
+    FILE_TYPE_NONE,
+    FILE_TYPE_FILE,
+    FILE_TYPE_DIR,
+} FileTypeList;
+
 typedef int (*FileFunc)(Str *filename, void *);
 
 #define file_exec_ERR(dirname, subdirs, exec, args) "an error occured executing function on files"
 ErrDecl file_exec(Str *dirname, VStr *subdirs, FileFunc exec, void *args);
 
 #define FILE_PATH_MAX   4096
+
+FileTypeList file_get_type(Str *filename);
 
 int file_is_dir(Str *filename);
 

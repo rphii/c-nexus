@@ -12,6 +12,21 @@
 #include <sys/sysmacros.h>
 #endif
 
+FileTypeList file_get_type(Str *filename) {
+#if defined(PLATFORM_WINDOWS)
+    ASSERT("not implemented");
+#else
+    struct stat s;
+    char path[4094];
+    str_cstr(filename, path, FILE_PATH_MAX);
+    int r = lstat(path, &s);
+    if(r) return 0;
+    if(S_ISREG(s.st_mode)) return FILE_TYPE_FILE;
+    if(S_ISDIR(s.st_mode)) return FILE_TYPE_DIR;
+#endif
+    return 0;
+}
+
 int file_is_dir(Str *filename)
 {
 #if defined(PLATFORM_WINDOWS)
@@ -118,7 +133,8 @@ ErrDecl file_exec(Str *dirname, VStr *subdirs, FileFunc exec, void *args) {
     DIR *dir = 0;
     Str subdir = {0};
     //printf("FILENAME: %.*s\n", STR_F(dirname));
-    if(file_is_dir(dirname)) {
+    FileTypeList type = file_get_type(dirname);
+    if(type == FILE_TYPE_DIR) {
         size_t len = str_rnch(dirname, PLATFORM_CH_SUBDIR, 0);
         if(len < str_length(dirname) && str_get_at(dirname, len) != PLATFORM_CH_SUBDIR) ++len;
         struct dirent *dp = 0;
@@ -136,17 +152,18 @@ ErrDecl file_exec(Str *dirname, VStr *subdirs, FileFunc exec, void *args) {
             if(len2 != strlen(filename)) THROW("should probably have len2!");
             //--len;
             Str filename2 = STR_LL(filename, len2);
-            if(file_is_dir(&filename2)) {
+            FileTypeList type2 = file_get_type(&filename2);
+            if(type2 == FILE_TYPE_DIR) {
                 TRYF(str_fmt, &subdir, "%.*s", STR_F(&filename2));
                 TRY(vstr_push_back(subdirs, &subdir), ERR_VEC_PUSH_BACK);
                 str_zero(&subdir);
-            } else if(file_is_file(&filename2)) {
+            } else if(type2 == FILE_TYPE_FILE) {
                 TRY(exec(&filename2, args), "an error occured while executing the function");
             } else {
                 INFO("skipping '%.*s' since no regular file nor directory", STR_F(dirname));
             }
         }
-    } else if(file_is_file(dirname)) {
+    } else if(type == FILE_TYPE_FILE) {
         TRY(exec(dirname, args), "an error occured while executing the function");
     } else {
         INFO("skipping '%.*s' since no regular file nor directory", STR_F(dirname));
