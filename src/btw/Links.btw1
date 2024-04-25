@@ -5,18 +5,23 @@ Markdown Way:
 
 My Way:
 [Link]
-[Text](Path)
+[Link](Text)
+[Text](Link) is also viable... but it's ugly :(
 
 [Link](Icon) {
     What the fuck?
+}
+
+[Title](synonym 1)(synonym 2) {
+    content of [title]
+    [synonym 1] is the same note
 }
 
 [Icon]:[Link] {
     What the fuck?
 }
 
-[PDF](path/to/another/pdf)
-
+[path/to/file]$
 [PDF] {
     PDF is a file format. Typically used to display documents, such as data sheets, books or a restaurant's menu.
 }
@@ -24,7 +29,7 @@ My Way:
 [image]
 [img] {}
 
-[PDF]:(path/to/pdf)
+[path/to/pdf]&
 [TLC5926IWDR Datasheet] {
     [image]:(path/to/image)
 }
