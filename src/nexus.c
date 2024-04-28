@@ -470,6 +470,25 @@ error:
     goto clean;
 } //}}}
 
+ErrDecl nexus_find_or_create(Nexus *nexus, Node *find, Node **found) {/*{{{*/
+    ASSERT_ARG(nexus);
+    ASSERT_ARG(find);
+    ASSERT_ARG(found);
+    if(str_length(&find->title)) {
+        if(!tnode_has(&nexus->nodes, find)) {
+            Node temp = {0};
+            TRY(node_copy(&temp, find), ERR_NODE_COPY);
+            TRY(tnode_add(&nexus->nodes, &temp), ERR_LUTD_ADD);
+        }
+        size_t ii = 0, jj = 0;
+        if(tnode_find(&nexus->nodes, find, &ii, &jj)) THROW(ERR_UNREACHABLE);
+        *found = nexus->nodes.buckets[ii].items[jj];
+    }
+    return 0;
+error:
+    return -1;
+}/*}}}*/
+
 int nexus_search(Nexus *nexus, Node *anchor, Str *search, Node *results) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
@@ -760,7 +779,7 @@ error:
     ERR_CLEAN;
 } //}}}
 
-int nexus_link(Nexus *nexus, Node *src, Node *dest, bool *made_link) //{{{
+int nexus_link(Nexus *nexus, Node *src, Node *dest, size_t *linked) //{{{
 {
     ASSERT_ARG(nexus);
     ASSERT_ARG(src);
@@ -834,7 +853,7 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest, bool *made_link) //{{{
     if(!duplicate) {
         TRY(vrnode_push_back(&ev_src->outgoing, ev_dest), ERR_VEC_PUSH_BACK);
         TRY(vrnode_push_back(&ev_dest->incoming, ev_src), ERR_VEC_PUSH_BACK);
-        if(made_link) *made_link = true;
+        if(linked) ++(*linked);
     }
     return 0;
 error:

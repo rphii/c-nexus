@@ -511,6 +511,7 @@ size_t str_ch(const Str *str, char ch, size_t n) { //{{{
 
 size_t str_ch_pair(const Str *str, char c1) { //{{{
     ASSERT_ARG(str);
+    if(!str_length(str)) return str_length(str);
     size_t level = 1;
     char c0 = str_get_at(str, 0);
     for(size_t i = 1; i < str_length(str); ++i) {

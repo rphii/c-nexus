@@ -79,7 +79,7 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
 
 #define ERR_NEXUS_LINK "failed linking nodes"
 #define nexus_link_ERR(nexus, src, dst, made_link) "failed linking nodes"
-ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst, bool *made_link);
+ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst, size_t *linked);
 
 #define ERR_NEXUS_TAG "failed tagging nodes"
 #define nexus_tag_ERR(nexus, src, dst, made_tag) "failed tagging nodes"
@@ -100,6 +100,9 @@ ErrDecl nexus_userinput(Nexus *nexus, int key);
 
 #define ERR_NEXUS_GET "failed getting nexus node"
 Node *nexus_get(Nexus *nexus, Str *title);
+
+#define ERR_NEXUS_FIND_OR_CREATE "failed finding or creating node"
+ErrDecl nexus_find_or_create(Nexus *nexus, Node *find, Node **found);
 
 #define ERR_NEXUS_SEARCH "failed searching nexus"
 ErrDecl nexus_search(Nexus *nexus, Node *anchor, Str *search, Node *results);

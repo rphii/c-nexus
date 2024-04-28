@@ -42,6 +42,9 @@ VEC_INCLUDE(VrStr, vrstr, struct Str *, BY_VAL);
 struct BtwLex;
 VEC_INCLUDE(VBtwLex, vbtwlex, struct BtwLex, BY_REF);
 
+struct BtwLink;
+VEC_INCLUDE(VBtwLink, vbtwlink, struct BtwLink, BY_REF);
+
 //struct IconBundle;
 //VEC_INCLUDE(VIcon, vicon, struct IconBundle, BY_VAL);
 

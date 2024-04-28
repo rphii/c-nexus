@@ -3,6 +3,7 @@
 #include "str.h"
 #include "err.h"
 #include "vector.h"
+#include "lookup.h"
 
 typedef struct BtwParse {
     Str title;
@@ -13,8 +14,7 @@ typedef struct BtwParse {
 
 typedef enum {
     BTW_LEX_STRING,
-    BTW_LEX_FORMAT_FG,
-    BTW_LEX_FORMAT_BG,
+    BTW_LEX_FORMAT,
     BTW_LEX_LINK,
     BTW_LEX_SEPARATOR, // mainly { or }
 } BtwLexList;
@@ -29,24 +29,37 @@ typedef unsigned int BtwFlag;
 
 typedef struct BtwLex {
     BtwLexList id;
-    size_t i0; // starting index of current item / end index is start index of next
-    size_t line;
+    size_t line_i0; // starting index of current line in file
+    size_t line_num; // actual line number
     Str str; // snippet of text
-    BtwFlag flag;
 } BtwLex;
+
+typedef struct BtwLink {
+    Str str;
+    BtwFlag flags;
+} BtwLink;
+
+void btwlink_free(BtwLink *link);
 
 typedef struct Btw {
     Str *filename;
     Str ext;
     Str basename;
     Str content;
+    VStr dirfiles;
     VBtwLex items;
     //VIcon icons;
+#if 0
     VStr links;
     VStr titles;
-    VStr dirfiles;
     VSize indices;
     VSize flags;
+#endif
+    struct {
+        TNode nodes;
+        VBtwLink titles;
+        VBtwLink refs;
+    } parse;
     struct {
         size_t direxec;
         size_t attempts;

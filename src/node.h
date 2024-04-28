@@ -48,7 +48,7 @@ int node_cmp(Node *a, Node *b);
 ErrDecl node_copy(Node *dst, Node *src);
 
 #define ERR_NODE_CREATE "failed creating node"
-#define node_create_ERR(node, title, cmd, desc, icon) "failed creating node"
+#define node_create_ERR(node, title, cmd, desc) "failed creating node"
 ErrDecl node_create(Node *node, Str *title, Str *cmd, Str *desc);
 
 #define ERR_NODE_FOLLOW "failed following node"

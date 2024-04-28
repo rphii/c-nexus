@@ -94,6 +94,9 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
         Node *tag = vrnode_get_at(&node->tags, i);
         TRYF(str_fmt, out, "%s%.*s", i ? " " : "", STR_F(&tag->title));
     }
+    if(!vrnode_length(&node->tags)) {
+        TRYF(str_fmt, out, "-");
+    }
     //for(size_t i = 0; i < vicon_length(&node->icons); ++i) {
         //IconBundle *icon = vicon_get_at(&node->icons, i);
         //IconStr iconstr = {0};
