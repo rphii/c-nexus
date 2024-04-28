@@ -601,6 +601,7 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, BtwLink *link) {/*{{{*/
         if(str_ch(&item_fmt->str, '*', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_BOLD;
         if(str_ch(&item_fmt->str, '/', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_ITALIC;
         if(str_ch(&item_fmt->str, '_', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_UNDERLINE;
+        printf(" HAS FMT: 0x%x\n", link->flags);
     }
     //*len += (size_t)(bool)(item_link) + (size_t)(bool)(item_fmt);
     return 0;
@@ -617,24 +618,38 @@ ErrDecl btw_parse_note(Nexus *nexus, Btw *btw, size_t i0) {/*{{{*/
     for(;;) {
         TRYF(btw_parse_link, btw, index, &title);
         index += is_link;
+        size_t n_newline = 0;
+        size_t ws = btw_parse_is_ws(btw, index, &n_newline);
+        ASSERT(n_newline < 2, "n_newline (%zu) is not < 2", n_newline);
+        index += ws;
         is_link = btw_parse_is_link(btw, index);
         if(!is_link) {
+            //printf("LINK!\n");
             TRY(vbtwlink_push_back(&btw->parse.titles, &title), ERR_VEC_PUSH_BACK);
             break;
         } else {
+            //printf("REF!\n");
             TRY(vbtwlink_push_back(&btw->parse.refs, &title), ERR_VEC_PUSH_BACK);
         }
         /* next ... */
         memset(&title, 0, sizeof(title));
     }
     /* link ... */
+    printf("REF LEN %zu\n", vbtwlink_length(&btw->parse.refs));
     for(size_t i = 0; i < vbtwlink_length(&btw->parse.refs); ++i) {
         BtwLink *ref = vbtwlink_get_at(&btw->parse.refs, i);
         Node node_ref = { .title = ref->str };
         Node node_title = { .title = title.str };
         /* TODO check flags! */
-        TRYF(nexus_link, nexus, &node_title, &node_ref, &btw->stats.links);
+        if(ref->flags & BTW_FLAG_NOLINK) {
+        } else if(ref->flags & BTW_FLAG_TAG) {
+            printf(" tag %.*s .. %.*s\n", STR_F(&node_title.title), STR_F(&node_ref.title));
+            TRYF(nexus_tag, nexus, &node_title, &node_ref, &btw->stats.links);
+        } else {
+            TRYF(nexus_link, nexus, &node_title, &node_ref, &btw->stats.links);
+        }
     }
+    vbtwlink_clear(&btw->parse.refs);
     return 0;
 error:
     return -1;

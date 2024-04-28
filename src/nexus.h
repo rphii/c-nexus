@@ -83,7 +83,7 @@ ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst, size_t *linked);
 
 #define ERR_NEXUS_TAG "failed tagging nodes"
 #define nexus_tag_ERR(nexus, src, dst, made_tag) "failed tagging nodes"
-ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, bool *made_tag);
+ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, size_t *tagged);
 
 #define NEXUS_LINKS_EV_STR(nexus, src, ...)     do { \
         char *arr64789[] = {__VA_ARGS__}; \

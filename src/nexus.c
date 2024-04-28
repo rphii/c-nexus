@@ -860,7 +860,7 @@ error:
     return -1;
 } //}}}
 
-ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, bool *made_tag) {/*{{{*/
+ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, size_t *tagged) {/*{{{*/
     ASSERT_ARG(nexus);
     ASSERT_ARG(src);
     ASSERT_ARG(tag);
@@ -902,7 +902,7 @@ ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, bool *made_tag) {/*{{{*/
     if(!duplicate) {
         TRY(vrnode_push_back(&ev_src->tags, ev_tag), ERR_VEC_PUSH_BACK);
         TRY(vrnode_push_back(&ev_tag->outgoing, ev_src), ERR_VEC_PUSH_BACK);
-        if(made_tag) *made_tag = true;
+        if(tagged) ++(*tagged);
     }
     /* TODO make this more performant?! - add to tags */
     bool dont_add = false;
