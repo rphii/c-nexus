@@ -67,7 +67,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
                 fmt = VIEW_FMT_SEARCH_ACTIVE " %.*s %.*s : %.*s%s\n\n";
                 sub_sel = SIZE_MAX;
             }
-            TRYF(icons_fmt, &iconstr, &view->search_on->icons);
+            //TRYF(icons_fmt, &iconstr, &view->search_on->icons);
             TRY(str_fmt(out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming), STR_F(&iconstr), STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
             str_free(&iconstr);
             //TRYF(str_fmt, out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming));//, iconstr, STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);

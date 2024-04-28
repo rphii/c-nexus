@@ -151,23 +151,25 @@ int content_log(Nexus *nexus, Node *anchor) /* {{{ */
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(anchor, ERR_NULL_ARG);
     Node base, sub;
+#if 0
     NEXUS_INSERT(nexus, anchor, &base, ICON_DATE, "", "Log", "", NODE_LEAF);
-#define LOG(Y,D,M,title,desc,...) NEXUS_INSERT(nexus, &base, &sub, icon_base(Y,D,M,0,0,0), "", title, desc, __VA_ARGS__)
-#define LOG2(date,title,desc,...) NEXUS_INSERT(nexus, &base, &sub, (Icon)date, "", title, desc, __VA_ARGS__)
-    LOG(2024, 2, 7, "Initial commit", "Very bare-bones prototype", NODE_LEAF);
-    LOG(2024, 2,11, "Hacked in a search prototype", "", "Search View");
-    LOG(2024, 2,12, "Created the views source files", "Will allow for more modular stuff in the future", NODE_LEAF);
-    LOG(2024, 2,15, "Added arg[ument] source files (command line arguments)", "arg source files = src/arg.{c,h}", NODE_LEAF);
-    LOG(2024, 2,15, "Add command support for notes", "", "Notes with Commands");
-    LOG(2024, 2,16, "Add rebuild functionality", "", NODE_LEAF);
-    LOG(2024, 2,22, "Allowing linkage to notes that may or may not exist", "", "Unlinked Note. Visible in icon/search view!");
-    LOG(2024, 2,28, "Improve scrolling by reusing code", "", NODE_LEAF);
-    LOG(2024, 3,11, "Added browse by icon and time functionality", "", "Icon View", "Unlinked Note. Visible in icon/search view!");
-    LOG(2024, 3,13, "Allowing search on all linked notes on current one", "", NODE_LEAF);
+#define LOG(date,title,desc,...) NEXUS_INSERT(nexus, &base, &sub, date, "", title, desc, __VA_ARGS__)
+#define LOG2(date,title,desc,...) NEXUS_INSERT(nexus, &base, &sub, date, "", title, desc, __VA_ARGS__)
+    LOG("2024-02-07", "Initial commit", "Very bare-bones prototype", NODE_LEAF);
+    LOG("2024-02-11", "Hacked in a search prototype", "", "Search View");
+    LOG("2024-02-12", "Created the views source files", "Will allow for more modular stuff in the future", NODE_LEAF);
+    LOG("2024-02-15", "Added arg[ument] source files (command line arguments)", "arg source files = src/arg.{c,h}", NODE_LEAF);
+    LOG("2024-02-15", "Add command support for notes", "", "Notes with Commands");
+    LOG("2024-02-16", "Add rebuild functionality", "", NODE_LEAF);
+    LOG("2024-02-22", "Allowing linkage to notes that may or may not exist", "", "Unlinked Note. Visible in icon/search view!");
+    LOG("2024-02-28", "Improve scrolling by reusing code", "", NODE_LEAF);
+    LOG("2024-03-11", "Added browse by icon and time functionality", "", "Icon View", "Unlinked Note. Visible in icon/search view!");
+    LOG("2024-03-13", "Allowing search on all linked notes on current one", "", NODE_LEAF);
 
     time_t today;
     time(&today);
     LOG2(today, "Today", "Date of today", NODE_LEAF);
+#endif
 #undef LOG
 #undef LOG2
     return 0; error: return -1;

@@ -8,6 +8,17 @@
 #include "view.h"
 #include "arg.h"
 
+
+#define ICON_ROOT F("📚 ROOT", FG_BK_B)
+#define ICON_TAG  "#tag"
+#define ICON_WIKI F("📖 WIKI", FG_GN)
+#define ICON_MATH F("🧮 MATH", FG_MG)
+#define ICON_PHYSICS F("🌌 PHYS", FG_BL)
+#define ICON_HISTORY F("🏛️ HIST", FG_YL)
+#define ICON_NOTE F("✏️ NOTE", FG_BK_B)
+#define ICON_DATE F("📅 DATE", FG_RD)
+#define ICON_NONE "-"
+
 typedef struct Nexus {
     TNode nodes;
     TrNode icons;
@@ -44,18 +55,22 @@ void nexus_free(Nexus *nexus);
 #define ERR_NEXUS_INSERT_NODE "failed insertion of node into nexus"
 //ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
 #define nexus_insert_node_ERR(nexus, ref, title, cmd, desc, icons) "failed insertion of node into nexus"
-ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, VIcon *icons);
+ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc);
 //ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, Icon icon);
 
 // TODO this below because I am losing my mind otherwise
+#if 0
 #define nexus_tag_node_ERR(nexus, ref, temp, icon) "failed tagging node"
 ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
+#endif
 
-#define NEXUS_INSERT(nexus, root, ref, icon, cmd, title, description, ...)  do { \
+#define NEXUS_INSERT(nexus, root, ref, icon, cmd, title_note, description, ...)  do { \
         Node *temp, unused; \
-        VIcon ic = {.items = {{.id = ICON_BUNDLE_TIME, .time = icon}}, .len = 1}; \
-        TRY(nexus_insert_node(nexus, &temp, &STR_L(title), &STR_L(cmd), &STR_L(description), &ic), ERR_NEXUS_INSERT_NODE); \
+        TRY(nexus_insert_node(nexus, &temp, &STR_L(title_note), &STR_L(cmd), &STR_L(description)), ERR_NEXUS_INSERT_NODE); \
         TRY(nexus_link(nexus, root, temp, 0), ERR_NEXUS_LINK); \
+        Str tagstr = icon ? STR_L(icon) : STR(ICON_NONE); \
+        Node tag = {.title = tagstr}; \
+        TRY(nexus_tag(nexus, temp, &tag, 0), ERR_NEXUS_TAG); \
         NEXUS_LINKS_EV_STR(nexus, temp, __VA_ARGS__); \
         if(ref != 0) { \
             memcpy(ref != 0 ? ref : &unused, temp, sizeof(*temp)); \
@@ -65,6 +80,10 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
 #define ERR_NEXUS_LINK "failed linking nodes"
 #define nexus_link_ERR(nexus, src, dst, made_link) "failed linking nodes"
 ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst, bool *made_link);
+
+#define ERR_NEXUS_TAG "failed tagging nodes"
+#define nexus_tag_ERR(nexus, src, dst, made_tag) "failed tagging nodes"
+ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, bool *made_tag);
 
 #define NEXUS_LINKS_EV_STR(nexus, src, ...)     do { \
         char *arr64789[] = {__VA_ARGS__}; \

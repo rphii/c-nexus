@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "vector.h"
 #include "str.h"
 #include "err.h"
 
@@ -59,7 +60,7 @@ ErrDecl icon_fmt_tag(Str *out, IconBundle icon);
 ErrDecl icon_fmt(Str *out, char *lpad, IconBundle icon);
 
 #define icons_fmt_ERR(out, icons) "failed formatting icons"
-ErrDecl icons_fmt(Str *out, VIcon *icons);
+ErrDecl icons_fmt(Str *out, VrNode *icons);
 
 #define ICON_STR_LEN    48
 typedef char IconStr[ICON_STR_LEN]; // TODO rename this to icondatestr or something

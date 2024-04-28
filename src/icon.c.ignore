@@ -9,7 +9,7 @@ void icon_free(IconBundle *icon) { /*{{{*/
     ASSERT_ARG(icon);
     str_free(&icon->str);
     memset(icon, 0, sizeof(*icon));
-}/*{{{*/
+}/*}}}*/
 
 char *icon_str(IconList icon)
 {
@@ -72,15 +72,15 @@ ErrDecl icon_fmt(Str *out, char *lpad, IconBundle icon) {/*{{{*/
     return 0;
 error:
     return -1;
-}
+}/*}}}*/
 
-ErrDecl icons_fmt(Str *out, VIcon *icons) {/*{{{*/
+ErrDecl icons_fmt(Str *out, VrNode *icons) {/*{{{*/
     ASSERT_ARG(out);
     ASSERT_ARG(icons);
     char *pad = "\0 ";
     size_t len = str_length(out);
     //printf("FORMATTING %u icons\n", icons->len);
-    for(size_t i = 0; i < (icons->len < ICON_BUNDLE_MAX ? icons->len : ICON_BUNDLE_MAX); ++i) {
+    for(size_t i = 0; i < vrnode_length(icons); ++i) {
         TRYF(icon_fmt, out, pad, icons->items[i]);
         if(*pad != ' ' && str_length(out) != len) ++pad;
     }

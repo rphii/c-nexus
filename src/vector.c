@@ -2,7 +2,6 @@
 #include "view.h"
 #include "str.h"
 #include "btw.h"
-#include "icon.h"
 
 #include "vector.h"
 

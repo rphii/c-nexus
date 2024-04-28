@@ -4,7 +4,6 @@
 #include <ctype.h>
 
 #include "search.h"
-#include "icon.h"
 
 #if 0
 #define ERR_SEARCH_STATIC_REMOVE_ESCAPES "failed removing escape sequences"

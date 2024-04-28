@@ -1,6 +1,5 @@
 #include <ctype.h>
 
-#include "icon.h"
 #include "lookup.h"
 #include "nexus.h"
 #include "btw.h"
@@ -225,7 +224,7 @@ error:
     ERR_CLEAN;
 } //}}}
 
-bool btw_parse_color(Btw *btw, const Str *str, V3u8 col) {
+bool btw_parse_color(Btw *btw, const Str *str, V3u8 col) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(str);
     ASSERT_ARG(col);
@@ -246,10 +245,9 @@ bool btw_parse_color(Btw *btw, const Str *str, V3u8 col) {
     }
     /* check in lookup table for possible colors TODO */
     return false;
-}
+}/*}}}*/
 
-size_t btw_parse_match_pattern(VBtwLex *items, size_t i0, size_t n_pat, const BtwLexList **pat)
-{
+size_t btw_parse_match_pattern(VBtwLex *items, size_t i0, size_t n_pat, const BtwLexList **pat) {/*{{{*/
     ASSERT_ARG(items);
     ASSERT_ARG(pat);
     size_t pat_longest = n_pat;
@@ -270,7 +268,7 @@ next:;
      //printf(" => pat_longest %zu\n", pat_longest);
     }
     return pat_longest;
-}
+}/*}}}*/
 
 static const BtwLexList *static_btw_pat_link[] = {
     (BtwLexList []){3, BTW_LEX_FORMAT_FG, BTW_LEX_LINK, BTW_LEX_FORMAT_BG},  // #[#]
@@ -400,8 +398,7 @@ error:
 }/*}}}*/
 
 #define btw_parse_link_ERR(btw, i0, formatted, flags, iE) "failed parsing link"
-ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, BtwFlag *flags, size_t *len)
-{
+ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, BtwFlag *flags, size_t *len) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(pending);
     ASSERT_ARG(len);
@@ -438,7 +435,7 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, BtwFlag *flags, size_t
                 bool bold = ((item->flag & BTW_FLAG_BOLD));
                 bool it = ((item->flag & BTW_FLAG_ITALIC));
                 bool ul = ((item->flag & BTW_FLAG_UNDERLINE));
-#if 1
+#if 0
                 if(item->flag & BTW_FLAG_TAG) {
                     if(btw->icons.len >= ICON_BUNDLE_MAX) THROW("too many icons! %u/%u", btw->icons.len, ICON_BUNDLE_MAX);
                     /* TODO: properly parse that. check if time etc. */
@@ -475,7 +472,7 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, Str *pending, BtwFlag *flags, size_t
     return 0;
 error:
     return -1;
-}
+}/*}}}*/
 
 #define btw_parse_note_ERR(btw, i0, pending, iE) "failed parsing note"
 ErrDecl btw_parse_note(Btw *btw, size_t i0, Str *pending, size_t *len) {/*{{{*/
@@ -528,179 +525,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     ASSERT_ARG(nexus);
     ASSERT_ARG(btw);
     int err = 0;
-    VBtwLex *items = &btw->items;
-    Str pending = {0};
-    TRYF(str_copy, &pending, &btw->basename); /* to avoid double free; I know, it's a bit stupid */
-    TRY(vstr_push_back(&btw->titles, &pending), ERR_VEC_PUSH_BACK);
-    str_zero(&pending);
-    TRY(vsize_push_back(&btw->indices, vbtwlex_length(items)), ERR_VEC_PUSH_BACK);
-    Node nodeicon = {0};
-    size_t index = 0;
-    BtwFlag flags = 0;
-    while(vstr_length(&btw->titles)) {
-        str_clear(&pending);
-        str_clear(&pending);
-        //printf("   INDEX %zu\n", index);
-        if(vstr_length(&btw->titles) != vsize_length(&btw->indices)) {
-            THROW("vector length titles (%zu) != indices (%zu) mismatch!", vstr_length(&btw->titles), vsize_length(&btw->indices));
-        }
-        size_t note_len = 0, note_len2 = 0;
-        TRYF(btw_parse_is_note, items, index, &note_len, btw);
-        if(note_len) {
-            /////printf(" !!! NOTE (%zu) !!!\n", note_len);
-            // TODO: parse note; update context -> get title; store title+note_end
-            TRY(vsize_push_back(&btw->indices, index + note_len - 1), ERR_VEC_PUSH_BACK);
-            TRYF(btw_parse_note, btw, index, &pending, &note_len2);
-            /* check if note is empty */
-            if(str_length(&pending)) {
-                index += (note_len2 - 1);
-            } else {
-                index += note_len - 1;
-            }
-            str_clear(&pending); // TODO: do I need this clear?
-        } else {
-            size_t link = btw_parse_is_link(items, index);
-            if(link) {
-                /////printf(" !!! LINK !!!\n");
-                // TODO: format colored text -> add to current note (below)
-                size_t link_len = 0;
-                TRYF(btw_parse_link, btw, index, &pending, &flags, &link_len);
-                index += (link_len - 1);
-                /* clear tags */
-                for(int i_tag = 0; i_tag < btw->icons.len; ++i_tag) {
-                    str_clear(&btw->icons.items[i_tag].str); // TODO should probably have a function for this
-                }
-                //index += (link - 1);
-            } else /* TODO: this else is temporary, until the thing above properly works */ {
-                /////printf(" !!! DEFAULT !!!\n");
-                // TODO: add text to current note / title
-                if(index < vbtwlex_length(&btw->items)) {
-                    Str *p = &vbtwlex_get_at(&btw->items, index)->str;
-                    TRYF(str_fmt, &pending, "%.*s", STR_F(p));
-                }
-            }
-        }
-        {
-            /* add pending + link */
-            //printf("  link len1 %zu / titles len %zu\n", vstr_length(&btw->links), vstr_length(&btw->titles));
-            if(!vstr_length(&btw->titles)) THROW("expecting titles... but have none!");
-            Str *title = vstr_get_back(&btw->titles);
-            //printf(" GOT A TITLE %.*s\n", STR_F(title));
-            if(!str_length(title)) goto notitle;
-            Node tempnode = {
-                .title = *title,
-            };
-            if(!tnode_has(&nexus->nodes, &tempnode)) {
-                TRYF(node_create, &tempnode, title, CMD_NONE, 0, 0);
-                tnode_add(&nexus->nodes, &tempnode);
-                //printf("ADDED: %.*s\n", STR_F(&tempnode.title));
-            }
-            size_t i = 0, j = 0;
-            if(tnode_find(&nexus->nodes, &tempnode, &i, &j)) {
-                THROW(ERR_UNREACHABLE);
-            }
-            Node *fill = nexus->nodes.buckets[i].items[j];
-            //printf("FOUND: %.*s\n", STR_F(&fill->title));
-            //BtwLex *item = vbtwlex_get_at(&btw->items, index);
-            if(str_length(&pending)) {
-                /* trim ending newlines, up to max. 1 */
-#if 1
-                size_t end = str_find_rnws(&fill->desc);
-                size_t end2 = str_ch(&STR_I0(fill->desc, end), '\n', 2) + end;
-                size_t start = str_find_nws(&pending);
-                size_t start2 = str_rch(&STR_IE(pending, start), '\n', 1);
-                if(start2 >= str_length(&STR_IE(pending, start))) start2 = 0;
-                //printf(" start %zu, start2 %zu: [[[%.*s]]]\n", start, start2, STR_F(&STR_IE(pending, start)));
-                //printf(" e %zu/%zu .. s %zu/%zu\n", end2+fill->desc.first, fill->desc.last, start2+pending.first, pending.first);
-                if((fill->desc.last != fill->desc.first + end2) || (start2)) {
-                    fill->desc.last = fill->desc.first + end2;
-                    pending.first += start2;
-                }
-#endif
-                //printf(" => append to '%.*s' : %.*s .. %.*s\n", STR_F(&fill->title), STR_F(&fill->desc), STR_F(&pending));
-                //printf(" => append %.*s\n", STR_F(&pending));
-                //printf(" append to %.*s : %.*s\n", STR_F(&title), STR_F(&pending));
-                TRYF(str_fmt, &fill->desc, "%.*s", STR_F(&pending));
-                //printf(" => %.*s\n", STR_F(&fill->desc));
-                if(str_ch(title, '\033', 0) < str_length(title)) {
-                    TRYF(str_copy, &fill->title, title);
-                }
-                //printf(" (%.*s) [%.*s]\n", STR_F(title), STR_F(&pending));
-            }
-            /* do the links */
-            for(size_t i_link = 0; i_link < vstr_length(&btw->links); ++i_link) {
-                Str *s_link = vstr_get_at(&btw->links, i_link);
-                if(str_length(s_link)) {
-                    Node n_link = {
-                        .title = *s_link,
-                    };
-                    //printf("LINK %.*s <<>> %.*s\n", STR_F(&fill->title_link), STR_F(&n_link.title_link));
-                    INFO("  link ... %.*s ... %.*s", STR_F(title), STR_F(s_link));
-                    bool linked = false;
-                    TRYF(nexus_link, nexus, fill, &n_link, &linked);
-                    if(linked) ++btw->stats.links;
-                }
-            }
-            /* do the tags */
-            //printf("do tags ... %u\n", btw->icons.len);
-            for(int i_tag = 0; i_tag < btw->icons.len; ++i_tag) {
-                //printf("TAG: %.*s[%zu]\n", STR_F(&fill->title), str_length(&fill->title));
-                TRYF(nexus_tag_node, nexus, fill, &nodeicon, btw->icons.items[i_tag]);
-                str_clear(&btw->icons.items[i_tag].str); // TODO should probably have a function for this
-            }
-            btw->icons.len = 0;
-notitle:
-            vstr_clear(&btw->links);
-        }
-        ++index;
-        while(index >= vsize_get_back(&btw->indices)) { // TODO: what's cleaner? while or the if?
-            /*if(index >= vsize_get_back(&btw->indices)) */
-            // TODO trim the current node... or something... and append a newline??
-            size_t iE = vsize_get_back(&btw->indices);
-            Str s_child = {0}, *s_parent = 0;
-            Node child = {0}, parent = {0};
-            //printf(" current titles len %zu / last %.*s\n", vstr_length(&btw->titles), STR_F(vstr_get_back(&btw->titles)));
-            vsize_pop_back(&btw->indices, 0);
-            vstr_pop_back(&btw->titles, &s_child);
-            //printf(" decreased titles len %zu / last %*.s\n", vstr_length(&btw->titles), STR_F(vstr_get_back(&btw->titles)));
-            if(!vstr_length(&btw->titles)) break;
-            if(str_length(&s_child)) {
-                s_parent = vstr_get_back(&btw->titles);
-                flags = vsize_get_back(&btw->flags);
-                if(str_length(s_parent) && !(flags & BTW_FLAG_NOLINK)) {
-                    child.title = s_child;
-                    parent.title = *s_parent;
-                    INFO("  link ... %.*s ... %.*s", STR_F(&s_child), STR_F(s_parent));
-                    bool linked = false;
-                    TRYF(nexus_link, nexus, &parent, &child, &linked);
-                    if(linked) ++btw->stats.links;
-#if 0
-                    size_t ii = 0, jj = 0;
-                    TRY(tnode_find(&nexus->nodes, &child, &ii, &jj), ERR_LUTD_FIND);
-                    Node *p_child = nexus->nodes.buckets[ii].items[jj];
-                    //printf(" add a newline for: %.*s: [%.*s]\n", STR_F(&p_child->title), STR_F(&child.desc));
-                    TRYF(str_fmt, &p_child->desc, "\n");
-#endif
-                }
-            }
-            if(vsize_length(&btw->indices)) {
-                //printf("   CONTEXT %.*s\n", STR_F(vstr_get_back(&btw->titles)));
-                /* post-cleanup for scopes! get rid of '}' */
-                if(iE < vbtwlex_length(&btw->items)) {
-                    BtwLex *item = vbtwlex_get_at(&btw->items, iE);
-                    if(item->id == BTW_LEX_SEPARATOR && !str_cmp(&item->str, &STR("}"))) {
-                        ++index;
-                    } else {
-                        THROW("expected a } ... something went wrong while parsing");
-                    }
-                }
-            }
-        }
-    }
-    ++btw->stats.success;
 clean:
-    node_free(&nodeicon);
-    str_free(&pending);
     return err;
 error:
     ERR_CLEAN;
@@ -708,9 +533,9 @@ error:
 
 void btw_free(Btw *btw) { //{{{
     ASSERT_ARG(btw);
-    for(int i = 0; i < ICON_BUNDLE_MAX; ++i) {
-        str_free(&btw->icons.items[i].str);
-    }
+//    for(int i = 0; i < ICON_BUNDLE_MAX; ++i) {
+//        str_free(&btw->icons.items[i].str);
+//    }
     str_free(&btw->content);
     str_free(&btw->basename);
     str_free(&btw->ext);

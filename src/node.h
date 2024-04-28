@@ -5,16 +5,23 @@
 #include "err.h"
 #include "str.h"
 #include "vector.h"
-#include "icon.h"
+
+typedef enum {
+    NODE_DEFAULT,
+    NODE_TIME,
+
+} NodeList;
 
 typedef struct Node {
     //Icon icon;
-    VIcon icons;
+    //VIcon icons;
     Str title;
     Str desc;
     Str cmd;
     VrNode outgoing;
     VrNode incoming;
+    VrNode tags;
+    NodeList id;
 } Node;
 
 #if (NODE_SHOW_COUNT_IN_OUT)
@@ -35,12 +42,14 @@ typedef struct Node {
 void node_zero(Node *node);
 void node_free(Node *node);
 
+int node_cmp(Node *a, Node *b);
+
 #define ERR_NODE_COPY "failed copying node"
-ErrDecl node_copy(Node *restrict dst, Node *restrict src);
+ErrDecl node_copy(Node *dst, Node *src);
 
 #define ERR_NODE_CREATE "failed creating node"
 #define node_create_ERR(node, title, cmd, desc, icon) "failed creating node"
-ErrDecl node_create(Node *node, Str *title, Str *cmd, Str *desc, VIcon *icons);
+ErrDecl node_create(Node *node, Str *title, Str *cmd, Str *desc);
 
 #define ERR_NODE_FOLLOW "failed following node"
 ErrDecl node_follow(Node **node, size_t *sub_sel);

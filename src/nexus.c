@@ -1,5 +1,4 @@
 #include "nexus.h"
-#include "icon.h"
 #include "node.h"
 #include "search.h"
 #include "cmd.h"
@@ -13,7 +12,7 @@
 ErrDecl nexus_fmt_search(Str *str, Node *node) {
     ASSERT_ARG(str);
     ASSERT_ARG(node);
-    TRYF(icons_fmt, str, &node->icons);
+    //TRYF(icons_fmt, str, &node->iconss);
     TRYF(str_fmt, str, " : %.*s %.*s %.*s", STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
     return 0;
 error:
@@ -450,7 +449,7 @@ Node *nexus_get(Nexus *nexus, Str *title) //{{{
     Node *result = 0;
     size_t i0 = 0, j0 = 0;
     Node find = {0};
-    TRY(node_create(&find, title, 0, 0, 0), ERR_NODE_CREATE);
+    TRY(node_create(&find, title, 0, 0), ERR_NODE_CREATE);
     if(tnode_find(&nexus->nodes, &find, &i0, &j0)) {
         Node *alternative = 0;
         INFO("node does not exist in nexus: '%.*s'", STR_F(&find.title));
@@ -631,6 +630,7 @@ error:
 
 } //}}}
 
+#if 0
 ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/*{{{*/
     ASSERT_ARG(nexus);
     ASSERT_ARG(node);
@@ -711,13 +711,13 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
 error:
     return -1;
 }/*}}}*/
+#endif
 
-int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, VIcon *icons) //{{{
+int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc) //{{{
 {
     ASSERT_ARG(nexus);
     ASSERT_ARG(ref);
     ASSERT_ARG(title);
-    ASSERT_ARG(icons);
     //ASSERT(desc, ERR_NULL_ARG);
     //ASSERT(cmd, ERR_NULL_ARG);
     int err = 0;
@@ -735,22 +735,24 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc,
             Node *node = nexus->nodes.buckets[i].items[j];
             str_free(&node->title); /* TODO this is sketchy */
             VrNode in = node->incoming, out = node->outgoing;
-            TRY(node_create(node, title, cmd, desc, icons), ERR_NODE_CREATE);
+            TRY(node_create(node, title, cmd, desc), ERR_NODE_CREATE);
             node->incoming = in;
             node->outgoing = out;
         }
     } else {
         Node node;
-        TRY(node_create(&node, title, cmd, desc, icons), ERR_NODE_CREATE);
+        TRY(node_create(&node, title, cmd, desc), ERR_NODE_CREATE);
         TRY(tnode_add(&nexus->nodes, &node), ERR_LUTD_ADD);
         TRY(tnode_find(&nexus->nodes, &find, &i, &j), ERR_LUTD_FIND ": '%.*s'", STR_F(&find.title));
     }
     *ref = nexus->nodes.buckets[i].items[j];
     /* icon stuff */
+#if 0
     //printf("icons : %u for %.*s\n", icons->len, STR_F(&(*ref)->title));
     for(int i = 0; i < ((icons->len < ICON_BUNDLE_MAX) ? icons->len : ICON_BUNDLE_MAX); ++i) {
         TRYF(nexus_tag_node, nexus, *ref, &iconfind, icons->items[i]);
     }
+#endif
 clean:
     node_free(&iconfind);
     return err;
@@ -773,7 +775,7 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest, bool *made_link) //{{{
         TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
         //THROW("node does not exist in nexus: '%.*s'", STR_F(&src->title));
     }
-    if(!str_cmp_esci(&src->title, &dest->title)) return 0;
+    if(!node_cmp(src, dest)) return 0;
     if(!tnode_has(&nexus->nodes, dest)) {
         Node temp;
         TRY(node_copy(&temp, dest), ERR_NODE_COPY);
@@ -786,7 +788,7 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest, bool *made_link) //{{{
     }
     size_t i0 = 0, i1 = 0, j0 = 0, j1 = 0;
     TRY(tnode_find(&nexus->nodes, src, &i0, &j0), "couldn't find '%.*s'", STR_F(&src->title));
-    TRY(tnode_find(&nexus->nodes, dest, &i1, &j1), "couldn't find '%.*s'", STR_F(&src->title));
+    TRY(tnode_find(&nexus->nodes, dest, &i1, &j1), "couldn't find '%.*s'", STR_F(&dest->title));
     Node *ev_src = nexus->nodes.buckets[i0].items[j0];
     Node *ev_dest = nexus->nodes.buckets[i1].items[j1];
 #if 0 // TODO: sort by icons!!!
@@ -804,14 +806,14 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest, bool *made_link) //{{{
     bool duplicate = false;
     for(size_t i = 0; i < vrnode_length(&ev_src->outgoing); ++i) {
         Node *node = vrnode_get_at(&ev_src->outgoing, i);
-        if(!str_cmp_esci(&node->title, &ev_dest->title)) {
+        if(!node_cmp(node, ev_dest)) {
             duplicate = true;
             break;
         }
     }
     for(size_t i = 0; i < vrnode_length(&ev_src->incoming); ++i) {
         Node *node = vrnode_get_at(&ev_src->incoming, i);
-        if(!str_cmp_esci(&node->title, &ev_dest->title)) {
+        if(!node_cmp(node, ev_dest)) {
             duplicate = true;
             break;
         }
@@ -838,6 +840,67 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest, bool *made_link) //{{{
 error:
     return -1;
 } //}}}
+
+ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, bool *made_tag) {/*{{{*/
+    ASSERT_ARG(nexus);
+    ASSERT_ARG(src);
+    ASSERT_ARG(tag);
+    Node empty = { .title = STR("-") };
+    if(!str_length(&tag->title)) tag = &empty;
+    if(!tnode_has(&nexus->nodes, src)) {
+        Node temp;
+        TRY(node_copy(&temp, src), ERR_NODE_COPY);
+        TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
+    }
+    if(!node_cmp(src, tag)) return 0;
+    if(!tnode_has(&nexus->nodes, tag)) {
+        Node temp;
+        TRY(node_copy(&temp, tag), ERR_NODE_COPY);
+        TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
+    }
+    size_t i0 = 0, i1 = 0, j0 = 0, j1 = 0;
+    TRY(tnode_find(&nexus->nodes, src, &i0, &j0), "couldn't find '%.*s'", STR_F(&src->title));
+    TRY(tnode_find(&nexus->nodes, tag, &i1, &j1), "couldn't find '%.*s'", STR_F(&tag->title));
+    Node *ev_src = nexus->nodes.buckets[i0].items[j0];
+    Node *ev_tag = nexus->nodes.buckets[i1].items[j1];
+    /* check for duplicates - we should be fine to only check one half */
+    bool duplicate = false;
+    for(size_t i = 0; i < vrnode_length(&ev_src->tags); ++i) {
+        Node *node = vrnode_get_at(&ev_src->tags, i);
+        if(!node_cmp(node, ev_tag)) {
+            duplicate = true;
+            break;
+        }
+    }
+    for(size_t i = 0; i < vrnode_length(&ev_tag->outgoing); ++i) {
+        Node *node = vrnode_get_at(&ev_tag->outgoing, i);
+        if(!node_cmp(node, ev_tag)) {
+            duplicate = true;
+            break;
+        }
+    }
+    /* finally, add the nodes */
+    if(!duplicate) {
+        TRY(vrnode_push_back(&ev_src->tags, ev_tag), ERR_VEC_PUSH_BACK);
+        TRY(vrnode_push_back(&ev_tag->outgoing, ev_src), ERR_VEC_PUSH_BACK);
+        if(made_tag) *made_tag = true;
+    }
+    /* TODO make this more performant?! - add to tags */
+    bool dont_add = false;
+    for(size_t i = 0; i < vrnode_length(&nexus->tags.outgoing); ++i) {
+        Node *node = vrnode_get_at(&nexus->tags.outgoing, i);
+        if(!node_cmp(node, ev_tag)) {
+            dont_add = true;
+            break;
+        }
+    }
+    if(!dont_add) {
+        TRY(vrnode_push_back(&nexus->tags.outgoing, ev_tag), ERR_VEC_PUSH_BACK);
+    }
+    return 0;
+error:
+    return -1;
+}/*}}}*/
 
 int nexus_follow_sub(Nexus *nexus, View *view) //{{{
 {
@@ -942,20 +1005,19 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
     Btw btw = {0};
     if (!vsstr_length(files)) {
         Node *root;
-        IconBundle iconb = {.id = ICON_BUNDLE_TIME, .time = ICON_ROOT};
-        VIcon rooticons = {.items = {iconb}, .len = 1}; //{.items = &iconb, .len = 1};
         TRY(nexus_insert_node(nexus, &root, &STR(NEXUS_ROOT), CMD_NONE, &STR("Welcome to " F("c-nexus", BOLD) "\n\n"
                     F("basic controls", UL) "\n"
                     "  h : back in history\n"
                     "  j : move arrow down\n"
                     "  k : move arrow up\n"
                     "  l : follow the arrow\n\n"
-                    "more can be found in the " F("controls wiki", UL)), &rooticons), ERR_NEXUS_INSERT_NODE);
+                    "more can be found in the " F("controls wiki", UL))), ERR_NEXUS_INSERT_NODE);
 
         NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Test!", "This is proof that I can link to a note, even if it gets created in the future", "Note yet to be created", "shit");
         NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Note yet to be created", "This note is created after Test!", NODE_LEAF);
         NEXUS_INSERT(nexus, root, NODE_LEAF, ICON_WIKI, CMD_NONE, "Shit", "This note is created after Test!", NODE_LEAF);
 
+        TRY(nexus_tag(nexus, root, &(Node){.title = STR("🍃")}, 0), ERR_NEXUS_TAG);
         //TRY(nexus_insert_node(nexus, &root, &STR("🍃"), CMD_NONE, &STR("Welcome to " F("c-nexus", BOLD) "\n\n"
 
         TRY(content_build(nexus, root), ERR_CONTENT_BUILD);

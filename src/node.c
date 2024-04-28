@@ -1,9 +1,14 @@
 #include "err.h"
 #include "node.h"
 #include "cmd.h"
-#include "icon.h"
 #include "str.h"
 #include "vector.h"
+
+int node_cmp(Node *a, Node *b) {
+    ASSERT_ARG(a);
+    ASSERT_ARG(b);
+    return str_cmp_esci(&a->title, &b->title);
+}
 
 void node_zero(Node *node)
 {
@@ -15,9 +20,9 @@ void node_free(Node *node)
 {
     ASSERT(node, ERR_NULL_ARG);
     /* free all things */
-    for(size_t i = 0; i < ICON_BUNDLE_MAX; ++i) {
-        icon_free(&node->icons.items[i]);
-    }
+    //for(size_t i = 0; i < ICON_BUNDLE_MAX; ++i) {
+    //    icon_free(&node->icons.items[i]);
+    //}
     str_free(&node->title);
     str_free(&node->desc);
     str_free(&node->cmd);
@@ -84,11 +89,16 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
         TRYF(str_fmt, out, "" NODE_FMT_LEN_SUB_ACTIVE " %s", padl > padr ? padl : padr, sI+sO, select); //, iconstr, STR_F(&node->title));
     }
 #endif
+    /* icons */
+    for(size_t i = 0; i < vrnode_length(&node->tags); ++i) {
+        Node *tag = vrnode_get_at(&node->tags, i);
+        TRYF(str_fmt, out, "%s%.*s", i ? " " : "", STR_F(&tag->title));
+    }
     //for(size_t i = 0; i < vicon_length(&node->icons); ++i) {
         //IconBundle *icon = vicon_get_at(&node->icons, i);
         //IconStr iconstr = {0};
         //icon_fmt(iconstr, icon->time);
-        TRYF(icons_fmt, out, &node->icons);
+        //TRYF(icons_fmt, out, &node->icons);
         TRYF(str_fmt, out, " : %.*s\n", STR_F(&node->title));
     //}
     if(show_desc) {
@@ -180,13 +190,13 @@ int node_copy(Node *restrict dst, Node *restrict src)
 {
     ASSERT(dst, ERR_NULL_ARG);
     ASSERT(src, ERR_NULL_ARG);
-    TRY(node_create(dst, &src->title, &src->cmd, &src->desc, &src->icons), ERR_NODE_CREATE);
+    TRY(node_create(dst, &src->title, &src->cmd, &src->desc), ERR_NODE_CREATE);
     return 0;
 error:
     return -1;
 }
 
-int node_create(Node *node, Str *title, Str *cmd, Str *desc, VIcon *icons)
+int node_create(Node *node, Str *title, Str *cmd, Str *desc)
 {
     ASSERT(node, ERR_NULL_ARG);
     ASSERT(title, ERR_NULL_ARG);
@@ -194,11 +204,13 @@ int node_create(Node *node, Str *title, Str *cmd, Str *desc, VIcon *icons)
     if(!str_length(title)) THROW("title can't be empty");
     node_zero(node);
     //TRY(vicon_reserve(&node->icons, 1), ERR_VEC_RESERVE);
+#if 0
     if(icons) { // TODO maybe get rid of this if and assert icons up top?
         //printf("COPY %zu icons\n", icons->len);
         memcpy(&node->icons.items, icons->items, sizeof(*icons->items) * ((icons->len < ICON_BUNDLE_MAX) ? icons->len : ICON_BUNDLE_MAX));
         //vicon_copy(&node->icons, icons);
     }
+#endif
     //node->icons.items[0].time = icon;
     //node->icons.items[0].id = ICON_BUNDLE_TIME;
     TRYF(str_copy, &node->title, title);

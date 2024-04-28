@@ -1,6 +1,5 @@
 #ifndef BTW_H
 
-#include "icon.h"
 #include "str.h"
 #include "err.h"
 #include "vector.h"
@@ -42,7 +41,7 @@ typedef struct Btw {
     Str basename;
     Str content;
     VBtwLex items;
-    VIcon icons;
+    //VIcon icons;
     VStr links;
     VStr titles;
     VStr dirfiles;
