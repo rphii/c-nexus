@@ -37,7 +37,7 @@ ErrDecl btw_lex_append(VBtwLex *items, BtwLexList id, Str *str, size_t i0, size_
         //    return 0;
         //}
     }
-#if 1
+#if 0
     printf(F("%zu", BG_BK_B), vbtwlex_length(items));
     //if(item->flag) {
     //    printf(F("F", BG_WT_B FG_BK));
@@ -79,7 +79,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
         i0 = index;
         str_clear(&line);
         ++line_index;
-        TRYF(str_fmt_line, &line, str, &index);
+        TRYF(str_fmt_line, &line, str, index, &index);
         str_trim(&line);
         /* go over (trimmed) lines */
         //printf("line %zu:%.*s\n", line_index, STR_F(&line));
@@ -95,7 +95,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                 have_any = false;
 #if 1
                 /* check format+link */
-                //printf("\n");printf("line %zu:%.*s\n", line_index, STR_F(&line));
+                printf("line %zu:" F("%.*s", FG_BK_B) "\n", line_index, STR_F(&line));
                 /* matching brackets*/
                 size_t i_br0 = str_ch(&line, '[', 0);
                 size_t i_brE = str_ch_pair(&STR_I0(line, i_br0), ']') + i_br0;
@@ -103,11 +103,12 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                 size_t i_sepbeg = 0;//(i_brE < str_length(&line)) ? i_brE : 0;
                 size_t i_sep = str_find_any(&STR_I0(line, i_sepbeg), &STR("|{}")) + i_sepbeg;
                 /* any whitespace */
-                size_t i_ws = str_find_ws(&line);
+                size_t i_wsbeg = i_brE < str_length(&line) ? i_brE : 0;
+                size_t i_ws = str_find_ws(&STR_I0(line, i_wsbeg)) + i_wsbeg;
                 /* format, begins at bracket end, ends at whitespace or |[{ */
                 size_t i_fmt0 = i_brE + 1;
                 size_t i_fmtE1 = i_sep < i_ws ? i_sep : i_ws;
-                size_t i_fmtE2 = str_find_any(&STR_I0(line, i_fmt0), &STR("|{[")) + i_fmt0;
+                size_t i_fmtE2 = str_find_any(&STR_I0(line, i_fmt0), &STR("|{[.,'\"")) + i_fmt0;
                 size_t i_fmtE = i_fmtE1 < i_fmtE2 ? i_fmtE1 : i_fmtE2;
                 /* ... */
                 size_t done = 0;
@@ -124,7 +125,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                     /* valid link */
                     s_link = STR_LL(str_iter_begin(&STR_I0(line, i_br0+1)), i_brE-i_br0-1);
                     done += str_length(&s_link)+2; // +2 because trimmed []
-                    //printf("LINK: %.*s (%zu)\n", STR_F(&s_link), str_length(&s_link)+2);
+                    printf("LINK: %.*s (%zu)\n", STR_F(&s_link), str_length(&s_link)+2);
                     str_trim(&s_link);
                 }
                 if(have_fmt) {
@@ -132,13 +133,13 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                     s_fmt = STR_LL(str_iter_begin(&STR_I0(line, i_fmt0)), i_fmtE-i_fmt0);
                     done += str_length(&s_fmt);
                     /* should be trimmed!.. let's hope it is */
-                    //printf("FORMAT: %.*s (%zu)\n", STR_F(&s_fmt), str_length(&s_fmt));
+                    printf("FORMAT: %.*s (%zu)\n", STR_F(&s_fmt), str_length(&s_fmt));
                 }
                 if(have_sep) {
                     /* valid separator */
                     s_sep = STR_LL(str_iter_begin(&STR_I0(line, i_sep)), 1);
                     done += str_length(&s_sep);
-                    //printf("SEP: %.*s (%zu)\n", STR_F(&s_sep), str_length(&s_sep));
+                    printf("SEP: %.*s (%zu)\n", STR_F(&s_sep), str_length(&s_sep));
                 }
                 /* push all lex items */
                 if(have_any) {
@@ -147,7 +148,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                     size_t until = (i_br0 < i_sep) ? i_br0 : i_sep;
                     done += until;
                     TRYF(str_fmt, &temp, "%.*s", (int)until, str_iter_begin(&line));
-                    //printf("REST: %.*s\n", STR_F(&temp));
+                    printf("REST: %.*s\n", STR_F(&temp));
                     TRYF(btw_lex_append, items, BTW_LEX_STRING, &temp, i0, line_index);
                 }
                 if(have_link) {
@@ -510,7 +511,7 @@ ErrDecl btw_parse_is_scope(Btw *btw, size_t i0, size_t *len) {/*{{{*/
     if(i0 >= vbtwlex_length(&btw->items)) return 0;
     /* error stuff */
     bool err_scope = false;
-    Str hint = {0};
+    Str err_hint = {0};
     size_t line_i0 = 0;
     size_t line = -1;
     /* non-error stuff */
@@ -542,9 +543,9 @@ ErrDecl btw_parse_is_scope(Btw *btw, size_t i0, size_t *len) {/*{{{*/
     return 0;
 error:
     if(err_scope) {
-        (void)str_fmt_line(&hint, &btw->content, &line_i0);
-        printf(" %.*s:" F("%zu", FG_WT_B) " | %.*s\n", STR_F(btw->filename), line, STR_F(&hint));
-        str_free(&hint);
+        (void)str_fmt_line(&err_hint, &btw->content, line_i0, 0);
+        printf(" %.*s:" F("%zu", FG_WT_B) " | %.*s\n", STR_F(btw->filename), line, STR_F(&err_hint));
+        str_free(&err_hint);
     }
     return -1;
 }/*}}}*/
@@ -586,6 +587,8 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, BtwLink *link) {/*{{{*/
     ASSERT_ARG(btw);
     //ASSERT_ARG(len);
     ASSERT_ARG(link);
+    int err_flag = false;
+    Str err_hint = {0};
     BtwLex *item_link = vbtwlex_get_at(&btw->items, i0);
     BtwLex *item_fmt = 0;
     ASSERT(item_link->id == BTW_LEX_LINK, "expected a link (= %u, but is %u)", BTW_LEX_LINK, item_link->id);
@@ -593,17 +596,48 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, BtwLink *link) {/*{{{*/
         item_fmt = vbtwlex_get_at(&btw->items, i0 + 1);
         if(item_fmt->id != BTW_LEX_FORMAT) item_fmt = 0;
     }
-    TRYF(str_copy, &link->str, &item_link->str);
+    bool has_fg = false;
+    bool has_bg = false;
+    bool bold = false, italic = false, underline = false;
+    V3u8 fg = {0};
+    V3u8 bg = {0};
     if(item_fmt) {
-        if(str_ch(&item_fmt->str, ':', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_TAG;
-        if(str_ch(&item_fmt->str, '*', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_BOLD;
-        if(str_ch(&item_fmt->str, '/', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_ITALIC;
-        if(str_ch(&item_fmt->str, '_', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_UNDERLINE;
+        size_t i = 0;
+        for(i = 0; i < str_length(&item_fmt->str); ++i) {
+            char c = str_get_at(&item_fmt->str, i);
+            switch(c) {
+                case ':': { link->flags |= BTW_FLAG_TAG; } break;
+                case '!': { link->flags |= BTW_FLAG_NOLINK; } break;
+                case '*': { bold = true; } break;
+                case '/': { italic = true; } break;
+                case '_': { underline = true; } break;
+                case '#': break;
+                case '(': break;
+                default: {
+                    err_flag = true;
+                    THROW("unknown format modifier: '%c' on line %zu", c, item_fmt->line_num);
+                } break;
+            }
+            if(c == '#') break;
+            if(c == '(') break;
+        }
+        //if(str_ch(&item_fmt->str, ':', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_TAG;
+        //if(str_ch(&item_fmt->str, '*', 0) < str_length(&item_fmt->str)) bold = true;
+        //if(str_ch(&item_fmt->str, '/', 0) < str_length(&item_fmt->str)) italic = true;
+        //if(str_ch(&item_fmt->str, '_', 0) < str_length(&item_fmt->str)) underline = true;
         //printf(" HAS FMT: 0x%x\n", link->flags);
     }
+    //TRYF(str_copy, &link->str, &item_link->str);
+    str_clear(&link->str); // I think this is redundant
+    TRYF(str_fmt_fgbg, &link->str, &item_link->str, 0, 0, bold, italic, underline);
     //*len += (size_t)(bool)(item_link) + (size_t)(bool)(item_fmt);
     return 0;
 error:
+    if(err_flag) {
+        (void)str_fmt_line(&err_hint, &btw->content, item_fmt->line_i0, 0);
+        printf(" %.*s:" F("%zu", FG_WT_B) " | %.*s\n", STR_F(btw->filename), item_fmt->line_num, STR_F(&err_hint));
+        str_free(&err_hint);
+    }
     return -1;
 }/*}}}*/
 
@@ -684,12 +718,13 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         len_link = btw_parse_is_link(btw, i);
         /* do the thing */
         if(len_note) {
-            /////printf("found NOTE (%zu)\n", len_note);
+            printf("found NOTE (%zu)\n", len_note);
             TRYF(btw_parse_note, nexus, btw, i);
             i += (len_note);
         } else if(len_link) {
-            /////printf("found LINK (%zu)\n", len_link);
+            printf("found LINK (%zu)\n", len_link);
             TRYF(btw_parse_link, btw, i, &link);
+            printf("   link is: %.*s\n", STR_F(&link.str));
             i += (len_link - 1);
             BtwLink *link_title = vbtwlink_get_back(&btw->parse.titles); /* TODO DRY */
             TRYF(btw_parse_link_connect, nexus, btw, link_title, &link);
@@ -698,7 +733,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             if(!(item->id == BTW_LEX_SEPARATOR && str_get_at(&item->str, 0) == '}')) {
                 THROW("expected lex item to be }");
             }
-            /////printf("found END note\n");
+            printf("found END note\n");
             BtwLink prev = {0};
             vbtwlink_pop_back(&btw->parse.titles, &prev);
             vsize_pop_back(&btw->parse.indices, 0);
@@ -715,18 +750,19 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             }
         }
         if(str_length(&link.str)) {
-            if(link.str.cap) btwlink_free(&link); /* ugh I hate this */
-            else memset(&link, 0, sizeof(link));
             BtwLink *link_title = vbtwlink_get_back(&btw->parse.titles);
-            /////printf("found STRING .. %.*s\n", STR_F(&link_title->str));
+            printf("   link is: %.*s\n", STR_F(&link.str));
+            printf("found STRING .. %.*s\n", STR_F(&link_title->str));
             /* get title's note */
             Node node_title = { .title = link_title->str };
             Node *node = 0;
             TRY(nexus_find_or_create(nexus, &node_title, &node), ERR_NEXUS_FIND_OR_CREATE);
             if(node) {
                 /* TODO check flags! */
-                TRYF(str_fmt, &node->desc, "%.*s", STR_F(&item->str));
+                TRYF(str_fmt, &node->desc, "%.*s", STR_F(&link.str));
             }
+            if(link.str.cap) btwlink_free(&link); /* ugh I hate this */
+            else memset(&link, 0, sizeof(link));
         }
     }
 clean:

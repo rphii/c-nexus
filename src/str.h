@@ -63,8 +63,8 @@ ErrDecl str_fmt_nodir(Str *nodir, const Str *str); // remove directory
 #define str_fmt_basename_ERR(basename, str) "failed formatting basename"
 ErrDecl str_fmt_basename(Str *basename, const Str *str); // remove extention+directory
 
-#define str_fmt_line_ERR(line, str, i0) "failed getting line (index %zu / length %zu)", *i0, str_length(str)
-ErrDecl str_fmt_line(Str *line, const Str *str, size_t *i0);
+#define str_fmt_line_ERR(line, str, i0, iE) "failed getting line (index %zu / length %zu)", i0, str_length(str)
+ErrDecl str_fmt_line(Str *line, const Str *str, size_t i0, size_t *iE);
 
 #define str_fmt_fgbg_ERR(out, text, ...) "failed applying foreground/background to string '%.*s'", STR_F(text)
 ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bool bold, bool italic, bool underline);

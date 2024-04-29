@@ -867,6 +867,7 @@ ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, size_t *tagged) {/*{{{*/
     ASSERT_ARG(tag);
     Node empty = { .title = STR("-") };
     if(!str_length(&tag->title)) tag = &empty;
+    if(!str_length(&src->title)) return 0;
     if(!tnode_has(&nexus->nodes, src)) {
         Node temp;
         TRY(node_copy(&temp, src), ERR_NODE_COPY);

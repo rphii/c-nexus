@@ -1,0 +1,25 @@
+[bui]</*_>
+[bold]<*>
+[italic]</>
+[underline]<_>
+
+[icon]<:>
+
+[red]<#red>
+
+[nolink]<!>
+
+[nofmt1]<>
+[nofmt2]< >
+
+[fg]<#000000>
+[bg]<\ffffff>
+[fgbg]<#000000\ffffff>
+
+[custom]<@custom-fmt>
+
+just some [highlighted]</!> text
+
+I like this stuff
+... very much so ...
+

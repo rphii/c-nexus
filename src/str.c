@@ -249,15 +249,14 @@ clean:
 error: ERR_CLEAN;
 } //}}}
 
-ErrDecl str_fmt_line(Str *line, const Str *str, size_t *i0) { //{{{
+ErrDecl str_fmt_line(Str *line, const Str *str, size_t i0, size_t *iE) { //{{{
     ASSERT_ARG(line);
     ASSERT_ARG(str);
-    ASSERT_ARG(i0);
     Str fake = *str;
-    fake.first += *i0;
+    fake.first += i0;
     size_t i = str_ch(&fake, '\n', 0);
     TRYF(str_fmt, line, "%.*s", (int)i, str_iter_begin(&fake));
-    *i0 += i + 1; // TODO do I have to/should I check for if i<str_length(str)???
+    if(iE) *iE += i + 1; // TODO do I have to/should I check for if i<str_length(str)???
     return 0;
 error:
     return -1;
