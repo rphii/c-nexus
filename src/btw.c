@@ -100,7 +100,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                 size_t i_br0 = str_ch(&line, '[', 0);
                 size_t i_brE = str_ch_pair(&STR_I0(line, i_br0), ']') + i_br0;
                 /* separators */
-                size_t i_sepbeg = (i_brE < str_length(&line)) ? i_brE : 0;
+                size_t i_sepbeg = 0;//(i_brE < str_length(&line)) ? i_brE : 0;
                 size_t i_sep = str_find_any(&STR_I0(line, i_sepbeg), &STR("|{}")) + i_sepbeg;
                 /* any whitespace */
                 size_t i_ws = str_find_ws(&line);
@@ -115,7 +115,7 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
                 bool have_fmt = (bool)(i_fmt0 < i_fmtE && i_fmt0 < str_length(&line));
                 bool have_sep = (bool)(i_sep < str_length(&line) && ((!have_link) || (i_sep < i_br0)));
                 have_link &= !have_sep;
-                //printf("link %s, fmt %s, sep %s\n", have_link ? "yes" : "no", have_fmt ? "yes" : "no", have_sep ? "yes":"no");
+                //printf("\nlink %s, fmt %s, sep %s\n", have_link ? "YES" : "no", have_fmt ? "YES" : "no", have_sep ? "YES":"no");
                 have_any = (bool)(have_link || have_fmt || have_sep);
                 Str s_fmt = {0};
                 Str s_link = {0};
@@ -678,26 +678,27 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         size_t len_note = 0;
         size_t len_link = 0;
         BtwLex *item = vbtwlex_get_at(&btw->items, i);
-        printf("i=%zu (indices len %zu / last %zu)\n", i, vsize_length(&btw->parse.indices), vsize_length(&btw->parse.indices) ? vsize_get_back(&btw->parse.indices) : -1);
+        //printf("i=%zu (indices len %zu / last %zu)\n", i, vsize_length(&btw->parse.indices), vsize_length(&btw->parse.indices) ? vsize_get_back(&btw->parse.indices) : -1);
             ASSERT(vsize_length(&btw->parse.indices) == vbtwlink_length(&btw->parse.titles), "indices length (%zu) not equal to that of titles (%zu)", vsize_length(&btw->parse.indices), vbtwlink_length(&btw->parse.titles));
         TRYF(btw_parse_is_note, btw, i, &len_note);
         len_link = btw_parse_is_link(btw, i);
         /* do the thing */
         if(len_note) {
-            printf("found NOTE (%zu)\n", len_note);
+            /////printf("found NOTE (%zu)\n", len_note);
             TRYF(btw_parse_note, nexus, btw, i);
             i += (len_note);
         } else if(len_link) {
-            printf("found LINK (%zu)\n", len_link);
+            /////printf("found LINK (%zu)\n", len_link);
             TRYF(btw_parse_link, btw, i, &link);
             i += (len_link - 1);
             BtwLink *link_title = vbtwlink_get_back(&btw->parse.titles); /* TODO DRY */
             TRYF(btw_parse_link_connect, nexus, btw, link_title, &link);
         } else if(vsize_length(&btw->parse.indices) && vsize_get_back(&btw->parse.indices) == i) {
+            /* TODO should probably check if i > back of indices ... */
             if(!(item->id == BTW_LEX_SEPARATOR && str_get_at(&item->str, 0) == '}')) {
                 THROW("expected lex item to be }");
             }
-            printf("found END note\n");
+            /////printf("found END note\n");
             BtwLink prev = {0};
             vbtwlink_pop_back(&btw->parse.titles, &prev);
             vsize_pop_back(&btw->parse.indices, 0);
@@ -708,14 +709,16 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                 TRYF(nexus_link, nexus, &node_title, &node_prev, &btw->stats.links);
             }
         } else {
-            link.str = item->str;
-            link.str.cap = 0; /* ugh I hate this */
+            if(!(item->id == BTW_LEX_SEPARATOR && str_length(&item->str) && str_get_front(&item->str) == '|')) {
+                link.str = item->str;
+                link.str.cap = 0; /* ugh I hate this */
+            }
         }
         if(str_length(&link.str)) {
             if(link.str.cap) btwlink_free(&link); /* ugh I hate this */
             else memset(&link, 0, sizeof(link));
             BtwLink *link_title = vbtwlink_get_back(&btw->parse.titles);
-            printf("found STRING .. %.*s\n", STR_F(&link_title->str));
+            /////printf("found STRING .. %.*s\n", STR_F(&link_title->str));
             /* get title's note */
             Node node_title = { .title = link_title->str };
             Node *node = 0;
