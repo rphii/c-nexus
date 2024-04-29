@@ -721,6 +721,11 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             printf("found NOTE (%zu)\n", len_note);
             TRYF(btw_parse_note, nexus, btw, i);
             i += (len_note);
+            /* special case: empty note? -> skip entirely */
+            /* TODO should probably make this a bit more sleek; I just hacked this in because I wanted to see if this works. (and should probably also check *just in case* if we have titles */
+            if(!str_length(&vbtwlink_get_back(&btw->parse.titles)->str)) {
+                i = vsize_get_back(&btw->parse.indices) - 1;
+            }
         } else if(len_link) {
             printf("found LINK (%zu)\n", len_link);
             TRYF(btw_parse_link, btw, i, &link);
