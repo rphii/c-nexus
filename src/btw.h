@@ -59,6 +59,7 @@ typedef struct Btw {
         TNode nodes;
         VBtwLink titles;
         VBtwLink refs;
+        VSize indices;
     } parse;
     struct {
         size_t direxec;

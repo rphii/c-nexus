@@ -96,13 +96,20 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
 #if 1
                 /* check format+link */
                 //printf("\n");printf("line %zu:%.*s\n", line_index, STR_F(&line));
+                /* matching brackets*/
                 size_t i_br0 = str_ch(&line, '[', 0);
                 size_t i_brE = str_ch_pair(&STR_I0(line, i_br0), ']') + i_br0;
+                /* separators */
                 size_t i_sepbeg = (i_brE < str_length(&line)) ? i_brE : 0;
-                size_t i_sep = str_find_any(&STR_I0(line, i_sepbeg), &STR("|{}[")) + i_sepbeg;
+                size_t i_sep = str_find_any(&STR_I0(line, i_sepbeg), &STR("|{}")) + i_sepbeg;
+                /* any whitespace */
                 size_t i_ws = str_find_ws(&line);
+                /* format, begins at bracket end, ends at whitespace or |[{ */
                 size_t i_fmt0 = i_brE + 1;
-                size_t i_fmtE = i_sep < i_ws ? i_sep : i_ws;
+                size_t i_fmtE1 = i_sep < i_ws ? i_sep : i_ws;
+                size_t i_fmtE2 = str_find_any(&STR_I0(line, i_fmt0), &STR("|{[")) + i_fmt0;
+                size_t i_fmtE = i_fmtE1 < i_fmtE2 ? i_fmtE1 : i_fmtE2;
+                /* ... */
                 size_t done = 0;
                 bool have_link = (bool)(i_br0 < i_brE && i_brE < str_length(&line));
                 bool have_fmt = (bool)(i_fmt0 < i_fmtE && i_fmt0 < str_length(&line));
@@ -350,15 +357,6 @@ next:;
     return pat_longest;
 }/*}}}*/
 
-static const BtwLexList *static_btw_pat_link[] = {
-#if 0
-    (BtwLexList []){3, BTW_LEX_FORMAT_FG, BTW_LEX_LINK, BTW_LEX_FORMAT_BG},  // #[#]
-    (BtwLexList []){2, BTW_LEX_FORMAT_FG, BTW_LEX_LINK},                  // #[ ]
-    (BtwLexList []){2, BTW_LEX_LINK, BTW_LEX_FORMAT_BG},                  //  [#]
-    (BtwLexList []){1, BTW_LEX_LINK},                                  //  [ ]
-#endif
-};
-
 #if 0/*{{{*/
 size_t btw_parse_is_link(VBtwLex *items, size_t i0) { //{{{
     ASSERT_ARG(items);
@@ -482,7 +480,6 @@ error:
 #endif/*}}}*/
 
 
-
 size_t btw_parse_is_link(Btw *btw, size_t i0) {/*{{{*/
     ASSERT_ARG(btw);
     size_t result = 0;
@@ -575,6 +572,8 @@ next:
             if(scope) {
                 *len = (index - i0);
                 index += scope;
+                /* TODO FIX !?!??! */
+                TRY(vsize_push_back(&btw->parse.indices, i0+index), ERR_VEC_PUSH_BACK);
             }
         }
     }
@@ -601,9 +600,29 @@ ErrDecl btw_parse_link(Btw *btw, size_t i0, BtwLink *link) {/*{{{*/
         if(str_ch(&item_fmt->str, '*', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_BOLD;
         if(str_ch(&item_fmt->str, '/', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_ITALIC;
         if(str_ch(&item_fmt->str, '_', 0) < str_length(&item_fmt->str)) link->flags |= BTW_FLAG_UNDERLINE;
-        printf(" HAS FMT: 0x%x\n", link->flags);
+        //printf(" HAS FMT: 0x%x\n", link->flags);
     }
     //*len += (size_t)(bool)(item_link) + (size_t)(bool)(item_fmt);
+    return 0;
+error:
+    return -1;
+}/*}}}*/
+
+#define btw_parse_link_connect_ERR(nexus, btw, src, dst) "failed connecting links"
+ErrDecl btw_parse_link_connect(Nexus *nexus, Btw *btw, BtwLink *src, BtwLink *dst) {/*{{{*/
+    ASSERT_ARG(nexus);
+    ASSERT_ARG(btw);
+    ASSERT_ARG(src);
+    ASSERT_ARG(dst);
+    Node node_dst = { .title = dst->str };
+    Node node_src = { .title = src->str };
+    if(dst->flags & BTW_FLAG_NOLINK) {
+    } else if(dst->flags & BTW_FLAG_TAG) {
+        printf(" tag %.*s .. %.*s\n", STR_F(&node_src.title), STR_F(&node_dst.title));
+        TRYF(nexus_tag, nexus, &node_src, &node_dst, &btw->stats.links);
+    } else {
+        TRYF(nexus_link, nexus, &node_src, &node_dst, &btw->stats.links);
+    }
     return 0;
 error:
     return -1;
@@ -635,19 +654,10 @@ ErrDecl btw_parse_note(Nexus *nexus, Btw *btw, size_t i0) {/*{{{*/
         memset(&title, 0, sizeof(title));
     }
     /* link ... */
-    printf("REF LEN %zu\n", vbtwlink_length(&btw->parse.refs));
+    //printf("REF LEN %zu\n", vbtwlink_length(&btw->parse.refs));
     for(size_t i = 0; i < vbtwlink_length(&btw->parse.refs); ++i) {
         BtwLink *ref = vbtwlink_get_at(&btw->parse.refs, i);
-        Node node_ref = { .title = ref->str };
-        Node node_title = { .title = title.str };
-        /* TODO check flags! */
-        if(ref->flags & BTW_FLAG_NOLINK) {
-        } else if(ref->flags & BTW_FLAG_TAG) {
-            printf(" tag %.*s .. %.*s\n", STR_F(&node_title.title), STR_F(&node_ref.title));
-            TRYF(nexus_tag, nexus, &node_title, &node_ref, &btw->stats.links);
-        } else {
-            TRYF(nexus_link, nexus, &node_title, &node_ref, &btw->stats.links);
-        }
+        TRYF(btw_parse_link_connect, nexus, btw, &title, ref);
     }
     vbtwlink_clear(&btw->parse.refs);
     return 0;
@@ -662,11 +672,15 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     BtwLink link = {0};
     TRYF(str_copy, &link.str, &btw->basename);
     TRY(vbtwlink_push_back(&btw->parse.titles, &link), ERR_VEC_PUSH_BACK);
+    TRY(vsize_push_back(&btw->parse.indices, vbtwlex_length(&btw->items)), ERR_VEC_PUSH_BACK);
     for(size_t i = 0; i < vbtwlex_length(&btw->items); ++i) {
+        if(!vbtwlink_length(&btw->parse.titles)) THROW("should not have no title anymore");
         memset(&link, 0, sizeof(link));
         size_t len_note = 0;
         size_t len_link = 0;
         BtwLex *item = vbtwlex_get_at(&btw->items, i);
+        printf("i=%zu (indices len %zu / last %zu)\n", i, vsize_length(&btw->parse.indices), vsize_length(&btw->parse.indices) ? vsize_get_back(&btw->parse.indices) : -1);
+            ASSERT(vsize_length(&btw->parse.indices) == vbtwlink_length(&btw->parse.titles), "indices length (%zu) not equal to that of titles (%zu)", vsize_length(&btw->parse.indices), vbtwlink_length(&btw->parse.titles));
         TRYF(btw_parse_is_note, btw, i, &len_note);
         len_link = btw_parse_is_link(btw, i);
         /* do the thing */
@@ -678,19 +692,29 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             printf("found LINK (%zu)\n", len_link);
             TRYF(btw_parse_link, btw, i, &link);
             i += (len_link - 1);
-        } else if(item->id == BTW_LEX_SEPARATOR && str_get_at(&item->str, 0) == '}') {
+            BtwLink *link_title = vbtwlink_get_back(&btw->parse.titles); /* TODO DRY */
+            TRYF(btw_parse_link_connect, nexus, btw, link_title, &link);
+        } else if(vsize_length(&btw->parse.indices) && vsize_get_back(&btw->parse.indices) == i) {
+            if(!(item->id == BTW_LEX_SEPARATOR && str_get_at(&item->str, 0) == '}')) {
+                THROW("expected lex item to be }");
+            }
             printf("found END note\n");
             BtwLink prev = {0};
             vbtwlink_pop_back(&btw->parse.titles, &prev);
+            vsize_pop_back(&btw->parse.indices, 0);
             if(vbtwlink_length(&btw->parse.titles)) {
                 BtwLink *title = vbtwlink_get_back(&btw->parse.titles);
-                if(str_length(&prev.str) && str_length(&title->str)) {
-                    Node node_prev = { .title = prev.str };
-                    Node node_title = { .title = title->str };
-                    TRYF(nexus_link, nexus, &node_title, &node_prev, &btw->stats.links);
-                }
+                Node node_prev = { .title = prev.str };
+                Node node_title = { .title = title->str };
+                TRYF(nexus_link, nexus, &node_title, &node_prev, &btw->stats.links);
             }
         } else {
+            link.str = item->str;
+            link.str.cap = 0; /* ugh I hate this */
+        }
+        if(str_length(&link.str)) {
+            if(link.str.cap) btwlink_free(&link); /* ugh I hate this */
+            else memset(&link, 0, sizeof(link));
             BtwLink *link_title = vbtwlink_get_back(&btw->parse.titles);
             printf("found STRING .. %.*s\n", STR_F(&link_title->str));
             /* get title's note */
@@ -722,6 +746,7 @@ void btw_free(Btw *btw) { //{{{
     vbtwlink_free(&btw->parse.refs);
     vbtwlink_free(&btw->parse.titles);
     tnode_free(&btw->parse.nodes);
+    vsize_free(&btw->parse.indices);
     //vsize_free(&btw->indices);
     //vsize_free(&btw->flags);
     //vstr_free(&btw->titles);

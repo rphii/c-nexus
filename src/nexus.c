@@ -784,6 +784,7 @@ int nexus_link(Nexus *nexus, Node *src, Node *dest, size_t *linked) //{{{
     ASSERT_ARG(nexus);
     ASSERT_ARG(src);
     ASSERT_ARG(dest);
+    if(!str_length(&src->title) || !str_length(&dest->title)) return 0;
     if(!tnode_has(&nexus->nodes, src)) {
         Node temp;
         TRY(node_copy(&temp, src), ERR_NODE_COPY);

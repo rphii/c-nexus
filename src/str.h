@@ -29,7 +29,7 @@ VEC_INCLUDE(Str, str, char, BY_VAL);
 
 #define STR_F(s)                (int)str_length(s), str_iter_begin(s)
 
-#define STR_I0(str, i0)         (const Str){.s = (str).s, .first = (str).first + i0, .last = (str).last}
+#define STR_I0(str, i0)         (const Str){.s = (str).s, .first = ((str).first + i0 < (str).last) ? (str).first + i0 : (str).last, .last = (str).last}
 #define STR_IE(str, iE)         (const Str){.s = (str).s, .first = (str).first, .last = (str).first + iE}
 
 #define ERR_STR_CAT_BACK    "failed appending string to other string"
