@@ -572,8 +572,7 @@ next:
             if(scope) {
                 *len = (index - i0);
                 index += scope;
-                /* TODO FIX !?!??! */
-                TRY(vsize_push_back(&btw->parse.indices, i0+index), ERR_VEC_PUSH_BACK);
+                TRY(vsize_push_back(&btw->parse.indices, index-1), ERR_VEC_PUSH_BACK);
             }
         }
     }
