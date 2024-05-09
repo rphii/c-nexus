@@ -36,7 +36,7 @@ VEC_INCLUDE(Str, str, char, BY_VAL);
 #define ERR_STR_FMT         "failed string formatting"
 #define ERR_STR_COPY        "failed copying string"
 
-#define str_copy_ERR(v1, v2) "failed copying string"
+#define ERR_str_copy(v1, v2) "failed copying string"
 
 /* other functions */
 
@@ -48,25 +48,25 @@ void str_trim(Str *str);
 
 void str_cstr(Str *str, char *cstr, size_t len);
 
-#define str_fmt_va_ERR(str, format, argp) "failed formatting string"
+#define ERR_str_fmt_va(str, format, argp) "failed formatting string"
 ErrDecl str_fmt_va(Str *str, const char *format, va_list argp);
-#define str_fmt_ERR(str, format, ...) "failed formatting string"
+#define ERR_str_fmt(str, format, ...) "failed formatting string"
 ErrDecl str_fmt(Str *str, const char *format, ...);
-#define str_fmt_ext_ERR(ext, str) "failed formatting extension"
+#define ERR_str_fmt_ext(ext, str) "failed formatting extension"
 ErrDecl str_fmt_ext(Str *ext, const Str *str); // extract extension
-#define str_fmt_noext_ERR(ext, str) "failed removing extension"
+#define ERR_str_fmt_noext(ext, str) "failed removing extension"
 ErrDecl str_fmt_noext(Str *ext, const Str *str); // remove extension
-#define str_fmt_dir_ERR(dir, str, up) "failed formatting directory"
+#define ERR_str_fmt_dir(dir, str, up) "failed formatting directory"
 ErrDecl str_fmt_dir(Str *dir, const Str *str, size_t up); // extract directory
-#define str_fmt_nodir_ERR(nodir, str) "failed formatting without directory"
+#define ERR_str_fmt_nodir(nodir, str) "failed formatting without directory"
 ErrDecl str_fmt_nodir(Str *nodir, const Str *str); // remove directory
-#define str_fmt_basename_ERR(basename, str) "failed formatting basename"
+#define ERR_str_fmt_basename(basename, str) "failed formatting basename"
 ErrDecl str_fmt_basename(Str *basename, const Str *str); // remove extention+directory
 
-#define str_fmt_line_ERR(line, str, i0, iE) "failed getting line (index %zu / length %zu)", i0, str_length(str)
+#define ERR_str_fmt_line(line, str, i0, iE) "failed getting line (index %zu / length %zu)", i0, str_length(str)
 ErrDecl str_fmt_line(Str *line, const Str *str, size_t i0, size_t *iE);
 
-#define str_fmt_fgbg_ERR(out, text, ...) "failed applying foreground/background to string '%.*s'", STR_F(text)
+#define ERR_str_fmt_fgbg(out, text, ...) "failed applying foreground/background to string '%.*s'", STR_F(text)
 ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bool bold, bool italic, bool underline);
 
 #define ERR_STR_GET_STR     "failed getting string from user"
@@ -95,7 +95,7 @@ size_t str_hash(const Str *a);
 size_t str_hash_ci(const Str *a);
 size_t str_hash_esci(const Str *a);
 
-#define str_remove_escapes_ERR(out, in) "failed removing escape sequences"
+#define ERR_str_remove_escapes(out, in) "failed removing escape sequences"
 ErrDecl str_remove_escapes(Str *out, Str *in);
 
 #define STR_H

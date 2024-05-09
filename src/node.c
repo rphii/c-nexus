@@ -78,31 +78,31 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
     //icon_fmt(iconstr, node->icon);
 #if (NODE_SHOW_COUNT_IN_OUT)
     if(!active) {
-        TRYF(str_fmt, out, "" NODE_FMT_LEN_SUB_INACTIVE " %s", padl, sI, padr, sO, select); //, iconstr, STR_F(&node->title));
+        TRYC(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s", padl, sI, padr, sO, select)); //, iconstr, STR_F(&node->title));
     } else {
-        TRYF(str_fmt, out, "" NODE_FMT_LEN_SUB_ACTIVE " %s", padl, sI, padr, sO, select); //, iconstr, STR_F(&node->title));
+        TRYC(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s", padl, sI, padr, sO, select)); //, iconstr, STR_F(&node->title));
     }
 #else
     if(!active) {
-        TRYF(str_fmt, out, "" NODE_FMT_LEN_SUB_INACTIVE " %s", padl > padr ? padl : padr, sI+sO, select); //, iconstr, STR_F(&node->title));
+        TRYC(str_fmt(out, "" NODE_FMT_LEN_SUB_INACTIVE " %s", padl > padr ? padl : padr, sI+sO, select)); //, iconstr, STR_F(&node->title));
     } else {
-        TRYF(str_fmt, out, "" NODE_FMT_LEN_SUB_ACTIVE " %s", padl > padr ? padl : padr, sI+sO, select); //, iconstr, STR_F(&node->title));
+        TRYC(str_fmt(out, "" NODE_FMT_LEN_SUB_ACTIVE " %s", padl > padr ? padl : padr, sI+sO, select)); //, iconstr, STR_F(&node->title));
     }
 #endif
     /* icons */
     for(size_t i = 0; i < vrnode_length(&node->tags); ++i) {
         Node *tag = vrnode_get_at(&node->tags, i);
-        TRYF(str_fmt, out, "%s%.*s", i ? " " : "", STR_F(&tag->title));
+        TRYC(str_fmt(out, "%s%.*s", i ? " " : "", STR_F(&tag->title)));
     }
     if(!vrnode_length(&node->tags)) {
-        TRYF(str_fmt, out, "-");
+        TRYC(str_fmt(out, "-"));
     }
     //for(size_t i = 0; i < vicon_length(&node->icons); ++i) {
         //IconBundle *icon = vicon_get_at(&node->icons, i);
         //IconStr iconstr = {0};
         //icon_fmt(iconstr, icon->time);
-        //TRYF(icons_fmt, out, &node->icons);
-        TRYF(str_fmt, out, " : %.*s\n", STR_F(&node->title));
+        //TRYC(icons_fmt, out, &node->icons);
+        TRYC(str_fmt(out, " : %.*s\n", STR_F(&node->title)));
     //}
     if(show_desc) {
         TRY(node_fmt_desc(out, node), ERR_NODE_FMT_DESC);
@@ -216,7 +216,7 @@ int node_create(Node *node, Str *title, Str *cmd, Str *desc)
 #endif
     //node->icons.items[0].time = icon;
     //node->icons.items[0].id = ICON_BUNDLE_TIME;
-    TRYF(str_copy, &node->title, title);
+    TRYC(str_copy(&node->title, title));
     if(desc && str_length(desc)) TRY(str_fmt(&node->desc, "%.*s", STR_F(desc)), ERR_STR_FMT);
     if(cmd && str_length(cmd)) TRY(str_fmt(&node->cmd, "%.*s", STR_F(cmd)), ERR_STR_FMT);
     return 0;

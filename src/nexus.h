@@ -42,7 +42,7 @@ typedef struct Nexus {
 } Nexus;
 
 #define ERR_NEXUS_INIT "failed initialization of nexus"
-#define nexus_init_ERR(nexus) "failed initialization of nexus"
+#define ERR_nexus_init(nexus) "failed initialization of nexus"
 ErrDecl nexus_init(Nexus *nexus);
 
 #define ERR_NEXUS_ARG "failed applying arguments"
@@ -54,7 +54,7 @@ void nexus_free(Nexus *nexus);
 
 #define ERR_NEXUS_INSERT_NODE "failed insertion of node into nexus"
 //ErrDecl nexus_insert_node(Nexus *nexus, Node *node);
-#define nexus_insert_node_ERR(nexus, ref, title, cmd, desc, icons) "failed insertion of node into nexus"
+#define ERR_nexus_insert_node(nexus, ref, title, cmd, desc, icons) "failed insertion of node into nexus"
 ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc);
 //ErrDecl nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc, Icon icon);
 
@@ -78,11 +78,11 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
     } while(0)
 
 #define ERR_NEXUS_LINK "failed linking nodes"
-#define nexus_link_ERR(nexus, src, dst, made_link) "failed linking nodes"
+#define ERR_nexus_link(nexus, src, dst, made_link) "failed linking nodes"
 ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst, size_t *linked);
 
 #define ERR_NEXUS_TAG "failed tagging nodes"
-#define nexus_tag_ERR(nexus, src, dst, made_tag) "failed tagging nodes"
+#define ERR_nexus_tag(nexus, src, dst, made_tag) "failed tagging nodes"
 ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, size_t *tagged);
 
 #define NEXUS_LINKS_EV_STR(nexus, src, ...)     do { \

@@ -75,8 +75,8 @@ void screen_leave(void);    /* implementation is in "screen.h" */
     } while(0)
 #define ASSERT_ARG(arg)     ASSERT(arg, ERR_NULL_ARG)
 
-#define TRYF(function, ...)  TRY(function(__VA_ARGS__), function##_ERR(__VA_ARGS__))
-#define TRYF2(function)      TRY(function, ERR_##function)
+//#define TRYF(function, ...)  TRY(function(__VA_ARGS__), function##_ERR(__VA_ARGS__))
+#define TRYC(function)      TRY(function, ERR_##function)
 
 
 #define ERR_H

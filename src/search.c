@@ -66,7 +66,7 @@ int search_nofree(bool ignorecase, Str *buf_searchon, Str *find, Str *content)
     ASSERT(find, ERR_NULL_ARG);
     int found = 0;
 #if 1
-    TRYF(str_remove_escapes, buf_searchon, content);
+    TRYC(str_remove_escapes(buf_searchon, content));
     if(!str_length(find)) {
         found = -1;
     } else {

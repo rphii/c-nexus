@@ -2,7 +2,7 @@
 
 GIT_VERSION := "$(shell git describe --abbrev=4 --dirty --always --tags)"
 CC      := gcc
-CFLAGS  := -Wall -Wextra -Wimplicit -std=gnu99 \
+CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   -Wno-unused-parameter \
 		   -DPROC_COUNT=$(shell nproc --all) \
 		   -rdynamic -Og -ggdb3 \

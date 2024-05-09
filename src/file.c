@@ -154,7 +154,7 @@ ErrDecl file_exec(Str *dirname, VStr *subdirs, FileFunc exec, void *args) {
             Str filename2 = STR_LL(filename, len2);
             FileTypeList type2 = file_get_type(&filename2);
             if(type2 == FILE_TYPE_DIR) {
-                TRYF(str_fmt, &subdir, "%.*s", STR_F(&filename2));
+                TRYC(str_fmt(&subdir, "%.*s", STR_F(&filename2)));
                 TRY(vstr_push_back(subdirs, &subdir), ERR_VEC_PUSH_BACK);
                 str_zero(&subdir);
             } else if(type2 == FILE_TYPE_FILE) {
@@ -189,7 +189,7 @@ ErrDecl file_dir_read(Str *dirname, VStr *files) {
         Str filename = {0};
         if(dp->d_name[0] == '.') continue; // TODO add an argument for this
         if(!str_cmp(&STR_L(dp->d_name), &STR(".")) || !str_cmp(&STR_L(dp->d_name), &STR(".."))) continue;
-        TRYF(str_fmt, &filename, "%.*s/%s", (int)len, dirname->s, dp->d_name);
+        TRYC(str_fmt(&filename, "%.*s/%s", (int)len, dirname->s, dp->d_name));
         //printf("FILE: %.*s\n", STR_F(&filename));
         TRY(vstr_push_back(files, &filename), ERR_VEC_PUSH_BACK);
     }

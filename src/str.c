@@ -141,7 +141,7 @@ ErrDecl str_fmt_ext(Str *ext, const Str *str) //{{{
             /* in case we have something like: file.dir/filename -> / is after . */
             size_t j = str_rch(str, PLATFORM_CH_SUBDIR, 0);
             if((j < len && j < i) || (j == len)) {
-                TRYF(str_fmt, ext, "%.*s", (int)(len - i), str_iter_at(str, i));
+                TRYC(str_fmt(ext, "%.*s", (int)(len - i), str_iter_at(str, i)));
             }
         }
     }
@@ -157,7 +157,7 @@ ErrDecl str_fmt_noext(Str *ext, const Str *str) //{{{
     size_t len = str_length(str);
     if(len) {
         size_t iE = str_rch(str, '.', 0);
-        TRYF(str_fmt, ext, "%.*s", (int)(iE), str_iter_begin(str));
+        TRYC(str_fmt(ext, "%.*s", (int)(iE), str_iter_begin(str)));
     }
     return 0;
 error:
@@ -177,7 +177,7 @@ ErrDecl str_fmt_basename(Str *basename, const Str *str) //{{{
         }
         if(i0 < len) ++i0;
         else if(i0 >= len) i0 = 0;
-        TRYF(str_fmt, basename, "%.*s", (int)(iE - i0), str_iter_at(str, i0));
+        TRYC(str_fmt(basename, "%.*s", (int)(iE - i0), str_iter_at(str, i0)));
     }
     return 0;
 error:
@@ -194,17 +194,17 @@ ErrDecl str_fmt_dir(Str *dir, const Str *str, size_t up) //{{{
     if(len) {
         size_t i = str_rch(str, '/', up);
         if(i < len) {
-            TRYF(str_fmt, dir, "%.*s", (int)(i+1), str_iter_begin(str));
+            TRYC(str_fmt(dir, "%.*s", (int)(i+1), str_iter_begin(str)));
         }
         else if(PLATFORM_CH_SUBDIR != '/') {
             i = str_rch(str, PLATFORM_CH_SUBDIR, up);
             if(i < len) {
-                TRYF(str_fmt, dir, "%.*s", (int)(i+1), str_iter_begin(str));
+                TRYC(str_fmt(dir, "%.*s", (int)(i+1), str_iter_begin(str)));
             }
         }
     }
     if(len_dir == str_length(dir)) {
-        TRYF(str_fmt, dir, ".");
+        TRYC(str_fmt(dir, "."));
     }
     return 0;
 error:
@@ -223,7 +223,7 @@ ErrDecl str_fmt_nodir(Str *nodir, const Str *str) //{{{
         }
         if(i0 < len) ++i0;
         else if(i0 >= len) i0 = 0;
-        TRYF(str_fmt, nodir, "%.*s", (int)(len - i0), str_iter_at(str, i0));
+        TRYC(str_fmt(nodir, "%.*s", (int)(len - i0), str_iter_at(str, i0)));
     }
     return 0;
 error:
@@ -255,7 +255,7 @@ ErrDecl str_fmt_line(Str *line, const Str *str, size_t i0, size_t *iE) { //{{{
     Str fake = *str;
     fake.first += i0;
     size_t i = str_ch(&fake, '\n', 0);
-    TRYF(str_fmt, line, "%.*s", (int)i, str_iter_begin(&fake));
+    TRYC(str_fmt(line, "%.*s", (int)i, str_iter_begin(&fake)));
     if(iE) *iE += i + 1; // TODO do I have to/should I check for if i<str_length(str)???
     return 0;
 error:
@@ -267,7 +267,7 @@ ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bo
     ASSERT_ARG(text);
     bool do_fmt = ((fg || bg || bold || italic || underline));
     if(!do_fmt) {
-        TRYF(str_fmt, out, "%.*s", STR_F(text));
+        TRYC(str_fmt(out, "%.*s", STR_F(text)));
         return 0;
     }
     char fmt[64] = {0}; /* theoretically 52 would be enough? */
@@ -280,10 +280,10 @@ ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bo
     if(italic) offs += snprintf(fmt + offs, len - offs, "%s", IT);
     if(underline) offs += snprintf(fmt + offs, len - offs, "%s", UL);
     snprintf(fmt + offs, len - offs, "%s", FS_END);
-    if(fg && bg) { TRYF(str_fmt, out, fmt, fg[0], fg[1], fg[2], bg[0], bg[1], bg[2], STR_F(text)); }
-    else if(fg) {  TRYF(str_fmt, out, fmt, fg[0], fg[1], fg[2], STR_F(text)); }
-    else if(bg) {  TRYF(str_fmt, out, fmt, bg[0], bg[1], bg[2], STR_F(text)); }
-    else {         TRYF(str_fmt, out, fmt, STR_F(text)); }
+    if(fg && bg) { TRYC(str_fmt(out, fmt, fg[0], fg[1], fg[2], bg[0], bg[1], bg[2], STR_F(text))); }
+    else if(fg) {  TRYC(str_fmt(out, fmt, fg[0], fg[1], fg[2], STR_F(text))); }
+    else if(bg) {  TRYC(str_fmt(out, fmt, bg[0], bg[1], bg[2], STR_F(text))); }
+    else {         TRYC(str_fmt(out, fmt, STR_F(text))); }
     return 0;
 error:
     return -1;

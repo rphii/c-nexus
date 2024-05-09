@@ -8,12 +8,12 @@
 #include "file.h"
 #include "vector.h"
 
-#define nexus_fmt_search_ERR(str, node) "failed searching node"
+#define ERR_nexus_fmt_search(str, node) "failed searching node"
 ErrDecl nexus_fmt_search(Str *str, Node *node) {
     ASSERT_ARG(str);
     ASSERT_ARG(node);
-    //TRYF(icons_fmt, str, &node->iconss);
-    TRYF(str_fmt, str, " : %.*s %.*s %.*s", STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
+    //TRYC(icons_fmt, str, &node->iconss);
+    TRYC(str_fmt(str, " : %.*s %.*s %.*s", STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc)));
     return 0;
 error:
     return -1;
@@ -81,7 +81,7 @@ static void *nexus_static_thread_search(void *args) /* {{{ */
         }
         str_clear(&arg->cmd);
         str_clear(&arg->content);
-        TRYF(nexus_fmt_search, &arg->content, node);
+        TRYC(nexus_fmt_search(&arg->content, node));
         int found = search_nofree(true, &arg->cmd, arg->search, &arg->content);
         //IconStr iconstr = {0};
         //icon_fmt(iconstr, node->icon);
@@ -199,7 +199,7 @@ int nexus_init(Nexus *nexus) //{{{
     TRY(nexus_build(nexus, nexus->config.files), ERR_NEXUS_BUILD);
     tnode_sort_sub(&nexus->nodes);
     /* set up view */
-    TRYF(str_fmt, &nexus->tags.title, "List of tags");
+    TRYC(str_fmt(&nexus->tags.title, "List of tags"));
     View *view = &nexus->view;
     view->id = nexus->config.view;
     switch(view->id) {
@@ -373,11 +373,11 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
                 if(sub) cmd_run(&sub->cmd);
             } break;
             case 'r': {
-                TRYF(str_copy, &reenter, &nexus->view.current->title);
+                TRYC(str_copy(&reenter, &nexus->view.current->title));
                 nexus_free(nexus);
                 nexus->config.entry = reenter;
                 str_zero(&reenter);
-                TRYF(nexus_init, nexus);
+                TRYC(nexus_init(nexus));
             } break;
                       /* TODO : jump to random note! */
             default: break;
@@ -629,7 +629,7 @@ int nexus_search(Nexus *nexus, Node *anchor, Str *search, Node *results) //{{{
             str_clear(&content);
             //IconStr iconstr = {0};
             //icon_fmt(iconstr, node->icon);
-            TRYF(nexus_fmt_search, &content, node);
+            TRYC(nexus_fmt_search, &content, node);
             int found = search_nofree(true, &cmd, search, &content);
             //int found = search_fmt_nofree(true, &cmd, &content, search, "%s %.*s %.*s %.*s", iconstr, STR_F(&node->title), STR_F(&node->cmd), STR_F(&node->desc));
             if(found) {
@@ -662,7 +662,7 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
     /* check if we want to tag or not*/
     size_t ii, jj;
     str_clear(&temp->title);
-    TRYF(icon_fmt_tag, &temp->title, icon);
+    TRYC(icon_fmt_tag, &temp->title, icon);
     if(!str_length(&temp->title)) return 0;
     /* TODO: maybe ... not make this a ... throw ... but ... like ... do it proper */
     if(node->icons.len >= ICON_BUNDLE_MAX) {
@@ -683,7 +683,7 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
         switch(icon.id) {
             case ICON_BUNDLE_NONE: break;
             case ICON_BUNDLE_STR: {
-                TRYF(str_fmt, &ib->str, "%.*s", STR_F(&icon.str));
+                TRYC(str_fmt, &ib->str, "%.*s", STR_F(&icon.str));
                 INFO("Add icon %.*s ... %.*s", STR_F(&ib->str), STR_F(&node->title));
             } break;
             case ICON_BUNDLE_TIME: {
@@ -709,7 +709,7 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
     //printf("%.*s is %s\n", STR_F(&temp->title), istag ? "a tag!" : "no tag");
     if(!found || !istag) {
         IconBundle ciscool = (IconBundle){.id = ICON_BUNDLE_TIME, .time = ICON_TAG};
-        TRYF(nexus_tag_node, nexus, iconfound, temp, ciscool); /* dangerous !*/
+        TRYC(nexus_tag_node, nexus, iconfound, temp, ciscool); /* dangerous !*/
     }
     if(!istag || !found) {
         //printf("ADD %.*s TO TAGS!\n", STR_F(&iconfound->title));
@@ -725,7 +725,7 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon) {/
     }
     if(!str_length(&iconfound->title)) THROW("i don't want to think about what's better right now; return 0 or throw?"); // TODO
     //INFO("Added Icon %.*s ... %.*s", STR_F(&iconfound->title), STR_F(&node->title));
-    TRYF(nexus_link, nexus, iconfound, node, 0);
+    TRYC(nexus_link, nexus, iconfound, node, 0);
     return 0;
 error:
     return -1;
@@ -769,7 +769,7 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc)
 #if 0
     //printf("icons : %u for %.*s\n", icons->len, STR_F(&(*ref)->title));
     for(int i = 0; i < ((icons->len < ICON_BUNDLE_MAX) ? icons->len : ICON_BUNDLE_MAX); ++i) {
-        TRYF(nexus_tag_node, nexus, *ref, &iconfind, icons->items[i]);
+        TRYC(nexus_tag_node, nexus, *ref, &iconfind, icons->items[i]);
     }
 #endif
 clean:
@@ -1046,9 +1046,9 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
         BtwExec exec_args = {.nexus = nexus, .btw = &btw};
         for(size_t i = 0; i < vsstr_length(files); ++i) {
             Str *filename = vsstr_get_at(files, i);
-            TRYF(file_exec, filename, &btw.dirfiles, btw_parse_exec, &exec_args);
-            //TRYF(file_exec, filename, &btw.dirfiles, btw_parse_exec, 0);
-            //TRYF(btw_parse_file, nexus, filename, &btw);
+            TRYC(file_exec(filename, &btw.dirfiles, btw_parse_exec, &exec_args));
+            //TRYC(file_exec, filename, &btw.dirfiles, btw_parse_exec, 0);
+            //TRYC(btw_parse_file, nexus, filename, &btw);
 #if 0
             char *ext = strrchr(file->s, '.');
             if((ext && (ext - file->s > 0)) || !ext) {
@@ -1071,13 +1071,13 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
             //Str *filename = vstr_get_at(&btw.dirfiles, i);
             vstr_pop_back(&btw.dirfiles, &filename);
             memset(btw.dirfiles.items[vstr_length(&btw.dirfiles)], 0, sizeof(Str));
-            TRYF(file_exec, &filename, &btw.dirfiles, btw_parse_exec, &exec_args);
+            TRYC(file_exec(&filename, &btw.dirfiles, btw_parse_exec, &exec_args));
             str_free(&filename);
 #else
         while(vstr_length(&btw.dirfiles)) {
             Str filename = {0};
             vstr_pop_front(&btw.dirfiles, &filename);
-            TRYF(file_exec, &filename, &btw.dirfiles, btw_parse_exec, &exec_args);
+            TRYC(file_exec, &filename, &btw.dirfiles, btw_parse_exec, &exec_args);
             if(!((++btw.direxec) % 256)) {
                 vstr_shrink(&btw.dirfiles);
             }
@@ -1090,7 +1090,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
             //if(!(btw.direxec % 64)) {
             //vstr_shrink(&btw.dirfiles);
             //}
-            //TRYF(btw_parse_file, nexus, &filename, &btw);
+            //TRYC(btw_parse_file, nexus, &filename, &btw);
 #if 0
             if(!(n % 256)) {
                 vstr_shrink(&btw.dirfiles);

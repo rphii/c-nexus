@@ -14,6 +14,7 @@ typedef struct BtwParse {
 
 typedef enum {
     BTW_LEX_STRING,
+    BTW_LEX_WHITESPACE,
     BTW_LEX_FORMAT,
     BTW_LEX_LINK,
     BTW_LEX_SEPARATOR, // mainly { or }
@@ -94,16 +95,16 @@ void btw_free(Btw *parse);
 
 bool btw_parse_color(Btw *btw, const Str *str, V3u8 col);
 
-#define btw_lex_ERR(items, str) "failed lexing string"
+#define ERR_btw_lex(items, str) "failed lexing string"
 ErrDecl btw_lex(VBtwLex *btw, Str *str);
-#define btw_parse_ERR(nexus, items) "failed parsing"
+#define ERR_btw_parse(nexus, items) "failed parsing"
 ErrDecl btw_parse(Nexus *nexus, Btw *btw);
 
 ErrDecl btw_parse_exec(Str *filename, void *args);
 
-#define btw_file_prepare_ERR(nexus, filename, btw) "failed preparing file '%.*s'", STR_F(filename)
+#define ERR_btw_file_prepare(nexus, filename, btw) "failed preparing file '%.*s'", STR_F(filename)
 ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw);
-#define btw_parse_file_ERR(nexus, filename, btw) "failed parsing file '%.*s'", STR_F(filename)
+#define ERR_btw_parse_file(nexus, filename, btw) "failed parsing file '%.*s'", STR_F(filename)
 ErrDecl btw_parse_file(struct Nexus *nexus, Str *filename, Btw *btw);
 
 #define BTW_H

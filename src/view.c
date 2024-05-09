@@ -17,7 +17,7 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
     switch(view->id) {
         case VIEW_NORMAL: {
             Node *current = view->current;
-            TRYF(node_fmt, out, current, nexus->config.show_desc, "", 0, 0, false);
+            TRYC(node_fmt(out, current, nexus->config.show_desc, "", 0, 0, false));
             TRY(str_fmt(out, "\n"), ERR_STR_FMT);
             TRY(node_fmt_sub(out, current, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, view->sub_sel), ERR_NODE_FMT_SUB);
         } break;
@@ -67,16 +67,16 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
                 fmt = VIEW_FMT_SEARCH_ACTIVE " %.*s %.*s : %.*s%s\n\n";
                 sub_sel = SIZE_MAX;
             }
-            //TRYF(icons_fmt, &iconstr, &view->search_on->icons);
+            //TRYC(icons_fmt, &iconstr, &view->search_on->icons);
             TRY(str_fmt(out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming), STR_F(&iconstr), STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
             str_free(&iconstr);
-            //TRYF(str_fmt, out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming));//, iconstr, STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
+            //TRYC(str_fmt, out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming));//, iconstr, STR_F(&view->search_on->title), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
 #if 0
             for(size_t i = 0; i < vicon_length(&view->search_on->icons); ++i) {
                 IconBundle icon = vicon_get_at(&view->search_on->icons, i);
                 IconStr iconstr = {0};
                 icon_fmt(iconstr, icon.time);
-                TRYF(str_fmt, out, "%s", iconstr);
+                TRYC(str_fmt, out, "%s", iconstr);
             }
 #endif
             TRY(node_fmt_sub(out, findings, nexus->config.show_desc, nexus->config.show_preview, nexus->config.max_preview, sub_sel), ERR_NODE_FMT_SUB);
