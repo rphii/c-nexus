@@ -1,22 +1,22 @@
 begin
 
-[insane]b!
+<*!>[insane]
 
 TODO: what do I do about this?
-#red[#red[][]][[[#gn] I think it works now (although scuffed), too, wtf
+<#red>[[][]]<\gn>[[[] I think it works now (although scuffed), too, wtf
 
 TODO: refer to this below: it works.
-#red[#red]#gn]
+<#red\gn>[]]
 
-#[a#]b|c
+<*>[a]bc
 
-[r]b [g]b [b]b
-#red[r#blue]b#green[g#yellow]i|#magenta[b#pink]!|sick
+<*>[r] <*>[g] <*>[b]
+<*#red\blue>[r]</#green\yellow>[g]<!#magenta\pink>[b]sick
 
 [dd ]
 
 valid (b and c link to a, a having the content):
-[b] [c] [a] {
+<[b] [c]> [a] {
 
     LOL
 }
@@ -25,11 +25,11 @@ valid (b and c link to a, a having the content):
 
 {scope without owner -> description of current note}
 
-[b][c][a]{[text]}
+<[b][c]>[a]{[text]}
 
-[b]
-[c]
-[a]
+<[b]
+ [c]
+>[a]
 {
     valid... b and c also link to a
     and now, that we have duplicate [a]'s, join this description
@@ -43,20 +43,20 @@ valid (b and c link to a, a having the content):
     }
 }
 
-[b] [c] [dd]
-[a] {
+<[b] [c] [dd]
+>[a] {
     content of even more a!
     it's essentially the same if the links are inside the notes: [b] [c] [d]
 }
 
-[b]u[c]i[ddd]b
-[a] {
+<[b] [c] [ddd]
+>[a] {
     content of EVEN MORE a!
 }
-[b]b[c]u[ddddd]i|
+<[b] [c] [ddddd]>
 [a] { content of ... guess it... a! BUT! not ddddd }
 
-[b]b[c]u[dddd]i|
+<[b] [c] [dddd]>
 [a]
 
 { content of no one }

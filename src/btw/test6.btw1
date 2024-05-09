@@ -1,8 +1,8 @@
 begin
 
-[insane]b!
+<*!>[insane]
 
 TODO: what do I do about this?
-#red[abc#gn]#[TEXT#] {}
-#---------[yep#--------]
+<#red\gn>[abc]<>[TEXT] {}
+<------->[yep]
 

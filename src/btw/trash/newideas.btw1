@@ -1,0 +1,101 @@
+[bui]</*_>
+[bold]<*>
+[italic]</>
+[underline]<_>
+
+[icon]<:>
+
+[red]<#red>
+
+[nolink]<!>
+
+[nofmt1]<>
+[nofmt2]< >
+
+[fg]<#000000>
+[bg]<\ffffff>
+[fgbg]<#000000\ffffff>
+
+[custom]<@custom-fmt>
+
+just some [highlighted]</!> text
+
+I like this stuff
+... very much so ...
+
+
+LINK TO SOMETHING ELSE
+
+    [something]<![sick][crazy]>  => would show as 'something' but link to 'sick' and 'crazy'
+
+    [abc]<[def]{ content of def; this will not work }> { content of abc }
+
+
+SYNONYMS
+
+    [blah]<[blahh][bla]> {}
+
+
+
+ICONS
+
+    [icon]:[icon 2]:[title] {}
+    [title]<:[icon][icon 2]> {}
+
+
+
+FORMATTING
+
+    BOLD            <*>[text]
+    ITALIC          </>[text]
+    UNDERLINE       <_>[text]
+    CODE            <$>[text]
+    COLOR FG        <#ffffff>[text]
+    COLOR BG        <\ffffff>[text]
+    FILE            <%[../images/stickman.png]>[text]
+    URL             <?[https://www.gentoo.org]>[text]
+    DO NOT LINK     <!>[text]
+    LINK MORE       <[link2][link3]>[text]                  (link 1 is 'text')
+    SYNONYM         <+[synonym]>[text]
+    CUSTOM FORMAT   <@[custom]>[text]
+
+
+    BOLD            [text]<*>
+    ITALIC          [text]</>
+    UNDERLINE       [text]<_>
+    CODE            [text]<$>
+    COLOR FG        [text]<#ffffff>
+    COLOR BG        [text]<\ffffff>
+    FILE            [text]<%[../images/stickman.png]>
+    URL             [text]<?[https://www.gentoo.org]>
+    DO NOT LINK     [text]<!>
+    LINK MORE       [text]<[link2][link3]>                 (link 1 is 'text')
+    SYONNYM         [text]<+[synonym]>
+    CUSTOM FORMAT   [text]<@[custom]>
+
+    TIME            [YYYY-MM-DD]<@YYYY-MM-DD>
+
+
+
+CUSTOM FORMATS
+
+    @format-name<flags>
+
+
+
+EXAMPLE USAGE
+
+    LINK RENAME         [text]<![link]>
+    URL                 [url]<_%[https://some.url]#1f1fff>
+    URL FORMAT          URL <_#1f1fff>
+    URL USING FORMAT    [URL]<@URL%[https://some.url]>
+
+
+NOTE FLAGS
+
+    ALL FROM ABOVE + BELOW
+
+    UNIQUE NOTE REQUIREMENT         [title]<+> {}
+    ICON                            [note]<:[icon]> {}
+
+

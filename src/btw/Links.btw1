@@ -15,7 +15,7 @@ My Way:
     What the fuck?
 }
 
-[PDF](path/to/another/pdf)
+<%[path/to/another/pdf]> [PDF] {}
 
 [PDF] {
     PDF is a file format. Typically used to display documents, such as data sheets, books or a restaurant's menu.
@@ -29,14 +29,14 @@ My Way:
     [image]:(path/to/image)
 }
 
-[Blättern]:
-[Blätter]:
-[Blatt] {
+< :[Blättern]
+  :[Blätter]
+> [Blatt] {
     Ein Blatt is in der Regel Grün.
 }
 
-[Bäume]: [Baum] {
-    Ein [Baum]u ist eine Art [Pflanze]u, welche aus [Holz]u und [Blättern]u wächst.
+<[Bäume]>[Baum] {
+    Ein [Baum]u ist eine Art <_>[Pflanze], welche aus <_>[Holz] und <_>[Blättern] wächst.
 }
 
 [Baum]

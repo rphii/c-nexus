@@ -6,9 +6,9 @@ text
             new
     line
 
-[]!iub
-[]|!iub
-[]!iub|
+<!/_*>[]
+<!/_*>[]
+<!/_*>[]
 
 #[]
 [#]
@@ -18,20 +18,19 @@ text
 [acb#]
 #[bac#]
 
-#---[lol#---] <== basically a comment (the #-- stuff)
+<\--->[lol] <== basically a comment (the #-- stuff)
 
-#red[
+<#red\gn>[
 sick shit
-#red]
 
-some #red[text] link to text
-some #rd[text]  link to text
+some <#red>[text] link to text
+some <#rd>[text]  link to text
 
-some [text#red]  link to text
-some [text#rd]   link to text
+some <\red>[text]  link to text
+some <\rd>[text]   link to text
 
-some #wt[text#bk]  link to text
-some #wt[text#bk]! no link
+some <#wt\bk >[text] link to text
+some <#wt\bk!>[text] no link
 
 string:some
 format:#wt[
@@ -47,8 +46,8 @@ begin # red [text# red] end
 begin # red[text# red] end
 
 
-#invalidcolor[text]  => render as text and link
-#invalidcolor[text]! => render as text and don't link
+<#invalidcolor>[text]  => render as text and link
+<!#invalidcolor>[text] => render as text and don't link
 
 what if [link is] ] this? => render as: what if link is ] this
 if [[link is]] this => render as: if [link is] this

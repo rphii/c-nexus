@@ -1,0 +1,23 @@
+any number of matching < and > work lol?
+
+<<< [foo] [bla] [def]
+>>> [bar] {
+
+    above
+    left <*!>[center] right
+    below
+
+}
+
+
+
+[bar] <<<
+[def] [bla] [def]
+>>> {
+
+    above
+    left [center]<*!> right
+    below
+
+}
+

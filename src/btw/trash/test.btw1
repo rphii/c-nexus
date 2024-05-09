@@ -8,19 +8,18 @@ some description
 
 not the last line!
 
-[bold]b|non-bold
+<*>[bold]non-bold
 
 [foo] {
     content of foo
 }
 
-[bold
+<*>[bold
 text
 that is
 multi line
-]
 
-]b
+]
 
 
 

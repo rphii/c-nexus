@@ -1,12 +1,13 @@
 text above
 
-left[shit]!#ff0000#00ff00 right
+left <!#ff0000\00ff00>[shit] right
 left [a] mid [b] right
 bot
 
-[hello]:#red
-[shit]
+< :[hello]
+  #red
+> [shit]
 { [z]
-[x]# wow [y]
+    [x]# wow [y]
 }
 
