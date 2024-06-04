@@ -150,8 +150,8 @@ int content_log(Nexus *nexus, Node *anchor) /* {{{ */
 {
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(anchor, ERR_NULL_ARG);
-    Node base, sub;
 #if 0
+    Node base, sub;
     NEXUS_INSERT(nexus, anchor, &base, ICON_DATE, "", "Log", "", NODE_LEAF);
 #define LOG(date,title,desc,...) NEXUS_INSERT(nexus, &base, &sub, date, "", title, desc, __VA_ARGS__)
 #define LOG2(date,title,desc,...) NEXUS_INSERT(nexus, &base, &sub, date, "", title, desc, __VA_ARGS__)
@@ -172,7 +172,7 @@ int content_log(Nexus *nexus, Node *anchor) /* {{{ */
 #endif
 #undef LOG
 #undef LOG2
-    return 0; error: return -1;
+    return 0; //error: return -1;
 } /* }}} */
 
 int content_build(Nexus *nexus, Node *root) //{{{

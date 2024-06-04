@@ -2,6 +2,7 @@
 
 #include "platform.h"
 #include "screen.h"
+#include "info.h"
 
 #if defined(PLATFORM_LINUX)
 #include <sys/ioctl.h>
@@ -29,7 +30,7 @@ void screen_enter(void)
 #if defined(PLATFORM_LINUX)
     printf("\033[?25l"); // hide cursor
     int result = system("tput smcup");
-    if(result) INFO("failed system command: 'tput smcup' (enter alternate screen)");
+    if(result) info(syscmd_failed, "failed system command: 'tput smcup' (enter alternate screen)");
 #endif
 }
 
@@ -38,7 +39,7 @@ void screen_leave(void)
 #if defined(PLATFORM_LINUX)
     printf("\033[?25h"); // show cursor
     int result = system("tput rmcup");
-    if(result) INFO("failed system command: 'tput smcup' (exit alternate screen)");
+    if(result) info(syscmd_failed, "failed system command: 'tput smcup' (exit alternate screen)");
 #endif
 }
 

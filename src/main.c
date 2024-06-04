@@ -7,9 +7,11 @@
 #include "nexus.h"
 #include "arg.h"
 //#include "screen.h"
-#include "colorprint.h"
+//#include "colorprint.h"
 #include "str.h"
-#include <ctype.h>
+#include "info.h"
+
+//#include <ctype.h>
 
 int main(int argc, const char **argv)
 {
@@ -19,22 +21,27 @@ int main(int argc, const char **argv)
     Arg arg = {0};
     Nexus nexus = {0};
 
+    //info_disable(INFO_parsing_skip_incorrect_extension, INFO_LEVEL_ALL);
+    info_disable_all(INFO_LEVEL_ID | INFO_LEVEL_FILE_LINE | INFO_LEVEL_FUNCTION | INFO_LEVEL_IS_INFO);
+    //info_disable(INFO_skipping_nofile_nodir, INFO_LEVEL_IS_INFO | INFO_LEVEL_FILE_LINE | INFO_LEVEL_FUNCTION);
+    //info_disable(INFO_parsing_file, INFO_LEVEL_IS_INFO | INFO_LEVEL_FILE_LINE | INFO_LEVEL_FUNCTION);
+
     TRY(platform_colorprint_init(), ERR_PLATFORM_COLORPRINT_INIT);
 
     TRY(arg_parse(&arg, argc, argv), ERR_ARG_PARSE);
     if(arg.exit_early) goto clean;
 
     //screen_enter();
-    INFO("Building the Nexus...");
+    info(nexus_init, "Building the Nexus...");
     TRY(nexus_arg(&nexus, &arg), ERR_NEXUS_ARG);
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
-    INFO("Successfully initialized");
+    info(nexus_init, "Successfully initialized");
     getchar();
     //goto clean;
 
     while(!nexus.quit) {
         str_clear(&p);
-        platform_clear();
+        //platform_clear();
         TRY(view_fmt(&nexus, &p, &nexus.view), ERR_VIEW_FMT);
         printf("%.*s", STR_F(&p));
         int key = platform_getch();

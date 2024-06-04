@@ -9,15 +9,17 @@ typedef struct BtwParse {
     Str title;
     Str cmd;
     Str description;
-
 } BtwParse;
 
 typedef enum {
+    BTW_LEX_NONE,
     BTW_LEX_STRING,
     BTW_LEX_WHITESPACE,
     BTW_LEX_FORMAT,
     BTW_LEX_LINK,
     BTW_LEX_SEPARATOR, // mainly { or }
+    /* ids above */
+    BTW_LEX__COUNT
 } BtwLexList;
 
 #define BTW_FLAG_BOLD       (1U<<0)
@@ -29,10 +31,12 @@ typedef enum {
 typedef unsigned int BtwFlag;
 
 typedef struct BtwLex {
-    BtwLexList id;
-    size_t line_i0; // starting index of current line in file
+    //size_t line_i0; // starting index of current line in file
     size_t line_num; // actual line number
-    Str str; // snippet of text
+    //size_t i0; // starting index of item
+    size_t iE; // ending index of item
+    //Str str; // snippet of text
+    BtwLexList id;
 } BtwLex;
 
 typedef struct BtwLink {

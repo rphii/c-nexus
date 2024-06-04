@@ -7,6 +7,7 @@
 #include "btw.h"
 #include "file.h"
 #include "vector.h"
+#include "info.h"
 
 #define ERR_nexus_fmt_search(str, node) "failed searching node"
 ErrDecl nexus_fmt_search(Str *str, Node *node) {
@@ -268,7 +269,7 @@ void nexus_rebuild(Nexus *nexus)
     int result = cmd_run(&cmd);
     Str args[5] = {0};
     if(result) {
-        INFO(ERR_NEXUS_REBUILD);
+        info(nexus_rebuild_failed, ERR_NEXUS_REBUILD);
         platform_getch();
         goto clean;
     }
@@ -452,7 +453,7 @@ Node *nexus_get(Nexus *nexus, Str *title) //{{{
     TRY(node_create(&find, title, 0, 0), ERR_NODE_CREATE);
     if(tnode_find(&nexus->nodes, &find, &i0, &j0)) {
         Node *alternative = 0;
-        INFO("node does not exist in nexus: '%.*s'", STR_F(&find.title));
+        info(nexus_title_node_not_found, "node does not exist in nexus: '%.*s'", STR_F(&find.title));
         for(i0 = 0; i0 < (1ULL << (nexus->nodes.width - 1)); ++i0) {
             for(j0 = 0; j0 < nexus->nodes.buckets[i0].len; ++j0) {
                 alternative = nexus->nodes.buckets[i0].items[j0];
@@ -1101,7 +1102,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
         if(res > btw.stats.maxres) btw.stats.maxres = res;
         //printf("%zu bytes max. reserved\n", btw.maxres);
         //printf("read %u files\n", n);
-        INFO("Loaded %zu of %zu checked files and established %zu links", btw.stats.success, btw.stats.attempts, btw.stats.links);
+        info(nexus_stats, "Loaded %zu of %zu checked files and established %zu links", btw.stats.success, btw.stats.attempts, btw.stats.links);
         //getchar();
     }
     /* trim all descriptions */

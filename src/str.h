@@ -65,6 +65,7 @@ ErrDecl str_fmt_basename(Str *basename, const Str *str); // remove extention+dir
 
 #define ERR_str_fmt_line(line, str, i0, iE) "failed getting line (index %zu / length %zu)", i0, str_length(str)
 ErrDecl str_fmt_line(Str *line, const Str *str, size_t i0, size_t *iE);
+void str_get_line(const Str *str, size_t *i0, size_t *iE);
 
 #define ERR_str_fmt_fgbg(out, text, ...) "failed applying foreground/background to string '%.*s'", STR_F(text)
 ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bool bold, bool italic, bool underline);

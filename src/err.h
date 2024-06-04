@@ -63,7 +63,13 @@ void screen_leave(void);    /* implementation is in "screen.h" */
     platform_trace(); ERR_PRINTF(F("[ABORT]", BOLD FG_BK BG_RD_B) " " F("%s:%d:%s (end of trace)", FG_WT_B) " " fmt "\n" , __FILE__, __LINE__, __func__, ##__VA_ARGS__); exit(-1); } while(0)
 
 #define INFO(fmt, ...)       do { \
-        ERR_PRINTF(F("[INFO]", BOLD FG_YL_B) " " F("%s:%d:%s", FG_WT_B) " " fmt"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
+        /*_Static_assert(0, "don't use");*/\
+        /*printff(fmt, ##__VA_ARGS__); */\
+        ERR_PRINTF(F("[INFO]", BOLD FG_YL_B) " " F("%s:%d:%s", FG_WT_B) " " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
+    } while(0)
+
+#define INFO_REDUCED(fmt, ...)  do { \
+        ERR_PRINTF(F("[INFO]", BOLD FG_YL_B) " " fmt "\n", ##__VA_ARGS__); \
     } while(0)
 
 #define TRY(stmt, fmt, ...)  if (stmt) { THROW(fmt, ##__VA_ARGS__); }
@@ -74,6 +80,27 @@ void screen_leave(void);    /* implementation is in "screen.h" */
         ABORT("assertion of '" ERR_STRINGIFY(stmt) "' failed... " fmt, ##__VA_ARGS__); } \
     } while(0)
 #define ASSERT_ARG(arg)     ASSERT(arg, ERR_NULL_ARG)
+
+#include <sys/ioctl.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#define printff(fmt, ...)   do { /*printf("%s():%i: ", __func__, __LINE__);*/  \
+        \
+        int l = snprintf(0, 0, "* %s:%i ", __func__, __LINE__); \
+        struct winsize w; \
+        ioctl(STDOUT_FILENO, TIOCGWINSZ, &w); \
+        int printed = printf(fmt, ##__VA_ARGS__); \
+        int missing = w.ws_col - (printed + l) % w.ws_col; \
+        if(0){\
+        for(int i = 0; i < missing; ++i) { \
+            if(!((missing - i)%2)) printf(F(".", FG_BK_B));\
+            else printf(" ");\
+        } \
+        }else{printf("%*s", missing, "");}\
+        printf("* %s:%i \n", __func__, __LINE__); \
+        \
+    } while(0);
 
 //#define TRYF(function, ...)  TRY(function(__VA_ARGS__), function##_ERR(__VA_ARGS__))
 #define TRYC(function)      TRY(function, ERR_##function)

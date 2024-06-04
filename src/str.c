@@ -262,6 +262,22 @@ error:
     return -1;
 } //}}}
 
+void str_get_line(const Str *str, size_t *i0, size_t *iE) {/*{{{*/
+    ASSERT_ARG(str);
+    ASSERT_ARG(i0);
+    ASSERT_ARG(iE);
+    size_t iE_temp = str_ch(&STR_I0(*str, *i0), '\n', 0);
+    Str fake_end = STR_IE(*str, iE_temp);
+    size_t i0_temp = str_rch(&fake_end, '\n', 0) + 1;
+    if(i0_temp >= str_length(&fake_end)) {
+        *i0 = 0;
+    } else {
+        *i0 = i0_temp;
+    }
+    *iE = iE_temp;
+    ASSERT(*i0 < *iE, "expected i0 (%zu) to be smaller than iE (%zu)", *i0, *iE);
+}/*}}}*/
+
 ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bool bold, bool italic, bool underline) {
     ASSERT_ARG(out);
     ASSERT_ARG(text);

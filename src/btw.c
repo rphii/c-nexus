@@ -8,6 +8,8 @@
 #include "str.h"
 #include "vector.h"
 
+#include "info.h"
+
 #if 0/*{{{*/
 
 bool btw_parse_color(Btw *btw, const Str *str, V3u8 col) {/*{{{*/
@@ -399,57 +401,71 @@ error:
 
 void btwlex_free(BtwLex *lex) { //{{{
     ASSERT_ARG(lex);
-    str_free(&lex->str);
+    //str_free(&lex->str);
     memset(lex, 0, sizeof(*lex));
 } //}}}
- 
+
 #define ERR_btw_lex_append(items, id, str, i0, line_index) "failed appending lex item"
-ErrDecl btw_lex_append(VBtwLex *items, BtwLexList id, Str *str, size_t i0, size_t line_index) { //{{{
+ErrDecl btw_lex_append(VBtwLex *items, BtwLexList id, size_t i0, size_t iE, size_t line_index) { //{{{
     ASSERT_ARG(items);
-    ASSERT_ARG(str);
-    // TODO: if link, to a trim? or somewhere else?
-    BtwLex item = {
-        .line_i0 = i0,
-        .line_num = line_index,
-        .str = *str,
-        .id = id,
-    };
-    if(item.id == BTW_LEX_STRING) {
-        //str_trim(&item->str);
-        if(!str_length(&item.str)) {
-            return 0;
+    BtwLex *prev = vbtwlex_length(items) ? vbtwlex_get_back(items) : 0;
+    if(id == BTW_LEX_NONE) {
+        THROW("id is NONE, we don't want to append that!");
+    }
+    if(prev) {
+        if(prev->iE != i0) {
+            THROW(F("!!! consistency breakage !!!", FG_RD) " previous iE(%zu) + 1 != i0(%zu)!", prev->iE, i0);
         }
     }
-    if(item.id == BTW_LEX_LINK) {
-        str_trim(&item.str);
-        //if(!str_length(&item->str)) {
-        //    return 0;
-        //}
-    }
+    if(prev && (prev->id == id && prev->id != BTW_LEX_SEPARATOR)) {
+        vbtwlex_get_back(items)->iE = iE;
+    } else {
+        // TODO: if link, to a trim? or somewhere else?
+        BtwLex item = {
+            .line_num = line_index,
+            //.i0 = i0,
+            .iE = iE,
+            .id = id,
+        };
 #if 0
-    printf(F("%zu", BG_BK_B), vbtwlex_length(items));
-    //if(item->flag) {
-    //    printf(F("F", BG_WT_B FG_BK));
-    //}
-    if(item.id == BTW_LEX_STRING) {
-        printf(F("[", FG_BK_B) "%.*s" F("]", FG_BK_B), STR_F(&item.str));
-    }
-    if(item.id == BTW_LEX_LINK) {
-        printf(F("'%.*s'", FG_CY_B), STR_F(&item.str));
-    }
-    if(item.id == BTW_LEX_FORMAT) {
-        printf(F("%.*s", FG_RD), STR_F(&item.str));
-    }
-    if(item.id == BTW_LEX_SEPARATOR) {
-        printf(F("%.*s", FG_BL_B), STR_F(&item.str));
-    }
+        if(item.id == BTW_LEX_STRING) {
+            //str_trim(&item->str);
+            if(!str_length(&item.str)) {
+                return 0;
+            }
+        }
+        if(item.id == BTW_LEX_LINK) {
+            str_trim(&item.str);
+            //if(!str_length(&item->str)) {
+            //    return 0;
+            //}
+        }
+#if 0
+        printf(F("%zu", BG_BK_B), vbtwlex_length(items));
+        //if(item->flag) {
+        //    printf(F("F", BG_WT_B FG_BK));
+        //}
+        if(item.id == BTW_LEX_STRING) {
+            printf(F("[", FG_BK_B) "%.*s" F("]", FG_BK_B), STR_F(&item.str));
+        }
+        if(item.id == BTW_LEX_LINK) {
+            printf(F("'%.*s'", FG_CY_B), STR_F(&item.str));
+        }
+        if(item.id == BTW_LEX_FORMAT) {
+            printf(F("%.*s", FG_RD), STR_F(&item.str));
+        }
+        if(item.id == BTW_LEX_SEPARATOR) {
+            printf(F("%.*s", FG_BL_B), STR_F(&item.str));
+        }
 #endif
-    //item->line = line_index;
-    //item->i0 = i0;
-    TRY(vbtwlex_push_back(items, &item), ERR_VEC_PUSH_BACK);
-    str_zero(str);
-    //memset(item, 0, sizeof(*item));
-    //printf(F("APPEND:%u:%.*s\n", FG_BK_B), item->id, STR_F(&item->str));
+#endif
+        //item->line = line_index;
+        //item->i0 = i0;
+        TRY(vbtwlex_push_back(items, &item), ERR_VEC_PUSH_BACK);
+        //str_zero(str);
+        //memset(item, 0, sizeof(*item));
+        //printf(F("APPEND:%u:%.*s\n", FG_BK_B), item->id, STR_F(&item->str));
+    }
     return 0;
 error:
     return -1;
@@ -458,52 +474,150 @@ error:
 ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
     ASSERT_ARG(items);
     ASSERT_ARG(str);
+    bool err_matching_bracket = false, err_matching_angle = false;
     int err = 0;
-    size_t n_emptyline = 0;
-    size_t index = 0, line_index = 0, i0 = 0;
+    size_t line_index = 1, i0 = 0, iE = 0;
+    BtwLexList id_next = BTW_LEX_NONE;//, id_prev = BTW_LEX_NONE;
     Str temp = {0};
-    //temp.id = BTW_LEX_STRING;
-    Str line = {0};
-    while(index < str_length(str)) {
-        i0 = index;
-        str_clear(&line);
-        ++line_index;
-        TRYC(str_fmt_line(&line, str, index, &index));
-        str_trim(&line);
-        /* go over (trimmed) lines */
-        //printf("line %zu:%.*s\n", line_index, STR_F(&line));
-#if 1
-        bool have_any = false;
-        if(!str_length(&line)) {
-            have_any = true;
-            ++n_emptyline;
-        }
-        if(!have_any) {
-            n_emptyline = 0;
-            do {
-            } while(have_any);
-        }
-        if(n_emptyline < 2) {
-            TRYC(str_fmt(&temp, "\n"));
-        }
+    bool done_next = false;
+    while(i0 < str_length(str) && iE < str_length(str)) {
+        /* find out next id */
+            //id_prev = id_next;
+            //ASSERT(id_prev < BTW_LEX__COUNT, "id_perv should not exceed '%u'", BTW_LEX__COUNT);
+            ASSERT(id_next < BTW_LEX__COUNT, "id_next should not exceed '%u'", BTW_LEX__COUNT);
+            char c = str_get_at(str, iE);
+#if 0
+            switch(c) {
+                case '<': {
+                    id_next = BTW_LEX_FORMAT;
+                } break;
+                case '[': {
+                    id_next = BTW_LEX_LINK;
+                } break;
+                case '{': case '}': {
+                    id_next = BTW_LEX_SEPARATOR;
+                } break;
+                default: {
+                    id_next = BTW_LEX_STRING;
+                } break;
+            }
 #endif
+            if(strchr("{}<>[]", c)) {
+                id_next = BTW_LEX_SEPARATOR;
+            } else if(isspace(c)) {
+                id_next = BTW_LEX_WHITESPACE;
+            } else {
+                id_next = BTW_LEX_STRING;
+            }
+            /* handling first id */
+#if 0
+            if(id_prev == BTW_LEX_NONE) {
+                id_prev = id_next;
+            }
+            if(id_prev != id_next && id_prev == BTW_LEX_STRING) {
+                done_next = true;
+            }
+#endif
+
+            /* handle next id */
+            if(!done_next) {
+                size_t iE_prev = iE;
+                switch(id_next) {
+                    case BTW_LEX_STRING: {
+                    //printff("STRING");
+                        ++iE;
+                        done_next = true;
+                    } break;
+                    case BTW_LEX_WHITESPACE: {
+                    //printff("WHITESPACE");
+                        char c = str_get_at(str, iE);
+                        while(iE < str_length(str) && (c = str_get_at(str, iE), isspace(c))) {
+                            if(str_get_at(str, iE) == '\n') {
+                                ++line_index;
+                            }
+                            ++iE;
+                        }
+                        done_next = true;
+                    } break;
+                    case BTW_LEX_FORMAT: {
+                    //printff("FORMAT");
+                        Str search = STR_I0(*str, i0);
+                        size_t find = str_ch_pair(&search, '>');
+                        if(find >= str_length(&search)) {
+                            err_matching_angle = true;
+                            THROW("did not find matching angle bracket");
+                        }
+                        iE = find + i0 + 1;
+                        done_next = true;
+                    } break;
+                    case BTW_LEX_LINK: {
+                    //printff("LINK");
+                        Str search = STR_I0(*str, i0);
+                        size_t find = str_ch_pair(&search, ']');
+                        if(find >= str_length(&search)) {
+                            err_matching_bracket = true;
+                            THROW("did not find matching bracket");
+                        }
+                        iE = find + i0 + 1;
+                        done_next = true;
+                    } break;
+                    case BTW_LEX_SEPARATOR: {
+                    //printff("SEPARATOR");
+                        ++iE;
+                        done_next = true;
+                    } break;
+                    case BTW_LEX__COUNT:
+                    case BTW_LEX_NONE: {
+                        THROW(ERR_UNREACHABLE);
+                    } break;
+                }
+                ASSERT(iE_prev < iE, "did not process case '%u' at index %zu", id_next, iE);
+            }
+
+            /* append if next doesn't match previous */
+            if(done_next) {
+                done_next = false;
+                //printff("id %u:[%zu-%zu]:[%.*s]", id_next, iE,i0, (int)(iE-i0), str_iter_at(str, i0));
+                TRYC(btw_lex_append(items, id_next, i0, iE, line_index));
+                //printff("i0 %zu / iE %zu", i0, iE);
+                ASSERT(i0 < iE, "something went wrong, maybe lexing didn't actually happen? i0=%zu, iE=%zu, id=%u, line=%zu", i0, iE, id_next, line_index);
+                /* done, prepare next! */
+                i0 = iE;
+            }
+
+        //}
         /////printf("\n");
     }
-    TRYC(btw_lex_append(items, BTW_LEX_STRING, &temp, i0, line_index));
+    if(iE > i0 && iE < str_length(str)) {
+        TRYC(btw_lex_append(items, id_next, i0, iE, line_index));
+    }
+#if 0
+    size_t ii0 = 0;
+    for(size_t i = 0; i < vbtwlex_length(items); ++i) {
+        BtwLex *item = vbtwlex_get_at(items, i);
+        printf("[" F("%.*s", FG_BK_B) "]", (int)(item->iE-ii0), str_iter_at(str, ii0));
+        ii0 = item->iE;
+    } printf("\n");
+#endif
 clean:
     //printf("%.*s\n", STR_F(&temp.str));
     str_free(&temp);
-    str_free(&line);
+    //str_free(&line);
     return err;
 error:
+    if(err_matching_bracket || err_matching_angle) {
+        err_matching_bracket = false;
+        err_matching_angle = false;
+        THROW("expected matching bracket (line %zu)", line_index);
+    }
     ERR_CLEAN;
 } //}}}
-
 
 ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     ASSERT_ARG(nexus);
     ASSERT_ARG(btw);
     int err = 0;
+    //printff("got %zu..", vbtwlex_length(&btw->items));
 #if 0/*{{{*/
     BtwLink link = {0};
     TRYC(str_copy, &link.str, &btw->basename);
@@ -622,7 +736,7 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
         TRYC(file_dir_read(filename, &btw->dirfiles));
         //printf("\r%.*s", *n, "");
         //*n = printf("[DIR]  %.*s", STR_F(filename));
-        INFO("directory '%.*s'", STR_F(filename));
+        info(directory, "directory '%.*s'", STR_F(filename));
         //INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
     } else {
         bool skip = false;
@@ -636,12 +750,12 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
 #endif
             // TODO make a flag for this?
             skip = true;
-            INFO("incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
+            info(parsing_skip_incorrect_extension, "incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
         }
         if(!skip) {
             //if(*n) printf("\n");
             //*n = printf("[FILE] %.*s", STR_F(filename));
-            INFO("parsing '%.*s'", STR_F(filename));
+            info(parsing_file, "parsing '%.*s'", STR_F(filename));
             TRYC(file_str_read(filename, &btw->content));
             str_trim(&btw->content);
         }
