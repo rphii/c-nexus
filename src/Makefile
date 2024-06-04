@@ -7,8 +7,8 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   -DPROC_COUNT=$(shell nproc --all) \
 		   -rdynamic -Og -ggdb3 \
 		   ##############\
-		   -fsanitize=address -rdynamic \
 		   -O3 -march=native \
+		   -fsanitize=address -rdynamic \
 		   -O3 -march=native \
 		   -Wconversion \
 		   -pg -rdynamic \

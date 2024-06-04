@@ -46,7 +46,8 @@
 #if DEBUG_DISABLE_ERR_MESSAGES
 #define ERR_PRINTF(fmt, ...)    {}
 #else
-#define ERR_PRINTF(fmt, ...)    do { fflush(stdout); /* for whatever reason I have to do this fflush... */ fprintf(ERR_FILE_STREAM, fmt, ##__VA_ARGS__); } while(0)
+//#define ERR_PRINTF(fmt, ...)    do { fflush(stdout); /* for whatever reason I have to do this fflush... */ fprintf(ERR_FILE_STREAM, fmt, ##__VA_ARGS__); } while(0)
+#define ERR_PRINTF(fmt, ...)    do { fprintf(ERR_FILE_STREAM, fmt, ##__VA_ARGS__); } while(0)
 #endif
 
 void screen_leave(void);    /* implementation is in "screen.h" */

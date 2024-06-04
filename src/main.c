@@ -22,7 +22,7 @@ int main(int argc, const char **argv)
     Nexus nexus = {0};
 
     //info_disable(INFO_parsing_skip_incorrect_extension, INFO_LEVEL_ALL);
-    info_disable_all(INFO_LEVEL_ID | INFO_LEVEL_FILE_LINE | INFO_LEVEL_FUNCTION | INFO_LEVEL_IS_INFO);
+    //info_disable_all(INFO_LEVEL_ID);
     //info_disable(INFO_skipping_nofile_nodir, INFO_LEVEL_IS_INFO | INFO_LEVEL_FILE_LINE | INFO_LEVEL_FUNCTION);
     //info_disable(INFO_parsing_file, INFO_LEVEL_IS_INFO | INFO_LEVEL_FILE_LINE | INFO_LEVEL_FUNCTION);
 

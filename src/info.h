@@ -44,14 +44,11 @@ typedef struct Info {
         if(disabled & INFO_LEVEL_TEXT) break; /* like.. if no text -> break entirely */ \
         bool decorators = false; \
         if(~disabled & INFO_LEVEL_IS_INFO) { \
-            ERR_PRINTF(F("[INFO]", FG_YL_B BOLD)); \
+            ERR_PRINTF(F("[INFO] ", FG_YL_B BOLD)); \
         } \
         if(~disabled & INFO_LEVEL_ID) { \
-            ERR_PRINTF(F("<%s>", FG_BL_B BOLD), STRINGIFY(id)); \
-            decorators = true; \
+            ERR_PRINTF(F("<%s> ", FG_BL_B BOLD), STRINGIFY(id)); \
         } \
-        ERR_PRINTF("%s", decorators ? " " : ""); \
-        decorators = false; \
         if(~disabled & INFO_LEVEL_FILE_LINE) { \
             ERR_PRINTF(F("%s%s:%i", FG_WT_B), decorators ? ":" : "", __FILE__, __LINE__); \
             decorators = true; \
