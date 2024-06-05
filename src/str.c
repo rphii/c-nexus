@@ -596,9 +596,11 @@ size_t str_rnch(const Str *str, char ch, size_t n) {
 size_t str_count_ch(const Str *str, char ch) {/*{{{*/
     ASSERT_ARG(str);
     size_t result = 0;
-    for(size_t i = 0; i < str_length(str); ++i) {
-        char c = str_get_at(str, i);
-        if(c == ch) ++result;
+    if(str->first < str->last) { /* TODO: add this to basically every string utility function :) */
+        for(size_t i = 0; i < str_length(str); ++i) {
+            char c = str_get_at(str, i);
+            if(c == ch) ++result;
+        }
     }
     return result;
 }/*}}}*/

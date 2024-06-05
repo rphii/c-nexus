@@ -51,6 +51,7 @@ void vrnode_sort(VrNode *vec)
 VEC_IMPLEMENT(VView, vview, View, BY_VAL, view_free);
 
 VEC_IMPLEMENT(VsStr, vsstr, Str, BY_REF, 0);
+VEC_IMPLEMENT(VvStr, vvstr, Str, BY_VAL, 0);
 
 VEC_IMPLEMENT(VrStr, vrstr, Str *, BY_VAL, 0);
 VEC_IMPLEMENT(VStr, vstr, Str, BY_REF, str_free);

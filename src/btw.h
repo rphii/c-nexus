@@ -15,9 +15,15 @@ typedef enum {
     BTW_LEX_NONE,
     BTW_LEX_STRING,
     BTW_LEX_WHITESPACE,
-    BTW_LEX_FORMAT,
-    BTW_LEX_LINK,
-    BTW_LEX_SEPARATOR, // mainly { or }
+    //BTW_LEX_FORMAT,
+    //BTW_LEX_LINK,
+    //BTW_LEX_SEPARATOR, // mainly { or }
+    BTW_LEX_SCOPE_START,
+    BTW_LEX_SCOPE_END,
+    BTW_LEX_LINK_START,
+    BTW_LEX_LINK_END,
+    BTW_LEX_FORMAT_START,
+    BTW_LEX_FORMAT_END,
     /* ids above */
     BTW_LEX__COUNT
 } BtwLexList;

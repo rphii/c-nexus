@@ -12,6 +12,8 @@ typedef enum {
     // parsing stufv
     INFO_parsing_file,
     INFO_parsing_skip_incorrect_extension,
+    INFO_parsing_found_note,
+    INFO_parsing_found_link,
     // nexus stuff
     INFO_nexus_rebuild_failed,
     INFO_nexus_init,
@@ -66,6 +68,8 @@ typedef struct Info {
 InfoLevelField info_query_disabled(InfoList id);
 void info_disable(InfoList id, InfoLevelField field);
 void info_disable_all(InfoLevelField field);
+
+void info_enable(InfoList id, InfoLevelField field);
 
 #define INFO_H
 #endif

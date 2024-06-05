@@ -24,4 +24,10 @@ void info_disable_all(InfoLevelField field) {
     }
 }
 
+void info_enable(InfoList id, InfoLevelField field) {
+    if(id < INFO__COUNT) {
+        s_info.disabled[id] &= ~field;
+    }
+}
+
 

@@ -39,8 +39,10 @@ SYNONYMS
 
 ICONS
 
-    [icon]:[icon 2]:[title] {}
-    [title]<:[icon][icon 2]> {}
+    <:[icon]:[icon2]>[title]{}
+
+    OLD///TRASH: [icon]:[icon 2]:[title] {}
+    OLD///TRASH: [title]<:[icon][icon 2]> {}
 
 
 

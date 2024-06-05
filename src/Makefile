@@ -27,9 +27,9 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   -rdynamic -ggdb3 \
-		   ##############\
 		   -fsanitize=address -rdynamic \
+		   ##############\
+		   -rdynamic -ggdb3 \
 		   -rdynamic -Og -ggdb3 \
 		   -pg -rdynamic \
 		   -fsanitize=address \

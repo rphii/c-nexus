@@ -1,17 +1,17 @@
-[Link]
+[Link 1]
 
 Markdown Way:
-[Text](Link)
+[Text 1](Link)
 
 My Way:
-[Link]
-[Text](Path)
+[Link 2]
+[Text 2](Path)
 
-[Link](Icon) {
+<:[Icon]>[Link] {
     What the fuck?
 }
 
-[Icon]:[Link] {
+<?[URL]>[Icon] {
     What the fuck?
 }
 
@@ -21,7 +21,7 @@ My Way:
     PDF is a file format. Typically used to display documents, such as data sheets, books or a restaurant's menu.
 }
 
-[image]
+<[image]>
 [img] {}
 
 [PDF]:(path/to/pdf)
@@ -44,7 +44,7 @@ My Way:
 
 [Link to date](2024-04-14)
 
-[2024-04-14] { Description of date }
+[2024-04-14] { Description of [date] }
 
 [Icon]: [Note] { Description }
 
