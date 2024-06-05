@@ -631,6 +631,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     Str link = {0};
     int stage_pair = 0;
     int stage = BTW_PARSE_STRING;
+    //bool maybe_format = false;
     pending.last = pending.first;
     snippet.last = snippet.first;
     for(size_t i = 0; i < vbtwlex_length(&btw->items); ++i) {
@@ -643,10 +644,19 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         /* check if we're at a link */
         switch(stage) {
             case BTW_PARSE_STRING: {
+                /* DRY[1] */
                 if(item->id == BTW_LEX_LINK_START) {
                     stage_pair = 1;
                     stage = BTW_PARSE_LINK;
                     pending.first = snippet.first;
+                } else if(item->id == BTW_LEX_FORMAT_START) {
+                    /* TODO ... update some kind of index to THIS position,
+                     * ... I then don't need to keep track of links, because
+                     * this thing should be parsed _again_ afterwards... 
+                     * and even if it is an "invalid" format, just... add the
+                     * string to the notes... */
+                    //maybe_format = true;
+                    //info(parsing_found_format, F("FormatBegin (maybe)", FG_BL_B));
                 }
             } break;
             case BTW_PARSE_LINK: {
@@ -668,9 +678,13 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             case BTW_PARSE_NOTE: {
                 if(item->id == BTW_LEX_SCOPE_START) {
                     vsstr_push_back(&notes, &link);
-                    info(parsing_found_note, F("NoteBegin:", FG_BK_B) "%.*s", STR_F(&link));
+                    //if(maybe_format) {
+                    //    info(parsing_found_format, F("FormatEnd", FG_BL_B));
+                    //}
+                    info(parsing_found_note, F("NoteBegin:", FG_MG_B) "%.*s", STR_F(&link));
                     //printff("NOTE begin : %.*s", STR_F(&pending));
                     stage = BTW_PARSE_STRING;
+                    //maybe_format = false;
                 } else if(item->id == BTW_LEX_WHITESPACE) {
                     if(str_count_ch(&pending, '\n') > 1) {
                         stage = BTW_PARSE_STRING;
@@ -678,10 +692,14 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                     }
                 } else {
                     info(parsing_found_link, F("Link:", FG_BK_B) "%.*s", STR_F(&link));
+                    /* DRY[1] */
                     if(item->id == BTW_LEX_LINK_START) {
                         stage_pair = 1;
                         stage = BTW_PARSE_LINK;
                         pending.first = snippet.first;
+                    } else if(item->id == BTW_LEX_FORMAT_START) {
+                        //maybe_format = true;
+                        info(parsing_found_format, F("FormatBegin (maybe)", FG_BL_B));
                     } else {
                         stage = BTW_PARSE_STRING;
                         //printff("CURRENT ID: %u", item->id);
@@ -691,10 +709,14 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             default: break;
         }
 
+        if(item->id == BTW_LEX_FORMAT_END) {
+            //maybe_format = false;
+            //printff("disable maybe_format");
+        }
         if(vsstr_length(&notes) && item->id == BTW_LEX_SCOPE_END) {
             Str title = {0};
             vsstr_pop_back(&notes, &title);
-            info(parsing_found_note, F("NoteEnd:", FG_BK_B) "%.*s", STR_F(&title));
+            info(parsing_found_note, F("NoteEnd:", FG_MG_B) "%.*s", STR_F(&title));
         }
 
         /* prepare for next item */

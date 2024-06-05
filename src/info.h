@@ -14,6 +14,7 @@ typedef enum {
     INFO_parsing_skip_incorrect_extension,
     INFO_parsing_found_note,
     INFO_parsing_found_link,
+    INFO_parsing_found_format,
     // nexus stuff
     INFO_nexus_rebuild_failed,
     INFO_nexus_init,
