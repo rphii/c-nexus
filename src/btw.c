@@ -624,11 +624,21 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
 #define BTW_PARSE_LINK      2
 #define BTW_PARSE_NOTE      3
 
+#define TEXTINFO(a,b)   do { if(1) {\
+                            text.last = a.first; \
+                            if(text.last < text.first) THROW("\n>>> last %zu:\n%.200s\n\n>>> first: %zu:\n%.200s\n", text.last, &text.s[text.last], text.first, &text.s[text.first]); \
+                            if(str_length(&text)) info(parsing_found_text, F("Text:", FG_GN_B) "%.*s", STR_F(&text)); \
+                            text.first = b.last; \
+                            /*printff("first = %zu", text.first);*/ \
+}} while(0)
+
     VsStr notes = {0};
+    TRY(vsstr_push_back(&notes, &STR(NEXUS_ROOT)), ERR_VEC_PUSH_BACK);
 
     Str snippet = btw->content;
     Str pending = btw->content;
     Str format = btw->content;
+    Str text = btw->content;
     Str link = {0};
     int stage_pair = 0;
     int stage = BTW_PARSE_STRING;
@@ -637,44 +647,47 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     pending.last = pending.first;
     snippet.last = snippet.first;
     format.last = format.first;
+    text.last = text.first;
+    size_t i_prev = 0;
     for(size_t i = 0; i < vbtwlex_length(&btw->items); ++i) {
+        if(i_prev > i) {
+            //printff(F("REWIND HAPPENED", UL BOLD IT));
+        }
+        i_prev = i;
         /* fetch next item */
         BtwLex *item = vbtwlex_get_at(&btw->items, i);
         snippet.last = item->iE;
         pending.last = item->iE;
-        //printf("[" F("%.*s", FG_BK_B) "]", (int)(item->iE-i0), str_iter_at(&btw->content, i0));
+        //printff("%zu..%zu", text.first, text.last);
         /* ... process ... */
         /* check if we're at a link */
         switch(stage) {
             case BTW_PARSE_STRING: {
                 /* DRY[1] */
                 if(item->id == BTW_LEX_LINK_START) {
+                    //printff("link start");
                     stage_pair = 1;
                     stage = BTW_PARSE_LINK;
                     pending.first = snippet.first;
+                    //printff("PENDING FIRST %zu", pending.first);
                 } else if(item->id == BTW_LEX_FORMAT_START) {
-                    //printff("Format begin");
+                    //printff("format start");
                     format_i0 = i;
                     format.first = snippet.first;
                     stage = BTW_PARSE_FORMAT;
-                    /* TODO ... update some kind of index to THIS position,
-                     * ... I then don't need to keep track of links, because
-                     * this thing should be parsed _again_ afterwards... 
-                     * and even if it is an "invalid" format, just... add the
-                     * string to the notes... */
-                    //maybe_format = true;
-                    //info(parsing_found_format, F("FormatBegin (maybe)", FG_BL_B));
                 } else {
                     if(item->id != BTW_LEX_WHITESPACE && str_length(&format)) {
-                        //printff("Format reset (%u)", item->id);
-                        //pending.first = format.first; //crap-code
                         /* DRY[2] */
-                        pending.first = format.first;
                         format.first = format.last; //crap-code
+                        //printff("reset");
                         i = format_i0 + 0;
                         item = vbtwlex_get_at(&btw->items, i);
-                        stage = BTW_PARSE_STRING;
+                            //snippet.last = item->iE;
+                            //snippet.first = item->iE;
+                          text.first = item->iE;
+                      //printff("first = %zu", text.first);
                     }
+                    stage = BTW_PARSE_STRING;
                 }
             } break;
             case BTW_PARSE_LINK: {
@@ -684,8 +697,19 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                     --stage_pair;
                     if(!stage_pair) {
                         link = pending;
-                        //printff("LINK : %.*s", STR_F(&pending));
+                        //printff("LINK %zu .. %zu", link.first, link.last);
                         stage = BTW_PARSE_NOTE;
+
+                        if(str_length(&format)) {
+                                //printff("FORMAT END @ %zu:%.30s", format.last, &format.s[format.last]);
+                                TEXTINFO(format, format);
+                              //text.last = format.first;
+                              //if(str_length(&text)) info(parsing_found_text, F("Text:", FG_GN_B) "%.*s", STR_F(&text));
+                              //text.first = format.last;
+                            info(parsing_found_format, F("Format:", FG_GN_B) "%.*s", STR_F(&format));
+                            format.first = format.last;
+                        }
+
                     }
                 } else if(item->id == BTW_LEX_WHITESPACE) {
                     if(str_count_ch(&pending, '\n') > 0) {
@@ -696,22 +720,26 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             case BTW_PARSE_NOTE: {
                 if(item->id == BTW_LEX_SCOPE_START) {
                     vsstr_push_back(&notes, &link);
-                    //if(maybe_format) {
-                    //    info(parsing_found_format, F("FormatEnd", FG_BL_B));
-                    //}
-                    if(str_length(&format)) {
-                        info(parsing_found_format, F("Format:", FG_GN_B) "%.*s", STR_F(&format));
-                    }
-                    info(parsing_found_note, F("NoteBegin:", FG_MG_B) "%.*s", STR_F(&link));
-                    //printff("NOTE begin : %.*s", STR_F(&pending));
+                            TEXTINFO(link, snippet);
+                          //text.last = link.first;
+                          //if(str_length(&text)) info(parsing_found_text, F("Text:", FG_GN_B) "%.*s", STR_F(&text));
+                          //text.first = link.last;
+                    info(parsing_found_note, F("NoteBegin (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&notes) - 1, snippet.first, STR_F(&link));
                     stage = BTW_PARSE_STRING;
-                    //maybe_format = false;
                 } else if(item->id == BTW_LEX_WHITESPACE) {
                     if(str_count_ch(&pending, '\n') > 1) {
                         stage = BTW_PARSE_STRING;
+                            TEXTINFO(link, link);
+                          //text.last = link.first;
+                          //if(str_length(&text)) info(parsing_found_text, F("Text:", FG_GN_B) "%.*s", STR_F(&text));
+                          //text.first = link.last;
                         info(parsing_found_link, F("Link:", FG_BK_B) "%.*s", STR_F(&link));
                     }
                 } else {
+                            TEXTINFO(link, link);
+                          //text.last = link.first;
+                          //if(str_length(&text)) info(parsing_found_text, F("Text:", FG_GN_B) "%.*s", STR_F(&text));
+                          //text.first = link.last;
                     info(parsing_found_link, F("Link:", FG_BK_B) "%.*s", STR_F(&link));
                     /* DRY[1] */
                     if(item->id == BTW_LEX_LINK_START) {
@@ -722,21 +750,20 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                         format_i0 = i;
                         format.first = snippet.first;
                         stage = BTW_PARSE_FORMAT;
-                        //maybe_format = true;
-                        //info(parsing_found_format, F("FormatBegin (maybe)", FG_BL_B));
                     } else {
                         if(item->id != BTW_LEX_WHITESPACE && str_length(&format)) {
-                            //printff("Format reset (%u)", item->id);
-                            //pending.first = format.first; //crap-code
                             /* DRY[2] */
-                            pending.first = format.first;
                             format.first = format.last; //crap-code
+                            //printff("reset");
                             i = format_i0 + 0;
                             item = vbtwlex_get_at(&btw->items, i);
-                            stage = BTW_PARSE_STRING;
+                                //snippet.last = item->iE;
+                                //snippet.first = item->iE;
+                              //printff("first = %zu", text.first);
+                              text.first = item->iE;
+                            //stage = BTW_PARSE_STRING;
                         }
                         stage = BTW_PARSE_STRING;
-                        //printff("CURRENT ID: %u", item->id);
                     }
                 }
             } break;
@@ -744,35 +771,51 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                 if(item->id == BTW_LEX_FORMAT_END) {
                     stage = BTW_PARSE_STRING;
                     format.last = snippet.last;
+                    //printff("%.*s", STR_F(&format));
                     //printff("Format end... %.*s", STR_F(&format));
                 } else if(item->id == BTW_LEX_FORMAT_START) {
                     /* DRY[2] */
-                    pending.first = format.first;
                     format.first = format.last; //crap-code
+                    //printff("reset");
                     i = format_i0 + 0;
                     item = vbtwlex_get_at(&btw->items, i);
+                            //snippet.last = item->iE;
+                            //snippet.first = item->iE;
+                      //printff("first = %zu => go back STRING", text.first);
+                      text.first = item->iE;
                     stage = BTW_PARSE_STRING;
                 } else if(i + 1 >= vbtwlex_length(&btw->items)) {
-                    i = format_i0 + 1;
+                    //printff("reset");
+                    i = format_i0 + 0;
+                    item = vbtwlex_get_at(&btw->items, i);
+                            //snippet.last = item->iE;
+                            //snippet.first = item->iE;
+                      //printff("first = %zu => go back STRING", text.first);
+                      text.first = item->iE;
                     stage = BTW_PARSE_STRING;
                 }
             } break;
             default: break;
         }
 
-        if(item->id == BTW_LEX_FORMAT_END) {
-            //maybe_format = false;
-            //printff("disable maybe_format");
-        }
-        if(vsstr_length(&notes) && item->id == BTW_LEX_SCOPE_END) {
-            Str title = {0};
-            vsstr_pop_back(&notes, &title);
-            info(parsing_found_note, F("NoteEnd:", FG_MG_B) "%.*s", STR_F(&title));
+        if(stage != BTW_PARSE_FORMAT) {
+            if(vsstr_length(&notes) > 1 && item->id == BTW_LEX_SCOPE_END) {
+                Str title = {0};
+                vsstr_pop_back(&notes, &title);
+                TEXTINFO(snippet, snippet);
+                //text.last = snippet.first;
+                //if(str_length(&text)) info(parsing_found_text, F("Text:", FG_GN_B) "%.*s", STR_F(&text));
+                //text.first = snippet.last;
+                info(parsing_found_note, F("NoteEnd (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&notes), snippet.last, STR_F(&title));
+            }
+            if(!vsstr_length(&notes)) break;
         }
 
         /* prepare for next item */
         snippet.first = item->iE;
-    } printf("\n");
+    } //printf("\n");
+
+    ++btw->stats.success;
 
 
     //printff("got %zu..", vbtwlex_length(&btw->items));

@@ -12,7 +12,6 @@ Searching should include searching the tag's content!
 <!*_>[priority 0]
 Fix if we have something like [abc]{text} and [abc]{another text} those two sould not connect the abc text like they do.. maybe add a new line
 
-
 <!*_>[priority 2]
 Make so that if it's the following, don't link to the parent note!
     <!>[Title don't link] { Description }
