@@ -1,20 +1,32 @@
 #### Start of system configuration section. ####
 
+OPTIMIZE := \
+			-fmerge-all-constants -fgcse-lm -fgcse-sm -fgcse-las -fgcse-after-reload -flive-range-shrinkage -fsched-pressure \
+		   -fsched-spec-load -fsched-spec-load-dangerous -fsched-stalled-insns=0 -fsched-stalled-insns-dep=0 -fsched2-use-superblocks -fsched-group-heuristic -fsched-critical-path-heuristic -fsched-spec-insn-heuristic -fsched-rank-heuristic -fsched-last-insn-heuristic -fsched-dep-count-heuristic -freschedule-modulo-scheduled-loops -fselective-scheduling -fselective-scheduling2 -fsel-sched-pipelining -fsel-sched-pipelining-outer-loops \
+		   -fno-semantic-interposition -fipa-pta -fisolate-erroneous-paths-attribute  \
+		   -ftree-loop-linear -floop-strip-mine -floop-block -fgraphite-identity -floop-nest-optimize -floop-parallelize-all -fno-var-tracking-assignments -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-loop-im -floop-unroll-and-jam -ftree-loop-ivcanon -fivopts -ftree-parallelize-loops=16 -ftree-vectorize -fvect-cost-model=dynamic -fsimd-cost-model=dynamic -fsplit-paths -fpredictive-commoning -fprefetch-loop-arrays -freorder-blocks-algorithm=stc -fallow-store-data-races -fno-toplevel-reorder -fno-section-anchors -fweb -funroll-loops -fwhole-program  \
+		   -flto -flto-partition=balanced -flto-compression-level=0 -fuse-linker-plugin -ffat-lto-objects -fprofile-correction \
+		   -fvpt -ftracer -fpeel-loops -fsplit-loops -funswitch-loops -fversion-loops-for-strides -fstdarg-opt -ffunction-sections -fdata-sections -ftoplevel-reorder \
+		   #-fprofile-partial-training -fauto-profile -fbranch-probabilities \
+
+
 GIT_VERSION := "$(shell git describe --abbrev=4 --dirty --always --tags)"
 CC      := gcc
 CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   -Wno-unused-parameter \
 		   -DPROC_COUNT=$(shell nproc --all) \
-		   -rdynamic -Og -ggdb3 \
+		   -O2 -march=native -mtune=native -DNDEBUG \
+		   ${OPTIMIZE} \
 		   ##############\
-		   -pg -rdynamic \
 		   -O3 -march=native -DNDEBUG \
+		   -pg -rdynamic \
+		   -rdynamic -O3 -march=native -DNDEBUG \
 		   -DCOLORPRINT_DISABLE \
 		   -fsanitize=address -rdynamic \
+		   -rdynamic -Og -ggdb3 \
 		   -O3 -march=native \
 		   -Wconversion \
 		   -O0 -g \
-		   -rdynamic -Og -ggdb3 \
 		   -DCOLORPRINT_DISABLE \
 		   -Werror \
 		   -Warith-conversion \
@@ -27,8 +39,9 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   -fsanitize=address -rdynamic \
+		   ${OPTIMIZE} \
 		   ##############\
+		   -fsanitize=address -rdynamic \
 		   -pg -rdynamic \
 		   -rdynamic -ggdb3 \
 		   -rdynamic -Og -ggdb3 \
