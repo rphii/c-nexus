@@ -23,6 +23,7 @@ int main(int argc, const char **argv)
 
     info_disable_all(INFO_LEVEL_ALL);
     info_enable(INFO_nexus_stats, INFO_LEVEL_ALL);
+    info_enable(INFO_nexus_init, INFO_LEVEL_ALL);
     info_enable(INFO_parsing_file, INFO_LEVEL_ALL);
     //info_enable(INFO_parsing_found_link, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
     info_enable(INFO_parsing_found_note, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
@@ -30,9 +31,9 @@ int main(int argc, const char **argv)
     //info_enable(INFO_parsing_found_text, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
 
 
-    //info_disable(INFO_parsing_skip_incorrect_extension, INFO_LEVEL_ALL);
+    //info_enable(INFO_parsing_skip_incorrect_extension, INFO_LEVEL_ALL);
     //info_disable_all(INFO_LEVEL_ID);
-    //info_disable(INFO_skipping_nofile_nodir, INFO_LEVEL_IS_INFO | INFO_LEVEL_FILE_LINE | INFO_LEVEL_FUNCTION);
+    //info_enable(INFO_skipping_nofile_nodir, INFO_LEVEL_ALL);
     //info_disable(INFO_parsing_file, INFO_LEVEL_IS_INFO | INFO_LEVEL_FILE_LINE | INFO_LEVEL_FUNCTION);
 
     TRY(platform_colorprint_init(), ERR_PLATFORM_COLORPRINT_INIT);

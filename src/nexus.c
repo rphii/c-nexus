@@ -1,4 +1,5 @@
 #include "nexus.h"
+#include "arg.h"
 #include "node.h"
 #include "search.h"
 #include "cmd.h"
@@ -121,6 +122,11 @@ int nexus_arg(Nexus *nexus, Arg *arg) /*{{{*/
     nexus->config.max_preview = arg->max_list;
     nexus->config.files = &arg->files;
     TRY(str_copy(&nexus->config.entry, &arg->entry), ERR_STR_COPY);
+    if(str_length(&arg->extensions)) {
+        TRY(str_copy(&nexus->config.extensions, &arg->extensions), ERR_STR_COPY);
+    } else {
+        TRYC(str_fmt(&nexus->config.extensions, "%s", specify_str(SPECIFY_EXTENSION)));
+    }
     switch(arg->view) {
         case SPECIFY_NONE:
         case SPECIFY_NORMAL: nexus->config.view = VIEW_NORMAL; break;
@@ -245,6 +251,7 @@ void nexus_free(Nexus *nexus) //{{{
     view_free(&nexus->view);
     //node_free(&nexus->nodeicon);
     str_free(&nexus->config.entry);
+    str_free(&nexus->config.extensions);
 } //}}}
 
 /* rebuild yourself {{{ */

@@ -15,15 +15,15 @@ CC      := gcc
 CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   -Wno-unused-parameter \
 		   -DPROC_COUNT=$(shell nproc --all) \
+		   -rdynamic -Og -ggdb3 \
+		   ##############\
 		   -O2 -march=native -mtune=native -DNDEBUG \
 		   ${OPTIMIZE} \
-		   ##############\
 		   -O3 -march=native -DNDEBUG \
 		   -pg -rdynamic \
 		   -rdynamic -O3 -march=native -DNDEBUG \
 		   -DCOLORPRINT_DISABLE \
 		   -fsanitize=address -rdynamic \
-		   -rdynamic -Og -ggdb3 \
 		   -O3 -march=native \
 		   -Wconversion \
 		   -O0 -g \
@@ -39,9 +39,9 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   ${OPTIMIZE} \
 		   ##############\
 		   -fsanitize=address -rdynamic \
+		   ${OPTIMIZE} \
 		   -pg -rdynamic \
 		   -rdynamic -ggdb3 \
 		   -rdynamic -Og -ggdb3 \

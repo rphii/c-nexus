@@ -3,6 +3,7 @@
 #include <ctype.h>
 
 #include "colorprint.h"
+#include "err.h"
 #include "vector.h"
 
 /* inclusion and configuration of vector */
@@ -524,6 +525,13 @@ size_t str_ch(const Str *str, char ch, size_t n) { //{{{
     return str_length(str);
 } //}}}
 
+size_t str_ch_from(const Str *str, char ch, size_t n, size_t from) {/*{{{*/
+    ASSERT_ARG(str);
+    Str search = STR_LL(str_iter_at(str, from), str_length(str) - from);
+    size_t result = str_ch(&search, ch, n) + from;
+    return result;
+}/*}}}*/
+
 size_t str_ch_pair(const Str *str, char c1) { //{{{
     ASSERT_ARG(str);
     if(!str_length(str)) return str_length(str);
@@ -662,6 +670,19 @@ size_t str_hash_esci(const Str *a) {/*{{{*/
 }/*}}}*/
 
 //}}}
+
+Str str_splice(Str *to_splice, Str *prev_splice, char sep) {/*{{{*/
+    ASSERT_ARG(to_splice);
+    Str result = *to_splice;
+    if(prev_splice && prev_splice->s) {
+        result.first += str_ch_from(to_splice, sep, 0, prev_splice->first); // TODO is this really += ??
+        if(result.first < str_length(to_splice)) {
+            ++result.first;
+        }
+    }
+    result.last = result.first + str_ch(&result, sep, 0);
+    return result;
+}/*}}}*/
 
 ErrDecl str_remove_escapes(Str *restrict out, Str *restrict in)
 {

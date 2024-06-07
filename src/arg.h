@@ -25,7 +25,9 @@ typedef enum {
         SPECIFY_ICON,
     SPECIFY_NUMBER,
     SPECIFY_STRING,
+    SPECIFY_LIST,
     SPECIFY_BOOL,
+    SPECIFY_EXTENSION,
     /* above */
     SPECIFY__COUNT
 } SpecifyList;
@@ -53,6 +55,7 @@ typedef enum {
     ARG_SHOW_DESCRIPTION,
     ARG_SHOW_PREVIEW,
     ARG_MAX_LIST,
+    ARG_EXTENSIONS,
     /* args above */
     ARG__COUNT
 } ArgList;
@@ -66,6 +69,7 @@ typedef struct Arg {
     SpecifyList show_preview;
     size_t max_list;
     Str entry;
+    Str extensions;
     VsStr files;
     struct {
         int tiny; /* tiny, because short is reserved */

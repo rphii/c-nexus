@@ -942,17 +942,23 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
         //INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
     } else {
         bool skip = false;
-#if 1
+#if 0
         const Str *ok[] = {
             &STR(".btw1"), &STR(".md"),// &STR(".txt"),
         };
         if(str_cmp_ci_any(&btw->ext, ok, sizeof(ok)/sizeof(*ok))) {
 #else
+#if 0
         if(str_cmp_ci(&btw->ext, &STR(".btw1"))) {
 #endif
-            // TODO make a flag for this?
-            skip = true;
-            info(parsing_skip_incorrect_extension, "incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
+#endif
+        Str split = {0};
+        while(split = str_splice(&nexus->config.extensions, &split, ','), str_length(&split)) {
+            if(str_cmp_ci(&btw->ext, &split)) {
+                // TODO make a flag for this?
+                skip = true;
+                info(parsing_skip_incorrect_extension, "incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
+            }
         }
         if(!skip) {
             //if(*n) printf("\n");

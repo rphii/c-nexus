@@ -1,0 +1,58 @@
+## -O2
+real	0m7.262s
+user	0m1.643s
+sys	0m5.571s
+
+## -O2 -march=native
+real	0m7.217s
+user	0m1.649s
+sys	0m5.510s
+
+## -O2 -march=native -DNDEBUG
+real	0m7.076s
+user	0m1.527s
+sys	0m5.500s
+
+## -O2 -march=native -mtune=native -DNDEBUG
+real	0m7.417s
+user	0m1.625s
+sys	0m5.740s
+
+
+## -O3
+real	0m7.272s
+user	0m1.579s
+sys	0m5.646s
+
+## -O3 -march=native
+real	0m7.200s
+user	0m1.573s
+sys	0m5.569s
+
+## -O3 -march=native -DNDEBUG
+real	0m7.274s
+user	0m1.631s
+sys	0m5.587s
+
+## -O3 -march=native -mtune=native -DNDEBUG
+real	0m7.602s
+user	0m1.649s
+sys	0m5.897s
+
+
+## -Ofast -march=native -DNDEBUG
+real	0m7.350s
+user	0m1.657s
+sys	0m5.633s
+
+## -Ofast -march=native -mtune=native -DNDEBUG
+real	0m7.338s
+user	0m1.587s
+sys	0m5.683s
+
+## MANY FLAGS
+real	0m6.927s
+user	0m1.228s
+sys	0m5.641s
+
+

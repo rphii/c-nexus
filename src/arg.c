@@ -17,6 +17,7 @@ static const char *static_arg[][2] = {
     [ARG_SHOW_DESCRIPTION] = {"-d", "--show-description"},
     [ARG_SHOW_PREVIEW] = {"-p", "--show-preview"},
     [ARG_MAX_LIST] = {"-l", "--max-list"},
+    [ARG_EXTENSIONS] = {"-x", "--extensions"},
 };
 
 const char *arg_str(ArgList id)
@@ -33,6 +34,7 @@ static const char *static_desc[] = {
     [ARG_SHOW_DESCRIPTION] = "show or hide description at startup",
     [ARG_SHOW_PREVIEW] = "show or hide preview at startup",
     [ARG_MAX_LIST] = "maximum notes to show at once (e.g. search) before scrolling",
+    [ARG_EXTENSIONS] = "accepted file extensions. comma seperated list"
 };
 
 /* specify */
@@ -42,7 +44,8 @@ static const Specify static_specify[ARG__COUNT] = {
     [ARG_VIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_NORMAL, SPECIFY_SEARCH_ALL, SPECIFY_SEARCH_SUB, SPECIFY_ICON),
     [ARG_SHOW_DESCRIPTION] = SPECIFY(SPECIFY_OPTION, SPECIFY_YES, SPECIFY_TRUE, SPECIFY_NO, SPECIFY_FALSE),
     [ARG_SHOW_PREVIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_NO, SPECIFY_FALSE, SPECIFY_YES, SPECIFY_TRUE),
-    [ARG_MAX_LIST] = SPECIFY(SPECIFY_NUMBER)
+    [ARG_MAX_LIST] = SPECIFY(SPECIFY_NUMBER),
+    [ARG_EXTENSIONS] = SPECIFY(SPECIFY_LIST, SPECIFY_EXTENSION),
 };
 
 static const char *static_specify_str[] = {
@@ -59,7 +62,9 @@ static const char *static_specify_str[] = {
         [SPECIFY_NO] = "no",
     [SPECIFY_NUMBER] = "NUMBER",
     [SPECIFY_STRING] = "STRING",
+    [SPECIFY_LIST] = "LIST",
     [SPECIFY_BOOL] = "< y | n >",
+    [SPECIFY_EXTENSION] = ".btw1,.btw",
 };
 
 const char *specify_str(SpecifyList id)
@@ -147,6 +152,11 @@ ErrDeclStatic arg_static_execute(Arg *arg, ArgList id)
                 arg->exit_early = true;
             }
         } break;
+        case ARG_EXTENSIONS: {
+            if(!str_length(&arg->extensions)) {
+                printf("%*s" F("%s", BOLD) "=LIST is empty\n", arg->tabs.tiny, "", static_arg[id][1]);
+            }
+        } break;
         case ARG_VIEW: { spec = &arg->view; } break;
         case ARG_SHOW_PREVIEW: { spec = &arg->show_preview; } break;
         case ARG_SHOW_DESCRIPTION: { spec = &arg->show_description; } break;
@@ -202,6 +212,7 @@ ErrDeclStatic static_arg_parse_spec(Arg *args, ArgList arg, Str *argY, Specify s
         case ARG_MAX_LIST: { to_set = &args->max_list; } break;
         case ARG_SHOW_PREVIEW: { to_set = &args->show_preview; } break;
         case ARG_SHOW_DESCRIPTION: { to_set = &args->show_description; } break;
+        case ARG_EXTENSIONS: { to_set = &args->extensions; } break;
         default: THROW("unhandled arg id (%u)", arg);
     }
     switch(id0) {
@@ -220,8 +231,20 @@ ErrDeclStatic static_arg_parse_spec(Arg *args, ArgList arg, Str *argY, Specify s
         } break;
         case SPECIFY_STRING: {
             str_clear((Str *)to_set);
-            TRY(str_fmt((Str *)to_set, "%.*s", STR_F(argY)), ERR_STR_FMT);
+            TRYC(str_fmt((Str *)to_set, "%.*s", STR_F(argY)));
         } break;
+        case SPECIFY_LIST: { /* TODO: can I really just memcpy? why did I fmt SPECIFY_STRING?? is that because if I rebuild? */
+            memcpy((Str *)to_set, argY, sizeof(*argY));
+        } break;
+#if 0
+        case SPECIFY_LIST: {
+            Str split = {0};
+            while(split = str_splice(argY, &split, ','), str_length(&split)) {
+                TRY(vsstr_push_back(&args->extensions, &split), ERR_VEC_PUSH_BACK);
+            }
+            printff("extensions loaded: %zu", vsstr_length(&args->extensions));
+        } break;
+#endif
         case SPECIFY_NUMBER: {
             errno = 0;
             char *endptr = 0;
@@ -373,6 +396,8 @@ void arg_help(Arg *arg) /* {{{ */
                                 TRY(str_fmt(&ts, ""F(" (default)", IT)""), ERR_STR_FMT);
                             } else if(specify->ids[0] == SPECIFY_OPTIONAL) {
                                 TRY(str_fmt(&ts, ""F(" (optional)", IT)""), ERR_STR_FMT);
+                            } else if(specify->ids[0] == SPECIFY_LIST) {
+                                TRY(str_fmt(&ts, ""F(" (default)", IT)""), ERR_STR_FMT);
                             } else {
                                 ABORT("!!! missing behavior hint !!!");
                             }
@@ -396,6 +421,7 @@ void arg_free(Arg *arg)
 {
     str_free(&arg->entry);
     str_free(&arg->unknown);
+    //str_free(&arg->extensions);
     vsstr_free(&arg->files);
 }
 

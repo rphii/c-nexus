@@ -84,6 +84,7 @@ size_t str_find_nany(const Str *str, const Str *any);
 // TODO size_t str_find_rnany(const Str *str, const Str *any);
 size_t str_nch(const Str *str, char ch, size_t n);
 size_t str_ch(const Str *str, char ch, size_t n);
+size_t str_ch_from(const Str *str, char ch, size_t n, size_t from);
 size_t str_ch_pair(const Str *str, char c1);
 size_t str_find_ws(const Str *str);
 size_t str_find_nws(const Str *str);
@@ -95,6 +96,8 @@ size_t str_irch(const Str *str, size_t iE, char ch, size_t n);
 size_t str_hash(const Str *a);
 size_t str_hash_ci(const Str *a);
 size_t str_hash_esci(const Str *a);
+
+Str str_splice(Str *to_splice, Str *prev_splice, char sep);
 
 #define ERR_str_remove_escapes(out, in) "failed removing escape sequences"
 ErrDecl str_remove_escapes(Str *out, Str *in);

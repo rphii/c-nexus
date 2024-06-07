@@ -30,6 +30,7 @@ typedef struct Nexus {
     struct {
         VsStr *files;
         Str entry;
+        Str extensions;
         ViewList view;
         bool show_desc;
         bool show_preview;
