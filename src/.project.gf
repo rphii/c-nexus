@@ -1,4 +1,4 @@
 [executable]
 path=~/dev/c/c-nexus/src/a
-arguments=~/dev/c/c-nexus/src/btw
+arguments=~/Obsidian -x=.md
 ask_directory=1

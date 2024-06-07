@@ -18,6 +18,7 @@ static const char *static_arg[][2] = {
     [ARG_SHOW_PREVIEW] = {"-p", "--show-preview"},
     [ARG_MAX_LIST] = {"-l", "--max-list"},
     [ARG_EXTENSIONS] = {"-x", "--extensions"},
+    [ARG_MAX_FILE_SIZE] = {"-z", "--max-filesize"},
 };
 
 const char *arg_str(ArgList id)
@@ -34,7 +35,8 @@ static const char *static_desc[] = {
     [ARG_SHOW_DESCRIPTION] = "show or hide description at startup",
     [ARG_SHOW_PREVIEW] = "show or hide preview at startup",
     [ARG_MAX_LIST] = "maximum notes to show at once (e.g. search) before scrolling",
-    [ARG_EXTENSIONS] = "accepted file extensions. comma seperated list"
+    [ARG_EXTENSIONS] = "accepted file extensions. comma seperated list",
+    [ARG_MAX_FILE_SIZE] = "maximum file size to be parsed, in bytes",
 };
 
 /* specify */
@@ -46,6 +48,7 @@ static const Specify static_specify[ARG__COUNT] = {
     [ARG_SHOW_PREVIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_NO, SPECIFY_FALSE, SPECIFY_YES, SPECIFY_TRUE),
     [ARG_MAX_LIST] = SPECIFY(SPECIFY_NUMBER),
     [ARG_EXTENSIONS] = SPECIFY(SPECIFY_LIST, SPECIFY_EXTENSION),
+    [ARG_MAX_FILE_SIZE] = SPECIFY(SPECIFY_NUMBER, SPECIFY_MAX_FILE_SIZE),
 };
 
 static const char *static_specify_str[] = {
@@ -64,7 +67,9 @@ static const char *static_specify_str[] = {
     [SPECIFY_STRING] = "STRING",
     [SPECIFY_LIST] = "LIST",
     [SPECIFY_BOOL] = "< y | n >",
-    [SPECIFY_EXTENSION] = ".btw1,.btw",
+    /* certain default values */
+    [SPECIFY_EXTENSION] = ".btw1,.md",
+    [SPECIFY_MAX_FILE_SIZE] = "65536",
 };
 
 const char *specify_str(SpecifyList id)
@@ -152,6 +157,11 @@ ErrDeclStatic arg_static_execute(Arg *arg, ArgList id)
                 arg->exit_early = true;
             }
         } break;
+        case ARG_MAX_FILE_SIZE: {
+            if(!arg->max_file_size) {
+                /* do nothing */
+            }
+        } break;
         case ARG_EXTENSIONS: {
             if(!str_length(&arg->extensions)) {
                 printf("%*s" F("%s", BOLD) "=LIST is empty\n", arg->tabs.tiny, "", static_arg[id][1]);
@@ -213,6 +223,7 @@ ErrDeclStatic static_arg_parse_spec(Arg *args, ArgList arg, Str *argY, Specify s
         case ARG_SHOW_PREVIEW: { to_set = &args->show_preview; } break;
         case ARG_SHOW_DESCRIPTION: { to_set = &args->show_description; } break;
         case ARG_EXTENSIONS: { to_set = &args->extensions; } break;
+        case ARG_MAX_FILE_SIZE: { to_set = &args->max_file_size; } break;
         default: THROW("unhandled arg id (%u)", arg);
     }
     switch(id0) {
@@ -246,6 +257,7 @@ ErrDeclStatic static_arg_parse_spec(Arg *args, ArgList arg, Str *argY, Specify s
         } break;
 #endif
         case SPECIFY_NUMBER: {
+            if(!str_length(argY)) THROW("no number specified");
             errno = 0;
             char *endptr = 0;
             char *begin = str_iter_begin(argY);
@@ -397,6 +409,8 @@ void arg_help(Arg *arg) /* {{{ */
                             } else if(specify->ids[0] == SPECIFY_OPTIONAL) {
                                 TRY(str_fmt(&ts, ""F(" (optional)", IT)""), ERR_STR_FMT);
                             } else if(specify->ids[0] == SPECIFY_LIST) {
+                                TRY(str_fmt(&ts, ""F(" (default)", IT)""), ERR_STR_FMT);
+                            } else if(specify->ids[0] == SPECIFY_NUMBER) {
                                 TRY(str_fmt(&ts, ""F(" (default)", IT)""), ERR_STR_FMT);
                             } else {
                                 ABORT("!!! missing behavior hint !!!");

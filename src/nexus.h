@@ -35,6 +35,7 @@ typedef struct Nexus {
         bool show_desc;
         bool show_preview;
         size_t max_preview;
+        size_t max_file_size;
     } config;
     Node tags;
     Node findings;

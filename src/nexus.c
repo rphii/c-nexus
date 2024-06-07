@@ -126,6 +126,13 @@ int nexus_arg(Nexus *nexus, Arg *arg) /*{{{*/
         TRY(str_copy(&nexus->config.extensions, &arg->extensions), ERR_STR_COPY);
     } else {
         TRYC(str_fmt(&nexus->config.extensions, "%s", specify_str(SPECIFY_EXTENSION)));
+        //printff("%.*s\n", STR_F(&nexus->config.extensions));
+    }
+    nexus->config.max_file_size = arg->max_file_size;
+    if(!nexus->config.max_file_size) {
+        char *endptr = 0;
+        /* TODO: create a function str_to_int */
+        nexus->config.max_file_size = strtoull(specify_str(SPECIFY_MAX_FILE_SIZE), &endptr, 10);
     }
     switch(arg->view) {
         case SPECIFY_NONE:

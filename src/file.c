@@ -18,7 +18,7 @@ FileTypeList file_get_type(Str *filename) {
     ASSERT("not implemented");
 #else
     struct stat s;
-    char path[4094];
+    char path[FILE_PATH_MAX];
     str_cstr(filename, path, FILE_PATH_MAX);
     int r = lstat(path, &s);
     if(r) return 0;
@@ -34,7 +34,7 @@ int file_is_dir(Str *filename)
     ASSERT("not implemented");
 #else
     struct stat s;
-    char path[4094];
+    char path[FILE_PATH_MAX];
     str_cstr(filename, path, FILE_PATH_MAX);
     int r = lstat(path, &s);
     if(r) return 0;
@@ -42,6 +42,20 @@ int file_is_dir(Str *filename)
 #endif
     return 0;
 }
+
+size_t file_size(Str *filename) {/*{{{*/
+    char path[FILE_PATH_MAX];
+    str_cstr(filename, path, FILE_PATH_MAX);
+    FILE *fp = fopen(path, "rb");
+    size_t result = SIZE_MAX;
+    if(fp) {
+        if(!fseek(fp, 0L, SEEK_END)) {
+            result = ftell(fp);
+        }
+        fclose(fp);
+    }
+    return result;
+}/*}}}*/
 
 int file_is_file(Str *filename)
 {

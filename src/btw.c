@@ -941,7 +941,7 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
         info(directory, "directory '%.*s'", STR_F(filename));
         //INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
     } else {
-        bool skip = false;
+        bool parse = false;
 #if 0
         const Str *ok[] = {
             &STR(".btw1"), &STR(".md"),// &STR(".txt"),
@@ -953,19 +953,26 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
 #endif
 #endif
         Str split = {0};
-        while(split = str_splice(&nexus->config.extensions, &split, ','), str_length(&split)) {
-            if(str_cmp_ci(&btw->ext, &split)) {
+        while(split = str_splice(&nexus->config.extensions, &split, ','), split.first < str_length(&nexus->config.extensions)) {
+            if(!str_cmp_ci(&btw->ext, &split)) {
                 // TODO make a flag for this?
-                skip = true;
-                info(parsing_skip_incorrect_extension, "incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
+                parse = true;
+                break;
             }
         }
-        if(!skip) {
+        if(parse) {
             //if(*n) printf("\n");
             //*n = printf("[FILE] %.*s", STR_F(filename));
-            info(parsing_file, "parsing '%.*s'", STR_F(filename));
-            TRYC(file_str_read(filename, &btw->content));
-            str_trim(&btw->content);
+            size_t size = 0;
+            if(nexus->config.max_file_size && (size = file_size(filename)) <= nexus->config.max_file_size) {
+                info(parsing_file, "parsing '%.*s'", STR_F(filename));
+                TRYC(file_str_read(filename, &btw->content));
+                str_trim(&btw->content);
+            } else {
+                info(parsing_skip_too_large, "file too large: %zu bytes, not parsing '%.*s'", size, STR_F(filename));
+            }
+        } else {
+            info(parsing_skip_incorrect_extension, "incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
         }
     }
 

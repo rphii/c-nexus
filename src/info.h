@@ -16,6 +16,7 @@ typedef enum {
     INFO_parsing_found_link,
     INFO_parsing_found_format,
     INFO_parsing_found_text,
+    INFO_parsing_skip_too_large,
     // nexus stuff
     INFO_nexus_rebuild_failed,
     INFO_nexus_init,
@@ -37,6 +38,7 @@ typedef enum {
 
 typedef struct Info {
     InfoLevelField disabled[INFO__COUNT];
+    bool last_is_ok;
 } Info;
 
 /* The # operator converts symbol 'v' into a string */
