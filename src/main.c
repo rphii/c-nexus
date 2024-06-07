@@ -59,6 +59,7 @@ int main(int argc, const char **argv)
     }
 
 clean:
+    info_handle_abort();
     nexus_free(&nexus);
     arg_free(&arg);
     str_free(&p);

@@ -39,8 +39,8 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   ##############\
 		   -fsanitize=address -rdynamic \
+		   ##############\
 		   ${OPTIMIZE} \
 		   -pg -rdynamic \
 		   -rdynamic -ggdb3 \
