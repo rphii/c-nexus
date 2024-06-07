@@ -628,12 +628,15 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
 
     Str snippet = btw->content;
     Str pending = btw->content;
+    Str format = btw->content;
     Str link = {0};
     int stage_pair = 0;
     int stage = BTW_PARSE_STRING;
+    size_t format_i0 = 0;
     //bool maybe_format = false;
     pending.last = pending.first;
     snippet.last = snippet.first;
+    format.last = format.first;
     for(size_t i = 0; i < vbtwlex_length(&btw->items); ++i) {
         /* fetch next item */
         BtwLex *item = vbtwlex_get_at(&btw->items, i);
@@ -650,6 +653,10 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                     stage = BTW_PARSE_LINK;
                     pending.first = snippet.first;
                 } else if(item->id == BTW_LEX_FORMAT_START) {
+                    //printff("Format begin");
+                    format_i0 = i;
+                    format.first = snippet.first;
+                    stage = BTW_PARSE_FORMAT;
                     /* TODO ... update some kind of index to THIS position,
                      * ... I then don't need to keep track of links, because
                      * this thing should be parsed _again_ afterwards... 
@@ -657,6 +664,17 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                      * string to the notes... */
                     //maybe_format = true;
                     //info(parsing_found_format, F("FormatBegin (maybe)", FG_BL_B));
+                } else {
+                    if(item->id != BTW_LEX_WHITESPACE && str_length(&format)) {
+                        //printff("Format reset (%u)", item->id);
+                        //pending.first = format.first; //crap-code
+                        /* DRY[2] */
+                        pending.first = format.first;
+                        format.first = format.last; //crap-code
+                        i = format_i0 + 0;
+                        item = vbtwlex_get_at(&btw->items, i);
+                        stage = BTW_PARSE_STRING;
+                    }
                 }
             } break;
             case BTW_PARSE_LINK: {
@@ -681,6 +699,9 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                     //if(maybe_format) {
                     //    info(parsing_found_format, F("FormatEnd", FG_BL_B));
                     //}
+                    if(str_length(&format)) {
+                        info(parsing_found_format, F("Format:", FG_GN_B) "%.*s", STR_F(&format));
+                    }
                     info(parsing_found_note, F("NoteBegin:", FG_MG_B) "%.*s", STR_F(&link));
                     //printff("NOTE begin : %.*s", STR_F(&pending));
                     stage = BTW_PARSE_STRING;
@@ -698,12 +719,42 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
                         stage = BTW_PARSE_LINK;
                         pending.first = snippet.first;
                     } else if(item->id == BTW_LEX_FORMAT_START) {
+                        format_i0 = i;
+                        format.first = snippet.first;
+                        stage = BTW_PARSE_FORMAT;
                         //maybe_format = true;
-                        info(parsing_found_format, F("FormatBegin (maybe)", FG_BL_B));
+                        //info(parsing_found_format, F("FormatBegin (maybe)", FG_BL_B));
                     } else {
+                        if(item->id != BTW_LEX_WHITESPACE && str_length(&format)) {
+                            //printff("Format reset (%u)", item->id);
+                            //pending.first = format.first; //crap-code
+                            /* DRY[2] */
+                            pending.first = format.first;
+                            format.first = format.last; //crap-code
+                            i = format_i0 + 0;
+                            item = vbtwlex_get_at(&btw->items, i);
+                            stage = BTW_PARSE_STRING;
+                        }
                         stage = BTW_PARSE_STRING;
                         //printff("CURRENT ID: %u", item->id);
                     }
+                }
+            } break;
+            case BTW_PARSE_FORMAT: {
+                if(item->id == BTW_LEX_FORMAT_END) {
+                    stage = BTW_PARSE_STRING;
+                    format.last = snippet.last;
+                    //printff("Format end... %.*s", STR_F(&format));
+                } else if(item->id == BTW_LEX_FORMAT_START) {
+                    /* DRY[2] */
+                    pending.first = format.first;
+                    format.first = format.last; //crap-code
+                    i = format_i0 + 0;
+                    item = vbtwlex_get_at(&btw->items, i);
+                    stage = BTW_PARSE_STRING;
+                } else if(i + 1 >= vbtwlex_length(&btw->items)) {
+                    i = format_i0 + 1;
+                    stage = BTW_PARSE_STRING;
                 }
             } break;
             default: break;

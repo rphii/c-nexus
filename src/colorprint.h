@@ -59,9 +59,15 @@
 #else
 #define F(msg,fmt) msg
 
-#define BOLD
-#define IT
-#define UL
+#define FS_BEG  ""
+#define FS_FG3  ""
+#define FS_BG3  ""
+#define FS_FMT  ""
+#define FS_END  ""
+
+#define BOLD    ""
+#define IT      ""
+#define UL      ""
 
 /* === foreground colors === */
 #define FG_BK

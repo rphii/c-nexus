@@ -7,12 +7,12 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   -DPROC_COUNT=$(shell nproc --all) \
 		   -rdynamic -Og -ggdb3 \
 		   ##############\
+		   -DCOLORPRINT_DISABLE \
 		   -O3 -march=native \
 		   -fsanitize=address -rdynamic \
 		   -O3 -march=native \
 		   -Wconversion \
 		   -pg -rdynamic \
-		   -DCOLORPRINT_DISABLE \
 		   -O0 -g \
 		   -rdynamic -Og -ggdb3 \
 		   -DCOLORPRINT_DISABLE \
@@ -27,8 +27,8 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   -fsanitize=address -rdynamic \
 		   ##############\
+		   -fsanitize=address -rdynamic \
 		   -rdynamic -ggdb3 \
 		   -rdynamic -Og -ggdb3 \
 		   -pg -rdynamic \
