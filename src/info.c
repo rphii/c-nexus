@@ -4,6 +4,81 @@
 
 static Info s_info; /* I hate public variables ... */
 
+InfoTypeList info_query_type(InfoList id) {
+    switch(id) {
+        case INFO_parsing_file: return INFO_TYPE_CHECK;
+        default: return INFO_TYPE_TEXT;
+    }
+}
+
+Str *info_query_last(InfoList id) {
+    ASSERT(id < INFO__COUNT, "id (%u) > COUNT (%u)", id, INFO__COUNT);
+    return &s_info.info_last[id];
+}
+
+void info_handle_end(InfoList id) {
+    if(id != INFO_NONE) {
+        switch(info_query_type(id)) {
+            case INFO_TYPE_TEXT: { ERR_PRINTF("\n"); } break;
+            case INFO_TYPE_CHECK: { 
+                s_info.status[id] = INFO_STATUS_PENDING;
+                ERR_PRINTF(" " F("..", FG_BK_B) " ");
+            } break;
+            case INFO_TYPE_LOADING: { ABORT("not implemented"); }
+        }
+    }
+    s_info.id_prev = id;
+}
+
+void info_handle_abort(void) {
+    info_handle_prev(INFO_NONE);
+    info_handle_end(INFO_NONE);
+}
+
+void info_handle_prev(InfoList id) {
+    switch(info_query_type(s_info.id_prev)) {
+        case INFO_TYPE_TEXT: break;
+        case INFO_TYPE_CHECK: { 
+            if(s_info.id_prev == id) {
+                //info_check(id, false);
+            } else if(s_info.status[s_info.id_prev] == INFO_STATUS_PENDING) {
+                ERR_PRINTF(F("(?)", FG_BL_B) "\n");
+            }
+        } break;
+        case INFO_TYPE_LOADING: { ABORT("not implemented"); }
+    }
+    switch(info_query_type(id)) {
+        case INFO_TYPE_TEXT: break;
+        case INFO_TYPE_CHECK: { 
+            //s_info.status[id] = INFO_STATUS_PENDING;
+            if(s_info.status[id] == INFO_STATUS_PENDING) {
+                //ERR_PRINTF("%.*s .. " F("(*)", FG_BL_B) " ", STR_F(info_query_last(id)));
+                info_check(id, false);
+            }
+        } break;
+        case INFO_TYPE_LOADING: { ABORT("not implemented"); }
+    }
+}
+
+void info_check(InfoList id, bool status) {
+    InfoTypeList now = info_query_type(id);
+    switch(id) {
+        case INFO_parsing_file: {
+            //if(s_info.status[id] != INFO_STATUS_NONE) {
+                s_info.status[id] = status ? INFO_STATUS_SUCCESS : INFO_STATUS_FAILURE;
+                char *buf = status ? F("ok", FG_GN_B) : F("fail", FG_RD_B);
+                if(s_info.id_prev != id) {
+                    //ERR_PRINTF("%.*s .. ", STR_F(info_query_last(id)));
+                    ERR_PRINTF("%.*s .. " F("(!)", FG_BL_B) " ", STR_F(info_query_last(id)));
+                }
+                ERR_PRINTF("%s\n", buf);
+                s_info.status[id] = INFO_STATUS_NONE;
+            //}
+        } break;
+        default: break;
+    }
+}
+
 InfoLevelField info_query_disabled(InfoList id) {
     InfoLevelField result = {0};
     if(id < INFO__COUNT) {

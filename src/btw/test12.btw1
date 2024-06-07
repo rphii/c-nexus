@@ -1,8 +1,8 @@
-[shit] {
-    some text from shit
+[test] {
+    some text from test
 }
 
-<#ff0000>[shit] {
-    some text from other shit
+<#ff0000>[test] {
+    some text from other test
 }
 

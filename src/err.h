@@ -52,15 +52,19 @@
 
 void screen_leave(void);    /* implementation is in "screen.h" */
 
+void info_handle_abort(void);
+
 /* macros */
 
 #define THROW(fmt, ...)      do { \
     (void)screen_leave(); \
+    info_handle_abort(); \
     ERR_PRINTF(F("[ERROR]", BOLD FG_RD_B) " " F("%s:%d:%s", FG_WT_B) " " fmt "\n" , __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
     goto error; } while(0)
 
 #define ABORT(fmt, ...)      do { \
     (void)screen_leave(); \
+    info_handle_abort(); \
     platform_trace(); ERR_PRINTF(F("[ABORT]", BOLD FG_BK BG_RD_B) " " F("%s:%d:%s (end of trace)", FG_WT_B) " " fmt "\n" , __FILE__, __LINE__, __func__, ##__VA_ARGS__); exit(-1); } while(0)
 
 #define INFO(fmt, ...)       do { \
@@ -78,6 +82,7 @@ void screen_leave(void);    /* implementation is in "screen.h" */
 #define ASSERT(stmt, fmt, ...)   do { \
     if (!(stmt)) { \
         (void)screen_leave(); \
+        info_handle_abort(); \
         ABORT("assertion of '" ERR_STRINGIFY(stmt) "' failed... " fmt, ##__VA_ARGS__); } \
     } while(0)
 #define ASSERT_ARG(arg)     ASSERT(arg, ERR_NULL_ARG)

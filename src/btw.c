@@ -991,6 +991,7 @@ ErrDecl btw_parse_file(Nexus *nexus, Str *filename, Btw *btw) //{{{
     if(str_length(&btw->content)) {
         TRYC(btw_lex(&btw->items, &btw->content));
         TRYC(btw_parse(nexus, btw));
+        info_check(INFO_parsing_file, true);
     }
     return 0;
 error:
