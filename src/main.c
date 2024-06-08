@@ -26,10 +26,10 @@ int main(int argc, const char **argv)
     info_enable(INFO_nexus_init, INFO_LEVEL_ALL);
 
     info_enable(INFO_parsing_file, INFO_LEVEL_ALL);
-    //info_enable(INFO_parsing_found_link, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
+    info_enable(INFO_parsing_found_link, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
     info_enable(INFO_parsing_found_note, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
-    //info_enable(INFO_parsing_found_format, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
-    //info_enable(INFO_parsing_found_text, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
+    info_enable(INFO_parsing_found_format, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
+    info_enable(INFO_parsing_found_text, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
 
 
     info_enable(INFO_parsing_skip_too_large, INFO_LEVEL_ALL);

@@ -277,8 +277,9 @@ ErrDecl btw_parse_text(Btw *btw, BtwParse *parse, Str *a, Str *b) {/*{{{*/
     ASSERT_ARG(parse);
     ASSERT_ARG(a);
     parse->text.last = a->first;
+    printff("\nTEXT: LENGTH %zu", vsstr_length(&parse->notes));
     if(parse->text.last < parse->text.first) THROW("\n>>> last %zu:\n%.200s\n\n>>> first: %zu:\n%.200s\n", parse->text.last, &parse->text.s[parse->text.last], parse->text.first, &parse->text.s[parse->text.first]);
-    if(str_length(&parse->text)) info(parsing_found_text, F("Text:", FG_GN_B) "%.*s", STR_F(&parse->text));
+    if(str_length(&parse->text)) info(parsing_found_text, F("Text:%.*s:", FG_GN_B) "%.*s", STR_F(vsstr_get_back(&parse->notes)), STR_F(&parse->text));
     parse->text.first = b ? b->last : a->last;
     return 0;
 error:
@@ -292,8 +293,8 @@ ErrDecl btw_parse_note_end(Btw *btw, BtwParse *parse) {/*{{{*/
     if(parse->stage != BTW_PARSE_FORMAT) {
         if(vsstr_length(&parse->notes) > 1 && parse->item->id == BTW_LEX_SCOPE_END) {
             Str title = {0};
-            vsstr_pop_back(&parse->notes, &title);
             TRYC(btw_parse_text(btw, parse, &parse->snippet, 0));
+            vsstr_pop_back(&parse->notes, &title);
             info(parsing_found_note, F("NoteEnd (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&parse->notes), parse->snippet.last, STR_F(&title));
         }
         if(!vsstr_length(&parse->notes)) {
@@ -360,12 +361,19 @@ error:
 
 #define ERR_btw_parse_note(...)     "failed parsing note end"
 ErrDecl btw_parse_note(Btw *btw, BtwParse *parse) {/*{{{*/
+    ASSERT_ARG(btw);
+    ASSERT_ARG(parse);
     if(parse->item->id == BTW_LEX_SCOPE_START) {
         TRYC(btw_parse_note_begin(btw, parse));
-    } else {
-        if(parse->item->id == BTW_LEX_WHITESPACE && str_count_ch(&parse->pending, '\n') > 1) {
+    } else if(parse->item->id == BTW_LEX_WHITESPACE) {
+        if(str_count_ch(&parse->pending, '\n') > 1) {
             parse->stage = BTW_PARSE_STRING;
+            TRYC(btw_parse_link_end(btw, parse));
         }
+    } else {
+        //if(parse->item->id == BTW_LEX_WHITESPACE && str_count_ch(&parse->pending, '\n') > 1) {
+        //    parse->stage = BTW_PARSE_STRING;
+        //}
         TRYC(btw_parse_link_end(btw, parse));
         btw_parse_string(btw, parse);
     }
@@ -438,6 +446,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     for(parse.i = 0; parse.i < vbtwlex_length(&btw->items); ++parse.i) {
         if(parse.i_prev > parse.i) { /*printff(F("REWIND HAPPENED", UL BOLD IT));*/ }
         parse.i_prev = parse.i;
+        //printf("\n");printf("%.20s", &btw->content.s[parse.snippet.first]);platform_getch();
         /* fetch next item */
         parse.item = vbtwlex_get_at(&btw->items, parse.i);
         parse.snippet.last = parse.item->iE;
@@ -511,10 +520,7 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
         THROW("don't expect dir!");
         int recursive = 0; // TODO make a flag for this
         TRYC(file_dir_read(filename, &btw->dirfiles));
-        //printf("\r%.*s", *n, "");
-        //*n = printf("[DIR]  %.*s", STR_F(filename));
         info(directory, "directory '%.*s'", STR_F(filename));
-        //INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
     } else {
         bool parse = false;
         Str split = {0};
@@ -526,8 +532,6 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
             }
         }
         if(parse) {
-            //if(*n) printf("\n");
-            //*n = printf("[FILE] %.*s", STR_F(filename));
             size_t size = 0;
             if(nexus->config.max_file_size && (size = file_size(filename)) <= nexus->config.max_file_size) {
                 info(parsing_file, "parsing '%.*s'", STR_F(filename));
