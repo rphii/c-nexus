@@ -4,6 +4,7 @@
 #include "err.h"
 #include "vector.h"
 #include "lookup.h"
+#include "nexus.h"
 
 typedef enum {
     BTW_LEX_NONE,
@@ -60,6 +61,7 @@ typedef struct BtwParse {
     BtwLex *item;
     VsStr notes;
     bool quit;
+    NexusCore core;
 } BtwParse;
 
 typedef struct BtwLink {

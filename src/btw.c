@@ -436,9 +436,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     BtwParse parse = {0};
     TRYC(btw_parse_init(btw, &parse));
     for(parse.i = 0; parse.i < vbtwlex_length(&btw->items); ++parse.i) {
-        if(parse.i_prev > parse.i) {
-            //printff(F("REWIND HAPPENED", UL BOLD IT));
-        }
+        if(parse.i_prev > parse.i) { /*printff(F("REWIND HAPPENED", UL BOLD IT));*/ }
         parse.i_prev = parse.i;
         /* fetch next item */
         parse.item = vbtwlex_get_at(&btw->items, parse.i);
@@ -460,17 +458,12 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
             } break;
             default: break;
         }
-
         TRYC(btw_parse_note_end(btw, &parse));
-        if(parse.quit) {
-            break;
-        }
-
+        if(parse.quit) break;
         /* prepare for next parse.item */
         parse.snippet.first = parse.item->iE;
     } //printf("\n");
 
-    ++btw->stats.success;
 
 clean:
     btw_parse_free(&parse);
@@ -524,16 +517,6 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
         //INFO("directory encountered, not parsing '%.*s'", STR_F(filename));
     } else {
         bool parse = false;
-#if 0
-        const Str *ok[] = {
-            &STR(".btw1"), &STR(".md"),// &STR(".txt"),
-        };
-        if(str_cmp_ci_any(&btw->ext, ok, sizeof(ok)/sizeof(*ok))) {
-#else
-#if 0
-        if(str_cmp_ci(&btw->ext, &STR(".btw1"))) {
-#endif
-#endif
         Str split = {0};
         while(split = str_splice(&nexus->config.extensions, &split, ','), split.first < str_length(&nexus->config.extensions)) {
             if(!str_cmp_ci(&btw->ext, &split)) {
@@ -574,6 +557,7 @@ ErrDecl btw_parse_file(Nexus *nexus, Str *filename, Btw *btw) //{{{
         TRYC(btw_lex(&btw->items, &btw->content));
         TRYC(btw_parse(nexus, btw));
         info_check(INFO_parsing_file, true);
+        ++btw->stats.success;
     }
     return 0;
 error:

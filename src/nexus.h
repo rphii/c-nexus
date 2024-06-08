@@ -19,6 +19,11 @@
 #define ICON_DATE F("📅 DATE", FG_RD)
 #define ICON_NONE "-"
 
+typedef struct NexusCore {
+    TNode nodes;
+    TrNode icons;
+} NexusCore;
+
 typedef struct Nexus {
     TNode nodes;
     TrNode icons;
