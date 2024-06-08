@@ -32,6 +32,11 @@ void info_handle_end(InfoList id) {
 
 void info_handle_abort(void) {
     info_handle_prev(INFO_NONE);
+    for(size_t id = 0; id < INFO__COUNT; ++id) {
+        if(info_query_type(id) == INFO_TYPE_CHECK && s_info.status[id] != INFO_STATUS_NONE) {
+            info_check(id, false);
+        }
+    }
     info_handle_end(INFO_NONE);
 }
 
