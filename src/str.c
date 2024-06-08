@@ -89,6 +89,11 @@ void str_cstr(Str *str, char *cstr, size_t len) {
     snprintf(cstr, len, "%.*s", STR_F(str));
 }
 
+void str_clear_to_last(Str *str) {
+    ASSERT_ARG(str);
+    str->first = str->last;
+}
+
 inline int str_fmt_va(Str *str, const char *format, va_list argp) //{{{
 {
     ASSERT_ARG(str);

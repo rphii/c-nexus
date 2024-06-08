@@ -5,12 +5,6 @@
 #include "vector.h"
 #include "lookup.h"
 
-typedef struct BtwParse {
-    Str title;
-    Str cmd;
-    Str description;
-} BtwParse;
-
 typedef enum {
     BTW_LEX_NONE,
     BTW_LEX_STRING,
@@ -34,6 +28,13 @@ typedef enum {
 #define BTW_FLAG_NOLINK     (1U<<3)
 #define BTW_FLAG_TAG        (1U<<4)
 
+typedef enum {
+    BTW_PARSE_STRING,    
+    BTW_PARSE_FORMAT,    
+    BTW_PARSE_LINK,      
+    BTW_PARSE_NOTE,      
+} BtwParseList;
+
 typedef unsigned int BtwFlag;
 
 typedef struct BtwLex {
@@ -44,6 +45,22 @@ typedef struct BtwLex {
     //Str str; // snippet of text
     BtwLexList id;
 } BtwLex;
+
+typedef struct BtwParse {
+    Str pending;
+    Str snippet;
+    Str format;
+    Str text;
+    Str link;
+    BtwParseList stage;
+    size_t stage_pair;
+    size_t format_i0;
+    size_t i;
+    size_t i_prev;
+    BtwLex *item;
+    VsStr notes;
+    bool quit;
+} BtwParse;
 
 typedef struct BtwLink {
     Str str;

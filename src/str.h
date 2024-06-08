@@ -47,6 +47,7 @@ void str_trimr(Str *str);
 void str_trim(Str *str);
 
 void str_cstr(Str *str, char *cstr, size_t len);
+void str_clear_to_last(Str *str);
 
 #define ERR_str_fmt_va(str, format, argp) "failed formatting string"
 ErrDecl str_fmt_va(Str *str, const char *format, va_list argp);
