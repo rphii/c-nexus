@@ -12,13 +12,13 @@ int node_cmp(Node *a, Node *b) {
 
 void node_zero(Node *node)
 {
-    ASSERT(node, ERR_NULL_ARG);
+    ASSERT_ARG(node);
     memset(node, 0, sizeof(*node));
 }
 
 void node_free(Node *node)
 {
-    ASSERT(node, ERR_NULL_ARG);
+    ASSERT_ARG(node);
     /* free all things */
     //for(size_t i = 0; i < ICON_BUNDLE_MAX; ++i) {
     //    icon_free(&node->icons.items[i]);
@@ -33,8 +33,8 @@ void node_free(Node *node)
 
 int node_fmt_desc(Str *out, Node *node)
 {
-    ASSERT(out, ERR_NULL_ARG);
-    ASSERT(node, ERR_NULL_ARG);
+    ASSERT_ARG(out);
+    ASSERT_ARG(node);
     size_t len_cmd = str_length(&node->cmd);
     size_t len_desc = str_length(&node->desc);
     if(len_cmd || len_desc) {
@@ -54,7 +54,7 @@ error:
 
 Node *node_get_sub_sel(Node *node, size_t sub_sel)
 {
-    ASSERT(node, ERR_NULL_ARG);
+    ASSERT_ARG(node);
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
     if(sub_sel >= sO+sI) sub_sel = sO+sI - 1;
@@ -70,9 +70,9 @@ Node *node_get_sub_sel(Node *node, size_t sub_sel)
 
 int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl, int padr, bool active)
 {
-    ASSERT(out, ERR_NULL_ARG);
-    ASSERT(node, ERR_NULL_ARG);
-    ASSERT(select, ERR_NULL_ARG);
+    ASSERT_ARG(out);
+    ASSERT_ARG(node);
+    ASSERT_ARG(select);
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
     //icon_fmt(iconstr, node->icon);
@@ -114,8 +114,8 @@ error:
 
 int node_fmt_sub(Str *out, Node *node, bool show_desc, bool show_preview, size_t max_preview, size_t sub_sel)
 {
-    ASSERT(out, ERR_NULL_ARG);
-    ASSERT(node, ERR_NULL_ARG);
+    ASSERT_ARG(out);
+    ASSERT_ARG(node);
     ASSERT(max_preview, "max_preview cannot be 0");
     int err = 0;
     size_t sO = vrnode_length(&node->outgoing);
@@ -191,8 +191,8 @@ error:
 
 int node_copy(Node *restrict dst, Node *restrict src)
 {
-    ASSERT(dst, ERR_NULL_ARG);
-    ASSERT(src, ERR_NULL_ARG);
+    ASSERT_ARG(dst);
+    ASSERT_ARG(src);
     TRY(node_create(dst, &src->title, &src->cmd, &src->desc), ERR_NODE_CREATE);
     return 0;
 error:
@@ -201,8 +201,8 @@ error:
 
 int node_create(Node *node, Str *title, Str *cmd, Str *desc)
 {
-    ASSERT(node, ERR_NULL_ARG);
-    ASSERT(title, ERR_NULL_ARG);
+    ASSERT_ARG(node);
+    ASSERT_ARG(title);
     //INFO("creating T:%.*s,C:%s,D:%s\n", STR_F(title), cmd ? cmd->s : "", desc ? desc->s : "");
     if(!str_length(title)) THROW("title can't be empty");
     node_zero(node);
@@ -226,8 +226,8 @@ error:
 
 int node_follow(Node **node, size_t *sub_sel)
 {
-    ASSERT(node, ERR_NULL_ARG);
-    ASSERT(sub_sel, ERR_NULL_ARG);
+    ASSERT_ARG(node);
+    ASSERT_ARG(sub_sel);
     size_t sO = vrnode_length(&(*node)->outgoing);
     size_t sI = vrnode_length(&(*node)->incoming);
     Node *result = *node;
@@ -247,8 +247,8 @@ error:
 
 void node_set_sub(Node *node, size_t *sub_sel, size_t to_set)
 {
-    ASSERT(node, ERR_NULL_ARG);
-    ASSERT(sub_sel, ERR_NULL_ARG);
+    ASSERT_ARG(node);
+    ASSERT_ARG(sub_sel);
     size_t sO = vrnode_length(&node->outgoing);
     size_t sI = vrnode_length(&node->incoming);
     size_t max = sO + sI;
