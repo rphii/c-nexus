@@ -367,9 +367,11 @@ ErrDecl btw_parse_link_end(Btw *btw, BtwParse *parse) {/*{{{*/
     info(INFO_parsing_found_link, F("Link:", FG_BK_B) "%.*s", STR_F(&parse->link));
     if(str_get_front(&parse->link) == '[') ++parse->link.first; /* TODO: this is stupid. should be assert or throw */
     if(str_get_back(&parse->link) == ']') --parse->link.last; /* TODO: this is stupid. should be assert or throw */
+    str_trim(&parse->link);
     Str *parent = vsstr_get_back(&parse->notes);
     printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->link));
     TRYC(nexus_link(&parse->core, parent, &parse->link, 0));
+    TRYC(nexus_add_text(&parse->core, parent, &parse->link));
     return 0;
 error:
     return -1;
