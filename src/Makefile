@@ -1,6 +1,8 @@
 #### Start of system configuration section. ####
 
-OPTIMIZE := \
+OPTIMIZE := #-march=native -O3 -fdevirtualize-at-ltrans -fipa-pta -fno-semantic-interposition -flto=auto -pipe
+
+			#\
 			-fmerge-all-constants -fgcse-lm -fgcse-sm -fgcse-las -fgcse-after-reload -flive-range-shrinkage -fsched-pressure \
 		   -fsched-spec-load -fsched-spec-load-dangerous -fsched-stalled-insns=0 -fsched-stalled-insns-dep=0 -fsched2-use-superblocks -fsched-group-heuristic -fsched-critical-path-heuristic -fsched-spec-insn-heuristic -fsched-rank-heuristic -fsched-last-insn-heuristic -fsched-dep-count-heuristic -freschedule-modulo-scheduled-loops -fselective-scheduling -fselective-scheduling2 -fsel-sched-pipelining -fsel-sched-pipelining-outer-loops \
 		   -fno-semantic-interposition -fipa-pta -fisolate-erroneous-paths-attribute  \
@@ -39,8 +41,8 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   -fsanitize=address -rdynamic \
 		   ##############\
+		   -fsanitize=address -rdynamic \
 		   ${OPTIMIZE} \
 		   -pg -rdynamic \
 		   -rdynamic -ggdb3 \

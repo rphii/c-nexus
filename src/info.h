@@ -23,6 +23,8 @@ typedef enum {
     INFO_nexus_init,
     INFO_nexus_title_node_not_found,
     INFO_nexus_stats,
+    INFO_parsing_create_note, /* TODO: isn't parsing */
+    INFO_parsing_add_text, /* TODO: isn't parsing */
 
     INFO__COUNT /* ids above */
 } InfoList;
@@ -67,17 +69,17 @@ Str *info_query_last(InfoList id);
 #define STRINGIFY(v) STRINGIFY0(v)
 
 #define info(id, str, ...)  do {\
-        InfoLevelField disabled = info_query_disabled(INFO_##id); \
+        InfoLevelField disabled = info_query_disabled(id); \
         if(disabled & INFO_LEVEL_TEXT) break; /* like.. if no text -> break entirely */ \
-        info_handle_prev(INFO_##id); \
-        Str *last = info_query_last(INFO_##id); \
+        info_handle_prev(id); \
+        Str *last = info_query_last(id); \
         str_clear(last); \
         bool decorators = false; \
         if(~disabled & INFO_LEVEL_IS_INFO) { \
             (void)(str_fmt(last, F("[INFO] ", FG_YL_B BOLD))); \
         } \
         if(~disabled & INFO_LEVEL_ID) { \
-            (void)(str_fmt(last, F("<%s> ", FG_BL_B BOLD), STRINGIFY(id))); \
+            (void)(str_fmt(last, F("<%s> ", FG_BL_B BOLD), &STRINGIFY(id)[5])); \
         } \
         if(~disabled & INFO_LEVEL_FILE_LINE) { \
             (void)(str_fmt(last, F("%s%s:%i", FG_WT_B), decorators ? ":" : "", __FILE__, __LINE__)); \
@@ -91,7 +93,7 @@ Str *info_query_last(InfoList id);
         decorators = false; \
         (void)(str_fmt(last, str, ##__VA_ARGS__)); \
         ERR_PRINTF("%.*s", STR_F(last)); \
-        info_handle_end(INFO_##id); \
+        info_handle_end(id); \
     } while(0)
 
 InfoLevelField info_query_disabled(InfoList id);

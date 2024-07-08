@@ -208,10 +208,10 @@ error:
 int nexus_init(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
-    TRY(tnode_init(&nexus->nodes, 12), ERR_LUTD_INIT);
-    TRY(trnode_init(&nexus->icons, 8), ERR_LUTD_INIT);
+    TRY(tnode_init(&nexus->core.nodes, NEXUS_LOOKUP_NOTES), ERR_LUTD_INIT);
+    TRY(trnode_init(&nexus->core.icons, NEXUS_LOOKUP_ICONS), ERR_LUTD_INIT);
     TRY(nexus_build(nexus, nexus->config.files), ERR_NEXUS_BUILD);
-    tnode_sort_sub(&nexus->nodes);
+    tnode_sort_sub(&nexus->core.nodes);
     /* set up view */
     TRYC(str_fmt(&nexus->tags.title, "List of tags"));
     View *view = &nexus->view;
@@ -249,8 +249,8 @@ error:
 void nexus_free(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
-    tnode_free(&nexus->nodes);
-    trnode_free(&nexus->icons);
+    tnode_free(&nexus->core.nodes);
+    trnode_free(&nexus->core.icons);
     //tnodeicon_free(&nexus->nodesicon);
     vview_free(&nexus->views);
     node_free(&nexus->findings);
@@ -283,7 +283,7 @@ void nexus_rebuild(Nexus *nexus)
     int result = cmd_run(&cmd);
     Str args[5] = {0};
     if(result) {
-        info(nexus_rebuild_failed, ERR_NEXUS_REBUILD);
+        info(INFO_nexus_rebuild_failed, ERR_NEXUS_REBUILD);
         platform_getch();
         goto clean;
     }
@@ -342,6 +342,82 @@ error:
     ERR_CLEAN;
 }
 /* }}} */
+
+ErrDecl nexus_create_if_nonexist(NexusCore *core, Str *title) {
+    ASSERT_ARG(core);
+    ASSERT_ARG(title);
+    Node node = {0};
+    node.title = *title;
+    if(!core->nodes.buckets) {
+        TRY(tnode_init(&core->nodes, NEXUS_LOOKUP_NOTES), ERR_LUTD_INIT);
+        TRY(trnode_init(&core->icons, NEXUS_LOOKUP_ICONS), ERR_LUTD_INIT);
+    }
+    //printf("HELLO\n");
+    if(str_length(title) && !tnode_has(&core->nodes, &node)) {
+        info(INFO_parsing_create_note, "Creating Note: '%.*s'", STR_F(title));
+        TRYC(node_create(&node, title, 0, 0));
+        TRY(tnode_add(&core->nodes, &node), ERR_LUTD_ADD);
+        /* TODO link with parent!!! */
+        //TRYC(node_create(
+        //TRY(nexus_insert_node(core, &panchor, title, 0, 0), ERR_LUTD_ADD);
+    }
+    return 0;
+error:
+    return -1;
+}
+
+ErrDecl nexus_add_text(NexusCore *core, Str *title, Str *text) { //{{{
+    ASSERT_ARG(core);
+    ASSERT_ARG(title);
+    ASSERT_ARG(text);
+    Node node = {0};
+    node.title = *title;
+    //if(!core->nodes.buckets) {
+    //    TRY(tnode_init(&core->nodes, NEXUS_LOOKUP_NOTES), ERR_LUTD_INIT);
+    //    TRY(trnode_init(&core->icons, NEXUS_LOOKUP_ICONS), ERR_LUTD_INIT);
+    //}
+    //printf("HELLO\n");
+    if(str_length(title)) {
+        info(INFO_parsing_add_text, "Adding Text: '%.*s' -> '%.*s'", STR_F(title), STR_F(text));
+        size_t ii, jj;
+        TRY(tnode_find(&core->nodes, &node, &ii, &jj), ERR_LUTD_FIND ": '%.*s'", STR_F(title));
+        Node *ref = core->nodes.buckets[ii].items[jj];
+        TRYC(str_fmt(&ref->desc, "%.*s", STR_F(text)));
+        //info(INFO_parsing_create_note, "Creating Note: '%.*s' -> '%.*s'", parent ? str_length(parent) : strlen(NEXUS_ROOT), parent ? str_iter_begin(parent) : NEXUS_ROOT, STR_F(title));
+        //TRYC(node_create(&node, title, 0, 0));
+        //Node anchor = { .title = parent ? *parent : STR(NEXUS_ROOT) };
+        //TRY(nexus_insert_node(core, &panchor, title, 0, 0), ERR_LUTD_ADD);
+    }
+    return 0;
+error:
+    return -1;
+} //}}}
+
+ErrDecl nexus_fuse(NexusCore *dst, NexusCore *src, size_t *links) { //{{{
+    ASSERT_ARG(dst);
+    ASSERT_ARG(src);
+    /* add to main nexus */
+    for(size_t i = 0; i < (1ULL << (src->nodes.width - 1)); ++i) {
+        for(size_t j = 0; j < src->nodes.buckets[i].len; ++j) {
+            Node *node = src->nodes.buckets[i].items[j];
+            /* create the node */
+            TRYC(nexus_create_if_nonexist(dst, &node->title));
+            TRYC(nexus_add_text(dst, &node->title, &node->desc));
+            /* establish links */
+            for(size_t k = 0; k < vrnode_length(&node->outgoing); ++k) {
+                Node *link = vrnode_get_at(&node->outgoing, k);
+                TRYC(nexus_link(dst, &node->title, &link->title, links));
+            }
+            for(size_t k = 0; k < vrnode_length(&node->incoming); ++k) {
+                Node *link = vrnode_get_at(&node->incoming, k);
+                TRYC(nexus_link(dst, &node->title, &link->title, links));
+            }
+        }
+    }
+    return 0;
+error:
+    return -1;
+} //}}}
 
 int nexus_userinput(Nexus *nexus, int key) /*{{{*/
 {
@@ -465,19 +541,19 @@ Node *nexus_get(Nexus *nexus, Str *title) //{{{
     size_t i0 = 0, j0 = 0;
     Node find = {0};
     TRY(node_create(&find, title, 0, 0), ERR_NODE_CREATE);
-    if(tnode_find(&nexus->nodes, &find, &i0, &j0)) {
+    if(tnode_find(&nexus->core.nodes, &find, &i0, &j0)) {
         Node *alternative = 0;
-        info(nexus_title_node_not_found, "node does not exist in nexus: '%.*s'", STR_F(&find.title));
-        for(i0 = 0; i0 < (1ULL << (nexus->nodes.width - 1)); ++i0) {
-            for(j0 = 0; j0 < nexus->nodes.buckets[i0].len; ++j0) {
-                alternative = nexus->nodes.buckets[i0].items[j0];
+        info(INFO_nexus_title_node_not_found, "node does not exist in nexus: '%.*s'", STR_F(&find.title));
+        for(i0 = 0; i0 < (1ULL << (nexus->core.nodes.width - 1)); ++i0) {
+            for(j0 = 0; j0 < nexus->core.nodes.buckets[i0].len; ++j0) {
+                alternative = nexus->core.nodes.buckets[i0].items[j0];
                 goto alt;
             }
         }
 alt:
         if(!alternative) THROW("could not find any node in nexus");
     }
-    result = nexus->nodes.buckets[i0].items[j0];
+    result = nexus->core.nodes.buckets[i0].items[j0];
 clean:
     node_free(&find);
     return result;
@@ -490,14 +566,14 @@ ErrDecl nexus_find_or_create(Nexus *nexus, Node *find, Node **found) {/*{{{*/
     ASSERT_ARG(find);
     ASSERT_ARG(found);
     if(str_length(&find->title)) {
-        if(!tnode_has(&nexus->nodes, find)) {
+        if(!tnode_has(&nexus->core.nodes, find)) {
             Node temp = {0};
             TRY(node_copy(&temp, find), ERR_NODE_COPY);
-            TRY(tnode_add(&nexus->nodes, &temp), ERR_LUTD_ADD);
+            TRY(tnode_add(&nexus->core.nodes, &temp), ERR_LUTD_ADD);
         }
         size_t ii = 0, jj = 0;
-        if(tnode_find(&nexus->nodes, find, &ii, &jj)) THROW(ERR_UNREACHABLE);
-        *found = nexus->nodes.buckets[ii].items[jj];
+        if(tnode_find(&nexus->core.nodes, find, &ii, &jj)) THROW(ERR_UNREACHABLE);
+        *found = nexus->core.nodes.buckets[ii].items[jj];
     }
     return 0;
 error:
@@ -514,7 +590,7 @@ int nexus_search(Nexus *nexus, Node *anchor, Str *search, Node *results) //{{{
 #if PROC_COUNT /* {{{ */
 
     /* declarations */
-    TNode *tnodes = &nexus->nodes;
+    TNode *tnodes = &nexus->core.nodes;
     NexusThreadSearch thr_search[PROC_COUNT] = {0};
     NexusThreadSearchThreadQueue thr_queue = {0};
     NexusThreadSearchJob job[SEARCH_THREAD_BATCH] = {0};
@@ -747,9 +823,9 @@ error:
 }/*}}}*/
 #endif
 
-int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc) //{{{
+ErrDecl nexus_insert_node(NexusCore *core, Node **ref, Str *title, Str *cmd, Str *desc) //{{{
 {
-    ASSERT_ARG(nexus);
+    ASSERT_ARG(core);
     ASSERT_ARG(ref);
     ASSERT_ARG(title);
     //ASSERT(desc, ERR_NULL_ARG);
@@ -760,13 +836,13 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc)
     Node find = {
         .title = *title
     };
-    bool found = !tnode_find(&nexus->nodes, &find, &i, &j);
+    bool found = !tnode_find(&core->nodes, &find, &i, &j);
     if(found) {
-        if(nexus->nodes.buckets[i].count[j]) {
+        if(core->nodes.buckets[i].count[j]) {
             THROW("should not insert node with equal title '%.*s'", STR_F(title));
         } else {
             /* node was added in nexus_link, via. add_count(0), meaning we should set the proper description etc. */
-            Node *node = nexus->nodes.buckets[i].items[j];
+            Node *node = core->nodes.buckets[i].items[j];
             str_free(&node->title); /* TODO this is sketchy */
             VrNode in = node->incoming, out = node->outgoing;
             TRY(node_create(node, title, cmd, desc), ERR_NODE_CREATE);
@@ -776,10 +852,10 @@ int nexus_insert_node(Nexus *nexus, Node **ref, Str *title, Str *cmd, Str *desc)
     } else {
         Node node;
         TRY(node_create(&node, title, cmd, desc), ERR_NODE_CREATE);
-        TRY(tnode_add(&nexus->nodes, &node), ERR_LUTD_ADD);
-        TRY(tnode_find(&nexus->nodes, &find, &i, &j), ERR_LUTD_FIND ": '%.*s'", STR_F(&find.title));
+        TRY(tnode_add(&core->nodes, &node), ERR_LUTD_ADD);
+        TRY(tnode_find(&core->nodes, &find, &i, &j), ERR_LUTD_FIND ": '%.*s'", STR_F(&find.title));
     }
-    *ref = nexus->nodes.buckets[i].items[j];
+    *ref = core->nodes.buckets[i].items[j];
     /* icon stuff */
 #if 0
     //printf("icons : %u for %.*s\n", icons->len, STR_F(&(*ref)->title));
@@ -794,38 +870,40 @@ error:
     ERR_CLEAN;
 } //}}}
 
-int nexus_link(Nexus *nexus, Node *src, Node *dest, size_t *linked) //{{{
+int nexus_link(NexusCore *core, Str *src, Str *dest, size_t *linked) //{{{
 {
-    ASSERT_ARG(nexus);
+    ASSERT_ARG(core);
     ASSERT_ARG(src);
     ASSERT_ARG(dest);
-    if(!str_length(&src->title) || !str_length(&dest->title)) return 0;
-    if(!tnode_has(&nexus->nodes, src)) {
+    if(!str_length(src) || !str_length(dest)) return 0;
+    Node node_src = { .title = *src };
+    Node node_dest = { .title = *dest };
+    if(!tnode_has(&core->nodes, &node_src)) {
         Node temp;
-        TRY(node_copy(&temp, src), ERR_NODE_COPY);
+        TRY(node_copy(&temp, &node_src), ERR_NODE_COPY);
 #if 0
         temp.icon = ICON_NONE;
 #else
 #endif
-        TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
+        TRY(tnode_add_count(&core->nodes, &temp, 0), ERR_LUTD_ADD);
         //THROW("node does not exist in nexus: '%.*s'", STR_F(&src->title));
     }
-    if(!node_cmp(src, dest)) return 0;
-    if(!tnode_has(&nexus->nodes, dest)) {
+    if(!node_cmp(&node_src, &node_dest)) return 0;
+    if(!tnode_has(&core->nodes, &node_dest)) {
         Node temp;
-        TRY(node_copy(&temp, dest), ERR_NODE_COPY);
+        TRY(node_copy(&temp, &node_dest), ERR_NODE_COPY);
 #if 0
         temp.icon = ICON_NONE;
 #else
 #endif
-        TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
+        TRY(tnode_add_count(&core->nodes, &temp, 0), ERR_LUTD_ADD);
         //THROW("node does not exist in nexus: '%.*s'", STR_F(&dest->title));
     }
     size_t i0 = 0, i1 = 0, j0 = 0, j1 = 0;
-    TRY(tnode_find(&nexus->nodes, src, &i0, &j0), "couldn't find '%.*s'", STR_F(&src->title));
-    TRY(tnode_find(&nexus->nodes, dest, &i1, &j1), "couldn't find '%.*s'", STR_F(&dest->title));
-    Node *ev_src = nexus->nodes.buckets[i0].items[j0];
-    Node *ev_dest = nexus->nodes.buckets[i1].items[j1];
+    TRY(tnode_find(&core->nodes, &node_src, &i0, &j0), "couldn't find '%.*s'", STR_F(&node_src.title));
+    TRY(tnode_find(&core->nodes, &node_dest, &i1, &j1), "couldn't find '%.*s'", STR_F(&node_dest.title));
+    Node *ev_src = core->nodes.buckets[i0].items[j0];
+    Node *ev_dest = core->nodes.buckets[i1].items[j1];
 #if 0 // TODO: sort by icons!!!
     Icon i_src = ev_src->icon;
     Icon i_dest = ev_dest->icon;
@@ -883,22 +961,22 @@ ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, size_t *tagged) {/*{{{*/
     Node empty = { .title = STR("-") };
     if(!str_length(&tag->title)) tag = &empty;
     if(!str_length(&src->title)) return 0;
-    if(!tnode_has(&nexus->nodes, src)) {
+    if(!tnode_has(&nexus->core.nodes, src)) {
         Node temp;
         TRY(node_copy(&temp, src), ERR_NODE_COPY);
-        TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
+        TRY(tnode_add_count(&nexus->core.nodes, &temp, 0), ERR_LUTD_ADD);
     }
     if(!node_cmp(src, tag)) return 0;
-    if(!tnode_has(&nexus->nodes, tag)) {
+    if(!tnode_has(&nexus->core.nodes, tag)) {
         Node temp;
         TRY(node_copy(&temp, tag), ERR_NODE_COPY);
-        TRY(tnode_add_count(&nexus->nodes, &temp, 0), ERR_LUTD_ADD);
+        TRY(tnode_add_count(&nexus->core.nodes, &temp, 0), ERR_LUTD_ADD);
     }
     size_t i0 = 0, i1 = 0, j0 = 0, j1 = 0;
-    TRY(tnode_find(&nexus->nodes, src, &i0, &j0), "couldn't find '%.*s'", STR_F(&src->title));
-    TRY(tnode_find(&nexus->nodes, tag, &i1, &j1), "couldn't find '%.*s'", STR_F(&tag->title));
-    Node *ev_src = nexus->nodes.buckets[i0].items[j0];
-    Node *ev_tag = nexus->nodes.buckets[i1].items[j1];
+    TRY(tnode_find(&nexus->core.nodes, src, &i0, &j0), "couldn't find '%.*s'", STR_F(&src->title));
+    TRY(tnode_find(&nexus->core.nodes, tag, &i1, &j1), "couldn't find '%.*s'", STR_F(&tag->title));
+    Node *ev_src = nexus->core.nodes.buckets[i0].items[j0];
+    Node *ev_tag = nexus->core.nodes.buckets[i1].items[j1];
     /* check for duplicates - we should be fine to only check one half */
     bool duplicate = false;
     for(size_t i = 0; i < vrnode_length(&ev_src->tags); ++i) {
@@ -1041,7 +1119,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
     Btw btw = {0};
     if (!vsstr_length(files)) {
         Node *root;
-        TRY(nexus_insert_node(nexus, &root, &STR(NEXUS_ROOT), CMD_NONE, &STR("Welcome to " F("c-nexus", BOLD) "\n\n"
+        TRY(nexus_insert_node(&nexus->core, &root, &STR(NEXUS_ROOT), CMD_NONE, &STR("Welcome to " F("c-nexus", BOLD) "\n\n"
                     F("basic controls", UL) "\n"
                     "  h : back in history\n"
                     "  j : move arrow down\n"
@@ -1116,13 +1194,13 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
         if(res > btw.stats.maxres) btw.stats.maxres = res;
         //printf("%zu bytes max. reserved\n", btw.maxres);
         //printf("read %u files\n", n);
-        info(nexus_stats, "Loaded %zu of %zu checked files and established %zu links", btw.stats.success, btw.stats.attempts, btw.stats.links);
+        info(INFO_nexus_stats, "Loaded %zu of %zu checked files and established %zu links", btw.stats.success, btw.stats.attempts, btw.stats.links);
         //getchar();
     }
     /* trim all descriptions */
-    for(size_t i = 0; i < (1ULL << (nexus->nodes.width - 1)); ++i) {
-        for(size_t j = 0; j < nexus->nodes.buckets[i].len; ++j) {
-            Node *node = nexus->nodes.buckets[i].items[j];
+    for(size_t i = 0; i < (1ULL << (nexus->core.nodes.width - 1)); ++i) {
+        for(size_t j = 0; j < nexus->core.nodes.buckets[i].len; ++j) {
+            Node *node = nexus->core.nodes.buckets[i].items[j];
             str_trim(&node->desc);
         }
     }

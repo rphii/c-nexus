@@ -67,14 +67,14 @@ typedef struct Arg {
     const char *name;
     Str unknown;
     bool exit_early;
-    SpecifyList view;
-    SpecifyList show_description;
-    SpecifyList show_preview;
-    size_t max_list;
-    size_t max_file_size;
-    Str entry;
-    Str extensions;
-    VsStr files;
+    SpecifyList view; // TODO: move into sub-struct
+    SpecifyList show_description; // TODO: move into sub-struct
+    SpecifyList show_preview; // TODO: move into sub-struct
+    size_t max_list; // TODO: move into sub-struct
+    size_t max_file_size; // TODO: move into sub-struct
+    Str entry; // TODO: move into sub-struct
+    Str extensions; // TODO: move into sub-struct
+    VsStr files; // TODO: move into sub-struct (MAYBE???)
     struct {
         int tiny; /* tiny, because short is reserved */
         int main;

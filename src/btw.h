@@ -30,10 +30,10 @@ typedef enum {
 #define BTW_FLAG_TAG        (1U<<4)
 
 typedef enum {
-    BTW_PARSE_STRING,    
-    BTW_PARSE_FORMAT,    
-    BTW_PARSE_LINK,      
-    BTW_PARSE_NOTE,      
+    BTW_PARSE_STRING,
+    BTW_PARSE_FORMAT,
+    BTW_PARSE_LINK,
+    BTW_PARSE_NOTE,
 } BtwParseList;
 
 typedef unsigned int BtwFlag;
@@ -61,6 +61,7 @@ typedef struct BtwParse {
     BtwLex *item;
     VsStr notes;
     bool quit;
+    bool at_least_one_is_empty;
     NexusCore core;
 } BtwParse;
 
@@ -90,7 +91,7 @@ typedef struct Btw {
         VBtwLink titles;
         VBtwLink refs;
         VSize indices;
-    } parse;
+    } parsed;
     struct {
         size_t direxec;
         size_t attempts;

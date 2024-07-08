@@ -1,4 +1,5 @@
 #include "info.h"
+#include "platform.h"
 #include "str.h"
 #include <stdarg.h>
 
@@ -20,7 +21,7 @@ void info_handle_end(InfoList id) {
     if(id != INFO_NONE) {
         switch(info_query_type(id)) {
             case INFO_TYPE_TEXT: { ERR_PRINTF("\n"); } break;
-            case INFO_TYPE_CHECK: { 
+            case INFO_TYPE_CHECK: {
                 s_info.status[id] = INFO_STATUS_PENDING;
                 ERR_PRINTF(" " F("..", FG_BK_B) " ");
             } break;
@@ -37,25 +38,28 @@ void info_handle_abort(void) {
         if(type == INFO_TYPE_CHECK && s_info.status[id] != INFO_STATUS_NONE) {
             info_check(id, false);
         }
+        str_free(&s_info.info_last[id]);
     }
     info_handle_end(INFO_NONE);
 }
 
 void info_handle_prev(InfoList id) {
+    bool output = true;
+    if((info_query_disabled(s_info.id_prev) & INFO_LEVEL_TEXT)) output = false;
     switch(info_query_type(s_info.id_prev)) {
         case INFO_TYPE_TEXT: break;
-        case INFO_TYPE_CHECK: { 
+        case INFO_TYPE_CHECK: {
             if(s_info.id_prev == id) {
                 //info_check(id, false);
             } else if(s_info.status[s_info.id_prev] == INFO_STATUS_PENDING) {
-                ERR_PRINTF(F("(?)", FG_BL_B) "\n");
+                if(output) ERR_PRINTF(F("(?)", FG_BL_B) "\n");
             }
         } break;
         case INFO_TYPE_LOADING: { ABORT("not implemented"); }
     }
     switch(info_query_type(id)) {
         case INFO_TYPE_TEXT: break;
-        case INFO_TYPE_CHECK: { 
+        case INFO_TYPE_CHECK: {
             //s_info.status[id] = INFO_STATUS_PENDING;
             if(s_info.status[id] == INFO_STATUS_PENDING) {
                 info_check(id, false);
@@ -67,15 +71,20 @@ void info_handle_prev(InfoList id) {
 
 void info_check(InfoList id, bool status) {
     InfoTypeList now = info_query_type(id);
+    bool output = true;
+    if((info_query_disabled(id) & INFO_LEVEL_TEXT)) output = false;
+    //platform_trace();
     switch(id) {
         case INFO_parsing_file: {
             //if(s_info.status[id] != INFO_STATUS_NONE) {
                 s_info.status[id] = status ? INFO_STATUS_SUCCESS : INFO_STATUS_FAILURE;
-                char *buf = status ? F("ok", FG_GN_B) : F("fail", FG_RD_B);
-                if(s_info.id_prev != id) {
-                    ERR_PRINTF("%.*s " F("..", FG_BK_B) " " F("(!)", FG_BL_B) " ", STR_F(info_query_last(id)));
+                if(output) {
+                    char *buf = status ? F("ok", FG_GN_B) : F("fail", FG_RD_B);
+                    if(s_info.id_prev != id) {
+                        ERR_PRINTF("%.*s " F("..", FG_BK_B) " " F("(!)", FG_BL_B) " ", STR_F(info_query_last(id)));
+                    }
+                    ERR_PRINTF("%s\n", buf);
                 }
-                ERR_PRINTF("%s\n", buf);
                 s_info.status[id] = INFO_STATUS_NONE;
             //}
         } break;

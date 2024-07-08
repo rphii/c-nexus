@@ -147,7 +147,7 @@ ErrDeclStatic arg_static_execute(Arg *arg, ArgList id)
         } break;
         case ARG_ENTRY: {
             if(!str_length(&arg->entry)) {
-                printf("%*s" F("%s", BOLD) "=STRING is missing\n", arg->tabs.tiny, "", static_arg[id][1]);
+                printf("%*s" F("%s", BOLD) "=STRING is missing\n", arg->tabs.tiny, "", static_arg[id][1]); // TODO:this is stupid (see below...)
                 arg->exit_early = true;
             }
         } break;

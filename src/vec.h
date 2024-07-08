@@ -266,7 +266,7 @@ typedef enum
 #define VEC_IMPLEMENT_COMMON_STATIC_GET(N, A, T, F, M) \
     static inline VEC_ITEM(T, M) *A##_static_get(const N *vec, size_t index) \
     { \
-        if(!vec || !(index < vec->last) || !(index >= vec->first)) platform_trace(); \
+        /*if(!vec || !(index < vec->last) || !(index >= vec->first)) platform_trace();*/ \
         VEC_ASSERT_REAL(vec); \
         VEC_ASSERT_REAL(index < vec->last); \
         VEC_ASSERT_REAL(index >= vec->first); \
@@ -833,7 +833,7 @@ typedef enum
         if(A##_length(src)) { \
             int result = A##_reserve(dst, A##_length(src)); \
             if(result) return result; \
-            vec_memcpy(dst->VEC_STRUCT_ITEMS, src->VEC_STRUCT_ITEMS, sizeof(*dst->VEC_STRUCT_ITEMS) * A##_length(src)); \
+            vec_memcpy(dst->VEC_STRUCT_ITEMS, A##_iter_begin(src), sizeof(*dst->VEC_STRUCT_ITEMS) * A##_length(src)); \
             dst->last = A##_length(src); \
         } \
         return VEC_ERROR_NONE; \

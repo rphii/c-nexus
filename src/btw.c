@@ -216,13 +216,20 @@ error:
 void btw_parse_free(BtwParse *parse) {/*{{{*/
     ASSERT_ARG(parse);
     vsstr_free(&parse->notes);
+    tnode_free(&parse->core.nodes);
+    trnode_free(&parse->core.icons);
 }/*}}}*/
 
 #define ERR_btw_parse_init(...)   "failed initializing parse struct"
 ErrDecl btw_parse_init(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(parse);
     ASSERT_ARG(btw);
-    TRY(vsstr_push_back(&parse->notes, &STR(NEXUS_ROOT)), ERR_VEC_PUSH_BACK);
+    TRY(vsstr_push_back(&parse->notes, &btw->basename), ERR_VEC_PUSH_BACK);
+    parse->at_least_one_is_empty |= !(str_cmp(&btw->basename, &STR("")));
+    if(!parse->at_least_one_is_empty) {
+        TRYC(nexus_create_if_nonexist(&parse->core, &btw->basename)); // TODO:CONTINUE
+    }
+    TRY(tnode_init(&btw->parsed.nodes, 8), ERR_LUTD_INIT);
     parse->snippet = btw->content;
     parse->pending = btw->content;
     parse->format = btw->content;
@@ -246,8 +253,17 @@ void btw_parse_recall(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(btw);
     //parse->format.first = parse->format.last; //crap-code
     parse->i = parse->format_i0 + 0;
-    parse->item = vbtwlex_get_at(&btw->items, parse->i);
-    parse->text.first = parse->item->iE;
+    if(parse->i > 1) {
+        parse->item = vbtwlex_get_at(&btw->items, parse->i - 1);
+        //parse->item = vbtwlex_get_at(&btw->items, parse->i);
+        parse->text.first = parse->item->iE;
+        //printff("FIRST");
+    } else {
+        parse->item = vbtwlex_get_front(&btw->items);
+        parse->text.first = 0;
+        //printff("SECOND");
+    }
+        //printff("\nrecalled...[%.*s]", 20, &parse->text.s[parse->text.first]);
     parse->stage = BTW_PARSE_STRING; // TODO: here or outside, where I call it?
 }/*}}}*/
 
@@ -265,7 +281,9 @@ void btw_parse_string(Btw *btw, BtwParse *parse) {/*{{{*/
     } else {
         if(parse->item->id != BTW_LEX_WHITESPACE && str_length(&parse->format)) {
             parse->format.first = parse->format.last; //crap-code
+            //printff("\nRECALLING");
             btw_parse_recall(btw, parse);
+            //printff("RECALLED STRING:[%.*s]", 20, str_iter_at(&parse->text, parse->
         }
         parse->stage = BTW_PARSE_STRING;
     }
@@ -277,9 +295,12 @@ ErrDecl btw_parse_text(Btw *btw, BtwParse *parse, Str *a, Str *b) {/*{{{*/
     ASSERT_ARG(parse);
     ASSERT_ARG(a);
     parse->text.last = a->first;
-    printff("\nTEXT: LENGTH %zu", vsstr_length(&parse->notes));
+    // ??? printff("\nTEXT: LENGTH %zu", vsstr_length(&parse->notes));
     if(parse->text.last < parse->text.first) THROW("\n>>> last %zu:\n%.200s\n\n>>> first: %zu:\n%.200s\n", parse->text.last, &parse->text.s[parse->text.last], parse->text.first, &parse->text.s[parse->text.first]);
-    if(str_length(&parse->text)) info(parsing_found_text, F("Text:%.*s:", FG_GN_B) "%.*s", STR_F(vsstr_get_back(&parse->notes)), STR_F(&parse->text));
+    if(str_length(&parse->text) && !parse->at_least_one_is_empty) {
+        info(INFO_parsing_found_text, F("Text:%.*s:", FG_GN_B) "%.*s", STR_F(vsstr_get_back(&parse->notes)), STR_F(&parse->text));
+        TRYC(nexus_add_text(&parse->core, vsstr_get_back(&parse->notes), &parse->text));
+    }
     parse->text.first = b ? b->last : a->last;
     return 0;
 error:
@@ -295,7 +316,8 @@ ErrDecl btw_parse_note_end(Btw *btw, BtwParse *parse) {/*{{{*/
             Str title = {0};
             TRYC(btw_parse_text(btw, parse, &parse->snippet, 0));
             vsstr_pop_back(&parse->notes, &title);
-            info(parsing_found_note, F("NoteEnd (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&parse->notes), parse->snippet.last, STR_F(&title));
+            parse->at_least_one_is_empty &= !(str_cmp(&title, &STR("")));
+            info(INFO_parsing_found_note, F("NoteEnd (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&parse->notes), parse->snippet.last, STR_F(&title));
         }
         if(!vsstr_length(&parse->notes)) {
             parse->quit = true;
@@ -313,7 +335,7 @@ ErrDecl btw_parse_format_end(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(parse);
     if(str_length(&parse->format)) {
         TRYC(btw_parse_text(btw, parse, &parse->format, 0));
-        info(parsing_found_format, F("Format:", FG_GN_B) "%.*s", STR_F(&parse->format));
+        info(INFO_parsing_found_format, F("Format:", FG_GN_B) "%.*s", STR_F(&parse->format));
         parse->format.first = parse->format.last;
     }
     return 0;
@@ -329,8 +351,10 @@ void btw_parse_format_begin(Btw *btw, BtwParse *parse) {/*{{{*/
         parse->stage = BTW_PARSE_STRING;
     } else if(parse->item->id == BTW_LEX_FORMAT_START) {
         parse->format.first = parse->format.last; //crap-code
+            //printff("\nRECALLING");
         btw_parse_recall(btw, parse);
     } else if(parse->i + 1 >= vbtwlex_length(&btw->items)) {
+            //printff("\nRECALLING");
         btw_parse_recall(btw, parse);
     }
 }/*}}}*/
@@ -340,7 +364,12 @@ ErrDecl btw_parse_link_end(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(parse);
     TRYC(btw_parse_text(btw, parse, &parse->link, 0));
-    info(parsing_found_link, F("Link:", FG_BK_B) "%.*s", STR_F(&parse->link));
+    info(INFO_parsing_found_link, F("Link:", FG_BK_B) "%.*s", STR_F(&parse->link));
+    if(str_get_front(&parse->link) == '[') ++parse->link.first; /* TODO: this is stupid. should be assert or throw */
+    if(str_get_back(&parse->link) == ']') --parse->link.last; /* TODO: this is stupid. should be assert or throw */
+    Str *parent = vsstr_get_back(&parse->notes);
+    printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->link));
+    TRYC(nexus_link(&parse->core, parent, &parse->link, 0));
     return 0;
 error:
     return -1;
@@ -350,10 +379,40 @@ error:
 ErrDecl btw_parse_note_begin(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(parse);
-        vsstr_push_back(&parse->notes, &parse->link);
+        if(parse->at_least_one_is_empty) return 0;
+        /* was here -> moved down ??? */
+        info(INFO_parsing_found_note, F("NoteBegin (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&parse->notes), parse->snippet.first, STR_F(&parse->link));
+        /* try adding to nexus */
+        Str title = parse->link;
+        if(str_get_front(&title) == '[') ++title.first; /* TODO this is stupid.. */
+        if(str_get_back(&title) == ']') --title.last;
+        str_trim(&title);
+        parse->at_least_one_is_empty |= !(str_cmp(&title, &STR("")));
+        //printff("AT LEAST ONE IS EMPTY: %s", parse->at_least_one_is_empty ? "TRUE" : "FALSE");
+        if(parse->at_least_one_is_empty) return 0;
         TRYC(btw_parse_text(btw, parse, &parse->link, &parse->snippet));
-        info(parsing_found_note, F("NoteBegin (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&parse->notes) - 1, parse->snippet.first, STR_F(&parse->link));
+        TRYC(nexus_create_if_nonexist(&parse->core, &title));
+        if(vsstr_length(&parse->notes)) {
+            Str *parent = vsstr_get_back(&parse->notes);
+            //printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&title));
+            TRYC(nexus_link(&parse->core, parent, &title, 0));
+            //nexus_link();
+        }
+        /* moved this 2 lines down from above -- is it still correct ?? */
+        vsstr_push_back(&parse->notes, &title);
+        //TRYC(btw_parse_text(btw, parse, &parse->link, &parse->snippet));
         parse->stage = BTW_PARSE_STRING;
+#if 0
+        node.title = title;
+        //printf("HELLO\n");
+        if(str_length(&title) && !tnode_has(&btw->parsed.nodes, &node)) {
+            info(parsing_create_note, "Creating Note: %.*s", STR_F(&title));
+            //str_clear(&node.title);
+            //TRYC(str_fmt(&node.title, "%.*s", STR_F(&parse->link)));
+            TRYC(node_create(&node, &title, 0, 0));
+            TRY(nexus_insert_node(&btw->parsed.nodes, &node), ERR_LUTD_ADD);
+        }
+#endif
     return 0;
 error:
     return -1;
@@ -366,11 +425,13 @@ ErrDecl btw_parse_note(Btw *btw, BtwParse *parse) {/*{{{*/
     if(parse->item->id == BTW_LEX_SCOPE_START) {
         TRYC(btw_parse_note_begin(btw, parse));
     } else if(parse->item->id == BTW_LEX_WHITESPACE) {
+        //printf("PENDING:[%.*s]\n", STR_F(&parse->pending));
         if(str_count_ch(&parse->pending, '\n') > 1) {
             parse->stage = BTW_PARSE_STRING;
             TRYC(btw_parse_link_end(btw, parse));
         }
     } else {
+        //printf("PENDING:[%.*s]\n", STR_F(&parse->pending));
         //if(parse->item->id == BTW_LEX_WHITESPACE && str_count_ch(&parse->pending, '\n') > 1) {
         //    parse->stage = BTW_PARSE_STRING;
         //}
@@ -444,8 +505,9 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
     BtwParse parse = {0};
     TRYC(btw_parse_init(btw, &parse));
     for(parse.i = 0; parse.i < vbtwlex_length(&btw->items); ++parse.i) {
-        if(parse.i_prev > parse.i) { /*printff(F("REWIND HAPPENED", UL BOLD IT));*/ }
+        if(parse.i_prev > parse.i) { printff(F("RECALL HAPPENED", UL BOLD IT)); }
         parse.i_prev = parse.i;
+        //printff("\nSTAGE [%u]", parse.stage);
         //printf("\n");printf("%.20s", &btw->content.s[parse.snippet.first]);platform_getch();
         /* fetch next item */
         parse.item = vbtwlex_get_at(&btw->items, parse.i);
@@ -472,8 +534,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         /* prepare for next parse.item */
         parse.snippet.first = parse.item->iE;
     } //printf("\n");
-
-
+    TRYC(nexus_fuse(&nexus->core, &parse.core, &btw->stats.links));
 clean:
     btw_parse_free(&parse);
     return err;
@@ -490,10 +551,10 @@ void btw_free(Btw *btw) { //{{{
     str_free(&btw->basename);
     str_free(&btw->ext);
     vbtwlex_free(&btw->items);
-    vbtwlink_free(&btw->parse.refs);
-    vbtwlink_free(&btw->parse.titles);
-    tnode_free(&btw->parse.nodes);
-    vsize_free(&btw->parse.indices);
+    //vbtwlink_free(&btw->parse.refs);
+    //vbtwlink_free(&btw->parse.titles);
+    tnode_free(&btw->parsed.nodes);
+    //vsize_free(&btw->parse.indices);
     //vsize_free(&btw->indices);
     //vsize_free(&btw->flags);
     //vstr_free(&btw->titles);
@@ -520,7 +581,7 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
         THROW("don't expect dir!");
         int recursive = 0; // TODO make a flag for this
         TRYC(file_dir_read(filename, &btw->dirfiles));
-        info(directory, "directory '%.*s'", STR_F(filename));
+        info(INFO_directory, "directory '%.*s'", STR_F(filename));
     } else {
         bool parse = false;
         Str split = {0};
@@ -534,14 +595,14 @@ ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw) //{{{
         if(parse) {
             size_t size = 0;
             if(nexus->config.max_file_size && (size = file_size(filename)) <= nexus->config.max_file_size) {
-                info(parsing_file, "parsing '%.*s'", STR_F(filename));
+                info(INFO_parsing_file, "parsing '%.*s'", STR_F(filename));
                 TRYC(file_str_read(filename, &btw->content));
                 str_trim(&btw->content);
             } else {
-                info(parsing_skip_too_large, "file too large: %zu bytes, not parsing '%.*s'", size, STR_F(filename));
+                info(INFO_parsing_skip_too_large, "file too large: %zu bytes, not parsing '%.*s'", size, STR_F(filename));
             }
         } else {
-            info(parsing_skip_incorrect_extension, "incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
+            info(INFO_parsing_skip_incorrect_extension, "incorrect extension '%.*s', not parsing '%.*s'", STR_F(&btw->ext), STR_F(filename));
         }
     }
 
@@ -555,6 +616,7 @@ ErrDecl btw_parse_file(Nexus *nexus, Str *filename, Btw *btw) //{{{
     ASSERT_ARG(nexus);
     ASSERT_ARG(filename);
     ASSERT_ARG(btw);
+    int err = 0;
 
     TRYC(btw_file_prepare(nexus, filename, btw));
     if(str_length(&btw->content)) {
@@ -563,8 +625,12 @@ ErrDecl btw_parse_file(Nexus *nexus, Str *filename, Btw *btw) //{{{
         info_check(INFO_parsing_file, true);
         ++btw->stats.success;
     }
-    return 0;
+    //return 0;
+clean:
+    btw_free(btw); // TODO: do I need to free here or not??? (asking myself in case I process multiple files in a row -> parse_exec )
+    return err;
 error:
+    ERR_CLEAN;
     return -1;
 } //}}}
 
