@@ -515,6 +515,16 @@ size_t str_find_nany(const Str *str, const Str *any) { //{{{
     return str_length(str);
 } //}}}
 
+size_t str_find_rnany(const Str *str, const Str *any) { //{{{
+    ASSERT_ARG(str);
+    ASSERT_ARG(any);
+    for(size_t i = 0; i < str_length(str); ++i) {
+        size_t temp = str_rch(any, str_get_at(str, i), 0);
+        if(temp >= str_length(any)) return i;
+    }
+    return str_length(str);
+} //}}}
+
 size_t str_nch(const Str *str, char ch, size_t n) { //{{{
     ASSERT_ARG(str);
     size_t ni = 0;
@@ -614,7 +624,7 @@ size_t str_rnch(const Str *str, char ch, size_t n) {
             ++ni;
         }
     }
-    return 0; //str_length(str);
+    return str_length(str);
 }
 
 size_t str_count_ch(const Str *str, char ch) {/*{{{*/

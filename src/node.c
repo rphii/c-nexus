@@ -90,6 +90,23 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
     }
 #endif
     /* icons */
+    bool tagged = false;
+    for(size_t i = 0; i < vrnode_length(&node->outgoing); ++i) {
+        Node *tag = vrnode_get_at(&node->outgoing, i);
+        if(tag->type != NODE_TYPE_ICON) continue;
+        TRYC(str_fmt(out, "%s%.*s", tagged ? " " : "", STR_F(&tag->title)));
+        tagged = true;
+    }
+    for(size_t i = 0; i < vrnode_length(&node->incoming); ++i) {
+        Node *tag = vrnode_get_at(&node->incoming, i);
+        if(tag->type != NODE_TYPE_ICON) continue;
+        TRYC(str_fmt(out, "%s%.*s", tagged ? " " : "", STR_F(&tag->title)));
+        tagged = true;
+    }
+    if(!tagged) {
+        TRYC(str_fmt(out, "-"));
+    }
+#if 0
     for(size_t i = 0; i < vrnode_length(&node->tags); ++i) {
         Node *tag = vrnode_get_at(&node->tags, i);
         TRYC(str_fmt(out, "%s%.*s", i ? " " : "", STR_F(&tag->title)));
@@ -97,6 +114,7 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
     if(!vrnode_length(&node->tags)) {
         TRYC(str_fmt(out, "-"));
     }
+#endif
     //for(size_t i = 0; i < vicon_length(&node->icons); ++i) {
         //IconBundle *icon = vicon_get_at(&node->icons, i);
         //IconStr iconstr = {0};

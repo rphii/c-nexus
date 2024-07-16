@@ -12,16 +12,26 @@ typedef enum {
 
 } NodeList;
 
+typedef enum {
+    NODE_TYPE_NONE,
+    NODE_TYPE_TEXT = NODE_TYPE_NONE,
+    NODE_TYPE_ICON,
+} NodeType;
+
 typedef struct Node {
     //Icon icon;
     //VIcon icons;
     Str title;
     Str desc;
     Str cmd;
+    // TODO: add/create a new/better link type! those that have a reference to the text in the desc, if pesent! adjust view accordingly
+    VrStr textlinks;
     VrNode outgoing;
     VrNode incoming;
-    VrNode tags;
+    //VrNode tags;
     NodeList id;
+    // TODO it's stupid to have VrNode tags.. and also an additional TrNode icons in nexus.h ... -> add a type, saying wheter tag, etc, whatever!
+    NodeType type;
 } Node;
 
 #if (NODE_SHOW_COUNT_IN_OUT)

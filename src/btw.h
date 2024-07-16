@@ -59,20 +59,21 @@ typedef struct BtwFormat {
     Rgb8 fg;
     Rgb8 bg;
     VsStr links;
+    VsStr tags;
 } BtwFormat;
 
 typedef struct BtwParse {
     NexusCore core;
-    Str pending;
-    Str snippet;
-    Str format;
-    Str text;
-    Str link;
     Str link_scratch;
     Str fmt;
     VsStr notes;
     BtwFormat fmt_parsed;
     struct {
+        Str snippet;
+        Str pending;
+        Str format;
+        Str text;
+        Str link;
         BtwLex *item;
         BtwParseList stage;
         size_t stage_pair;

@@ -217,23 +217,25 @@ error:
 void btw_format_free(BtwFormat *fmt) { //{{{
     ASSERT_ARG(fmt);
     vsstr_free(&fmt->links);
+    vsstr_free(&fmt->tags);
 } //}}}
 
 void btw_format_clear(BtwFormat *fmt) { //{{{
     ASSERT_ARG(fmt);
     vsstr_clear(&fmt->links);
+    vsstr_clear(&fmt->tags);
 } //}}}
 
 
 void btw_parse_clear(BtwParse *parse) { //{{{
     ASSERT_ARG(parse);
     tnode_clear(&parse->core.nodes); // TODO maybe make a new functions ??
-    trnode_clear(&parse->core.icons);
-    str_clear(&parse->pending);
-    str_clear(&parse->snippet);
-    str_clear(&parse->format);
-    str_clear(&parse->text);
-    str_clear(&parse->link);
+    //trnode_clear(&parse->core.icons);
+    //str_clear(&parse->basic.pending);
+    //str_clear(&parse->basic.snippet);
+    //str_clear(&parse->basic.format);
+    //str_clear(&parse->basic.text);
+    //str_clear(&parse->basic.link);
     str_clear(&parse->link_scratch);
     str_clear(&parse->fmt);
     vsstr_clear(&parse->notes);
@@ -246,7 +248,7 @@ void btw_parse_free(BtwParse *parse) {/*{{{*/
     ASSERT_ARG(parse);
     vsstr_free(&parse->notes);
     tnode_free(&parse->core.nodes);
-    trnode_free(&parse->core.icons);
+    //trnode_free(&parse->core.icons);
     btw_format_free(&parse->fmt_parsed);
     str_free(&parse->link_scratch);
 }/*}}}*/
@@ -262,18 +264,18 @@ ErrDecl btw_parse_init(Btw *btw, BtwParse *parse) {/*{{{*/
         TRYC(nexus_create_if_nonexist(&parse->core, &btw->basename)); // TODO:CONTINUE
     }
     TRY(tnode_init(&btw->parsed.nodes, 8), ERR_LUTD_INIT);
-    parse->snippet = btw->content;
-    parse->pending = btw->content;
-    parse->format = btw->content;
-    parse->text = btw->content;
-    parse->link = btw->content;
+    parse->basic.snippet = btw->content;
+    parse->basic.pending = btw->content;
+    parse->basic.format = btw->content;
+    parse->basic.text = btw->content;
+    parse->basic.link = btw->content;
     parse->basic.stage_pair = 0;
     parse->basic.stage = BTW_PARSE_STRING;
     parse->basic.format_i0 = 0;
-    parse->pending.last = parse->pending.first;
-    parse->snippet.last = parse->snippet.first;
-    parse->format.last = parse->format.first;
-    parse->text.last = parse->text.first;
+    parse->basic.pending.last = parse->basic.pending.first;
+    parse->basic.snippet.last = parse->basic.snippet.first;
+    parse->basic.format.last = parse->basic.format.first;
+    parse->basic.text.last = parse->basic.text.first;
     parse->basic.i_prev = 0;
     return 0;
 error:
@@ -283,19 +285,19 @@ error:
 void btw_parse_recall(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(parse);
     ASSERT_ARG(btw);
-    //parse->format.first = parse->format.last; //crap-code
+    //parse->basic.format.first = parse->basic.format.last; //crap-code
     parse->basic.i = parse->basic.format_i0 + 0;
     if(parse->basic.i > 1) {
         parse->basic.item = vbtwlex_get_at(&btw->items, parse->basic.i - 1);
         //parse->basic.item = vbtwlex_get_at(&btw->items, parse->i);
-        parse->text.first = parse->basic.item->iE;
+        parse->basic.text.first = parse->basic.item->iE;
         //printff("FIRST");
     } else {
         parse->basic.item = vbtwlex_get_front(&btw->items);
-        parse->text.first = 0;
+        parse->basic.text.first = 0;
         //printff("SECOND");
     }
-        //printff("\nrecalled...[%.*s]", 20, &parse->text.s[parse->text.first]);
+        //printff("\nrecalled...[%.*s]", 20, &parse->basic.text.s[parse->basic.text.first]);
     parse->basic.stage = BTW_PARSE_STRING; // TODO: here or outside, where I call it?
 }/*}}}*/
 
@@ -303,19 +305,19 @@ void btw_parse_string(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(parse);
     ASSERT_ARG(btw);
     if(parse->basic.item->id == BTW_LEX_LINK_START) {
-        parse->pending.first = parse->snippet.first;
+        parse->basic.pending.first = parse->basic.snippet.first;
         parse->basic.stage_pair = 1;
         parse->basic.stage = BTW_PARSE_LINK;
     } else if(parse->basic.item->id == BTW_LEX_FORMAT_START) {
-        parse->format.first = parse->snippet.first;
+        parse->basic.format.first = parse->basic.snippet.first;
         parse->basic.format_i0 = parse->basic.i;
         parse->basic.stage = BTW_PARSE_FORMAT;
     } else {
-        if(parse->basic.item->id != BTW_LEX_WHITESPACE && str_length(&parse->format)) {
-            parse->format.first = parse->format.last; //crap-code
+        if(parse->basic.item->id != BTW_LEX_WHITESPACE && str_length(&parse->basic.format)) {
+            parse->basic.format.first = parse->basic.format.last; //crap-code
             //printff("\nREWINDING");
             btw_parse_recall(btw, parse);
-            //printff("REWINDED STRING:[%.*s]", 20, str_iter_at(&parse->text, parse->
+            //printff("REWINDED STRING:[%.*s]", 20, str_iter_at(&parse->basic.text, parse->
         }
         parse->basic.stage = BTW_PARSE_STRING;
     }
@@ -326,14 +328,14 @@ ErrDecl btw_parse_text(Btw *btw, BtwParse *parse, Str *a, Str *b) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(parse);
     ASSERT_ARG(a);
-    parse->text.last = a->first;
+    parse->basic.text.last = a->first;
     // ??? printff("\nTEXT: LENGTH %zu", vsstr_length(&parse->notes));
-    if(parse->text.last < parse->text.first) THROW("\n>>> last %zu:\n%.200s\n\n>>> first: %zu:\n%.200s\n", parse->text.last, &parse->text.s[parse->text.last], parse->text.first, &parse->text.s[parse->text.first]);
-    if(str_length(&parse->text) && !parse->basic.at_least_one_is_empty) {
-        info(INFO_parsing_found_text, F("Text:%.*s:", FG_GN_B) "%.*s", STR_F(vsstr_get_back(&parse->notes)), STR_F(&parse->text));
-        TRYC(nexus_add_text(&parse->core, vsstr_get_back(&parse->notes), &parse->text));
+    if(parse->basic.text.last < parse->basic.text.first) THROW("\n>>> last %zu:\n%.200s\n\n>>> first: %zu:\n%.200s\n", parse->basic.text.last, &parse->basic.text.s[parse->basic.text.last], parse->basic.text.first, &parse->basic.text.s[parse->basic.text.first]);
+    if(str_length(&parse->basic.text) && !parse->basic.at_least_one_is_empty) {
+        info(INFO_parsing_found_text, F("Text:%.*s:", FG_GN_B) "%.*s", STR_F(vsstr_get_back(&parse->notes)), STR_F(&parse->basic.text));
+        TRYC(nexus_add_text(&parse->core, vsstr_get_back(&parse->notes), &parse->basic.text));
     }
-    parse->text.first = b ? b->last : a->last;
+    parse->basic.text.first = b ? b->last : a->last;
     return 0;
 error:
     return -1;
@@ -346,10 +348,10 @@ ErrDecl btw_parse_note_end(Btw *btw, BtwParse *parse) {/*{{{*/
     if(parse->basic.stage != BTW_PARSE_FORMAT) {
         if(vsstr_length(&parse->notes) > 1 && parse->basic.item->id == BTW_LEX_SCOPE_END) {
             Str title = {0};
-            TRYC(btw_parse_text(btw, parse, &parse->snippet, 0));
+            TRYC(btw_parse_text(btw, parse, &parse->basic.snippet, 0));
             vsstr_pop_back(&parse->notes, &title);
             parse->basic.at_least_one_is_empty &= !(str_cmp(&title, &STR("")));
-            info(INFO_parsing_found_note, F("NoteEnd (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&parse->notes), parse->snippet.last, STR_F(&title));
+            info(INFO_parsing_found_note, F("NoteEnd (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&parse->notes), parse->basic.snippet.last, STR_F(&title));
         }
         if(!vsstr_length(&parse->notes)) {
             parse->basic.quit = true;
@@ -365,11 +367,11 @@ error:
 ErrDecl btw_parse_format_end(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(parse);
-    if(str_length(&parse->format)) {
-        TRYC(btw_parse_text(btw, parse, &parse->format, 0));
-        info(INFO_parsing_found_format, F("Format:", FG_GN_B) "%.*s", STR_F(&parse->format));
-        parse->fmt = parse->format;
-        parse->format.first = parse->format.last;
+    if(str_length(&parse->basic.format)) {
+        TRYC(btw_parse_text(btw, parse, &parse->basic.format, 0));
+        info(INFO_parsing_found_format, F("Format:", FG_GN_B) "%.*s", STR_F(&parse->basic.format));
+        parse->fmt = parse->basic.format;
+        parse->basic.format.first = parse->basic.format.last;
     }
     return 0;
 error:
@@ -380,10 +382,10 @@ void btw_parse_format_begin(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(parse);
     if(parse->basic.item->id == BTW_LEX_FORMAT_END) {
-        parse->format.last = parse->snippet.last;
+        parse->basic.format.last = parse->basic.snippet.last;
         parse->basic.stage = BTW_PARSE_STRING;
     } else if(parse->basic.item->id == BTW_LEX_FORMAT_START) {
-        parse->format.first = parse->format.last; //crap-code
+        parse->basic.format.first = parse->basic.format.last; //crap-code
             //printff("\nREWINDING");
         btw_parse_recall(btw, parse);
     } else if(parse->basic.i + 1 >= vbtwlex_length(&btw->items)) {
@@ -442,18 +444,41 @@ ErrDecl btw_parse_format(BtwFormat *fmt, Str *str) { //{{{
     /* check which links I may have to do */
     Str splice = {0};
     Str link = {0};
+    printff("Checking tags...");
+    size_t iT = SIZE_MAX;
     for(;;) {
+        /* get splice */
         splice = str_splice(str, &splice, '[');
+        printff("splice <<%.*s>>", STR_F(&link));
         if(link.s) {
-            size_t iE = str_ch_pair(&splice, ']');
-            if(iE < str_length(&splice)) {
-                Str link_to = STR_LL(str_iter_begin(&splice), iE);
+            bool tag = (iT <= link.first);
+            size_t iE = str_ch_pair(&link, ']');
+            printff("found iE %zu / %zu", iE, str_length(&link));
+            if(iE < str_length(&link)) {
+                Str link_to = STR_LL(str_iter_at(&link, 1), iE - 1);
                 str_trim(&link_to);
-                TRY(vsstr_push_back(&fmt->links, &link_to), ERR_VEC_PUSH_BACK);
-                //printff("FMT-LINK %zu..%zu[%.*s]", link_to.first, link_to.last, STR_F(&link_to));
+                printff("TAG? %zu->%zu [%.*s] %s", iT, link.first, STR_F(&link_to), tag ? "true" : "false");
+                if(tag) {
+                    TRY(vsstr_push_back(&fmt->tags, &link_to), ERR_VEC_PUSH_BACK);
+                } else {
+                    TRY(vsstr_push_back(&fmt->links, &link_to), ERR_VEC_PUSH_BACK);
+                }
+                printff("FMT-LINK %zu..%zu[%.*s]", link_to.first, link_to.last, STR_F(&link_to));
             }
         }
+        /* check for any tags */
+        iT = str_ch(&link, ':', 0);
+        if(iT < str_length(&link)) {
+            Str search = STR_I0(link, iT + 1);
+            iT = str_find_nany(&link, &STR(" \t:")) + link.first;
+        } else {
+            iT = SIZE_MAX;
+        }
+        /* next ... */
         link = splice;
+        if(link.first) {
+            --link.first;
+        }
         //printff("TAG %zu..%zu:'%.*s'", tag.first, tag.last, STR_F(&tag));
         //printff("[%zu..%zu] %.*s", line.first, line.last, STR_F(&line));getchar();
         if(splice.first >= str->last) { break;}
@@ -468,38 +493,38 @@ error:
 ErrDecl btw_parse_link_end(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(parse);
-    TRYC(btw_parse_text(btw, parse, &parse->link, 0));
+    TRYC(btw_parse_text(btw, parse, &parse->basic.link, 0));
     int err = 0;
     //Str scratch = {0}; // TODO move into parse? -> less freeing
-    info(INFO_parsing_found_link, F("Link:", FG_BK_B) "%.*s", STR_F(&parse->link));
-    if(str_get_front(&parse->link) == '[') ++parse->link.first; /* TODO: this is stupid. should be assert or throw */
-    if(str_get_back(&parse->link) == ']') --parse->link.last; /* TODO: this is stupid. should be assert or throw */
-    str_trim(&parse->link);
+    info(INFO_parsing_found_link, F("Link:", FG_BK_B) "%.*s", STR_F(&parse->basic.link));
+    if(str_get_front(&parse->basic.link) == '[') ++parse->basic.link.first; /* TODO: this is stupid. should be assert or throw */
+    if(str_get_back(&parse->basic.link) == ']') --parse->basic.link.last; /* TODO: this is stupid. should be assert or throw */
+    str_trim(&parse->basic.link);
     Str *parent = vsstr_get_back(&parse->notes);
     /* check format */
     if(str_length(&parse->fmt)) {
-        //if(str_get_front(&parse->format) == '<') ++parse->format.first; /* TODO: this is stupid. should be assert or throw */
-        //if(str_get_back(&parse->format) == '>') --parse->format.last; /* TODO: this is stupid. should be assert or throw */
+        //if(str_get_front(&parse->basic.format) == '<') ++parse->basic.format.first; /* TODO: this is stupid. should be assert or throw */
+        //if(str_get_back(&parse->basic.format) == '>') --parse->basic.format.last; /* TODO: this is stupid. should be assert or throw */
         TRYC(btw_parse_format(&parse->fmt_parsed, &parse->fmt));
         ////printff("WITH FORMAT [%.*s]", STR_F(&parse->fmt));
         str_clear(&parse->link_scratch);
-        TRYC(str_fmt_fgbg(&parse->link_scratch, &parse->link, parse->fmt_parsed.color_fg ? &parse->fmt_parsed.fg : 0, parse->fmt_parsed.color_bg ? &parse->fmt_parsed.bg : 0, parse->fmt_parsed.bold, parse->fmt_parsed.italic, parse->fmt_parsed.underline));
+        TRYC(str_fmt_fgbg(&parse->link_scratch, &parse->basic.link, parse->fmt_parsed.color_fg ? &parse->fmt_parsed.fg : 0, parse->fmt_parsed.color_bg ? &parse->fmt_parsed.bg : 0, parse->fmt_parsed.bold, parse->fmt_parsed.italic, parse->fmt_parsed.underline));
         if(!parse->fmt_parsed.skip_link) {
             /* add */
-            ////printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->link));
+            ////printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->basic.link));
             TRYC(nexus_link(&parse->core, parent, &parse->link_scratch, 0));
         }
         //printff("add text.....");
         TRYC(nexus_add_text(&parse->core, parent, &parse->link_scratch));
     } else {
         /* add */
-        ////printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->link));
-        TRYC(nexus_link(&parse->core, parent, &parse->link, 0));
+        ////printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->basic.link));
+        TRYC(nexus_link(&parse->core, parent, &parse->basic.link, 0));
         //printff("add text.....");
-        TRYC(nexus_add_text(&parse->core, parent, &parse->link));
+        TRYC(nexus_add_text(&parse->core, parent, &parse->basic.link));
     }
     parse->fmt.first = parse->fmt.last; // clear format
-    parse->link.first = parse->link.last;
+    parse->basic.link.first = parse->basic.link.last;
 clean:
     //str_free(&scratch);
     return err;
@@ -513,9 +538,9 @@ ErrDecl btw_parse_note_begin(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(parse);
         /////if(parse->at_least_one_is_empty) return 0;
         /* was here -> moved down ??? */
-        info(INFO_parsing_found_note, F("NoteBegin (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&parse->notes), parse->snippet.first, STR_F(&parse->link));
+        info(INFO_parsing_found_note, F("NoteBegin (%zu) @ %zu:", FG_MG_B) "%.*s", vsstr_length(&parse->notes), parse->basic.snippet.first, STR_F(&parse->basic.link));
         /* try adding to nexus */
-        Str title = parse->link;
+        Str title = parse->basic.link;
         if(str_get_front(&title) == '[') ++title.first; /* TODO this is stupid.. */
         if(str_get_back(&title) == ']') --title.last;
         str_trim(&title);
@@ -523,7 +548,7 @@ ErrDecl btw_parse_note_begin(Btw *btw, BtwParse *parse) {/*{{{*/
         //printff("AT LEAST ONE IS EMPTY: %s", parse->at_least_one_is_empty ? "TRUE" : "FALSE");
         //////if(parse->at_least_one_is_empty) return 0;
         if(!parse->basic.at_least_one_is_empty) {
-            TRYC(btw_parse_text(btw, parse, &parse->link, &parse->snippet));
+            TRYC(btw_parse_text(btw, parse, &parse->basic.link, &parse->basic.snippet));
             //BtwFormat fmt = {0};
             if(str_length(&parse->fmt)) {
                 TRYC(btw_parse_format(&parse->fmt_parsed, &parse->fmt));
@@ -532,6 +557,12 @@ ErrDecl btw_parse_note_begin(Btw *btw, BtwParse *parse) {/*{{{*/
                     ////printff("LINK [%.*s] .. [%.*s]", STR_F(link_to), STR_F(&title));
                     TRYC(nexus_link(&parse->core, link_to, &title, 0));
                 }
+                for(size_t i = 0; i < vsstr_length(&parse->fmt_parsed.tags); ++i) {
+                    Str *link_to = vsstr_get_at(&parse->fmt_parsed.tags, i);
+                    TRYC(nexus_tag(&parse->core, &title, link_to, 0));
+                    //TRYC(nexus_tag
+                }
+                vsstr_clear(&parse->fmt_parsed.tags);
             }
             TRYC(nexus_create_if_nonexist(&parse->core, &title));
             if(vsstr_length(&parse->notes)) {
@@ -544,7 +575,7 @@ ErrDecl btw_parse_note_begin(Btw *btw, BtwParse *parse) {/*{{{*/
         parse->fmt.first = parse->fmt.last; // clear format
         /* moved this 2 lines down from above -- is it still correct ?? */
         vsstr_push_back(&parse->notes, &title);
-        //TRYC(btw_parse_text(btw, parse, &parse->link, &parse->snippet));
+        //TRYC(btw_parse_text(btw, parse, &parse->basic.link, &parse->basic.snippet));
         parse->basic.stage = BTW_PARSE_STRING;
 #if 0
         node.title = title;
@@ -552,7 +583,7 @@ ErrDecl btw_parse_note_begin(Btw *btw, BtwParse *parse) {/*{{{*/
         if(str_length(&title) && !tnode_has(&btw->parsed.nodes, &node)) {
             info(parsing_create_note, "Creating Note: %.*s", STR_F(&title));
             //str_clear(&node.title);
-            //TRYC(str_fmt(&node.title, "%.*s", STR_F(&parse->link)));
+            //TRYC(str_fmt(&node.title, "%.*s", STR_F(&parse->basic.link)));
             TRYC(node_create(&node, &title, 0, 0));
             TRY(nexus_insert_node(&btw->parsed.nodes, &node), ERR_LUTD_ADD);
         }
@@ -569,14 +600,14 @@ ErrDecl btw_parse_note(Btw *btw, BtwParse *parse) {/*{{{*/
     if(parse->basic.item->id == BTW_LEX_SCOPE_START) {
         TRYC(btw_parse_note_begin(btw, parse));
     } else if(parse->basic.item->id == BTW_LEX_WHITESPACE) {
-        //printf("PENDING:[%.*s]\n", STR_F(&parse->pending));
-        if(str_count_ch(&parse->pending, '\n') > 1) {
+        //printf("PENDING:[%.*s]\n", STR_F(&parse->basic.pending));
+        if(str_count_ch(&parse->basic.pending, '\n') > 1) {
             parse->basic.stage = BTW_PARSE_STRING;
             TRYC(btw_parse_link_end(btw, parse));
         }
     } else {
-        //printf("PENDING:[%.*s]\n", STR_F(&parse->pending));
-        //if(parse->basic.item->id == BTW_LEX_WHITESPACE && str_count_ch(&parse->pending, '\n') > 1) {
+        //printf("PENDING:[%.*s]\n", STR_F(&parse->basic.pending));
+        //if(parse->basic.item->id == BTW_LEX_WHITESPACE && str_count_ch(&parse->basic.pending, '\n') > 1) {
         //    parse->stage = BTW_PARSE_STRING;
         //}
         TRYC(btw_parse_link_end(btw, parse));
@@ -596,12 +627,12 @@ ErrDecl btw_parse_link_begin(Btw *btw, BtwParse *parse) {/*{{{*/
     } else if(parse->basic.item->id == BTW_LEX_LINK_END) {
         --parse->basic.stage_pair;
         if(!parse->basic.stage_pair) {
-            parse->link = parse->pending;
+            parse->basic.link = parse->basic.pending;
             parse->basic.stage = BTW_PARSE_NOTE;
             TRYC(btw_parse_format_end(btw, parse));
         }
     } else if(parse->basic.item->id == BTW_LEX_WHITESPACE) {
-        if(str_count_ch(&parse->pending, '\n') > 0) {
+        if(str_count_ch(&parse->basic.pending, '\n') > 0) {
             parse->basic.stage = BTW_PARSE_STRING;
         }
     }
@@ -651,11 +682,11 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw, BtwParse *parse) { //{{{
         //if(parse->basic.i_prev > parse->basic.i) { printff(F("REWIND HAPPENED", UL BOLD IT)); }
         parse->basic.i_prev = parse->basic.i;
         //printff("\nSTAGE [%u]", parse->stage);
-        //printf("\n");printf("%.20s", &btw->content.s[btw->content.first + parse->snippet.first]);platform_getch();
+        //printf("\n");printf("%.20s", &btw->content.s[btw->content.first + parse->basic.snippet.first]);platform_getch();
         /* fetch next item */
         parse->basic.item = vbtwlex_get_at(&btw->items, parse->basic.i);
-        parse->snippet.last = parse->basic.item->iE;
-        parse->pending.last = parse->basic.item->iE;
+        parse->basic.snippet.last = parse->basic.item->iE;
+        parse->basic.pending.last = parse->basic.item->iE;
         /* ... process ... */
         switch(parse->basic.stage) {
             case BTW_PARSE_STRING: {
@@ -675,7 +706,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw, BtwParse *parse) { //{{{
         TRYC(btw_parse_note_end(btw, parse));
         if(parse->basic.quit) break;
         /* prepare for next parse->basic.item */
-        parse->snippet.first = parse->basic.item->iE;
+        parse->basic.snippet.first = parse->basic.item->iE;
     } //printf("\n");
     TRYC(nexus_merge(&nexus->core, &parse->core, &btw->stats.links));
 clean:

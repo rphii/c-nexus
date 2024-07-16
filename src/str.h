@@ -82,6 +82,7 @@ size_t str_count_overlap(const Str *a, const Str *b, bool ignorecase);
 size_t str_find_substring(const Str *str, const Str *sub);
 size_t str_find_any(const Str *str, const Str *any);
 size_t str_find_nany(const Str *str, const Str *any);
+size_t str_find_rnany(const Str *str, const Str *any);
 // TODO size_t str_find_rnany(const Str *str, const Str *any);
 size_t str_nch(const Str *str, char ch, size_t n);
 size_t str_ch(const Str *str, char ch, size_t n);

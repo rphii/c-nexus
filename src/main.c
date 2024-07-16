@@ -80,7 +80,7 @@ int main(int argc, const char **argv)
     TRY(nexus_arg(&nexus, &arg), ERR_NEXUS_ARG);
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
     info(INFO_nexus_init, "Successfully initialized");
-    goto clean;
+    //goto clean;
     getchar();
     screen_enter();
 
