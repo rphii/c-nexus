@@ -177,8 +177,8 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
             /* append if next doesn't match previous */
             if(done_next) {
                 done_next = false;
-                //printff("id %u:[%zu-%zu]:[%.*s]", id_next, iE,i0, (int)(iE-i0), str_iter_at(str, i0));
-                TRYC(btw_lex_append(items, id_next, i0, iE, line_index));
+                //printff("id %u:[%zu..%zu]:[%.*s]", id_next, i0,iE, (int)(iE-i0), str_iter_at(str, i0));platform_getch();
+                TRYC(btw_lex_append(items, id_next, i0 + str->first, iE + str->first, line_index));
                 //printff("i0 %zu / iE %zu", i0, iE);
                 ASSERT(i0 < iE, "something went wrong, maybe lexing didn't actually happen? i0=%zu, iE=%zu, id=%u, line=%zu", i0, iE, id_next, line_index);
                 /* done, prepare next! */
@@ -189,8 +189,9 @@ ErrDecl btw_lex(VBtwLex *items, Str *str) { //{{{
         /////printf("\n");
     }
     if(iE > i0 && iE < str_length(str)) {
-        TRYC(btw_lex_append(items, id_next, i0, iE, line_index));
+        TRYC(btw_lex_append(items, id_next, i0 + str->first, iE + str->first, line_index));
     }
+    TRYC(btw_lex_append(items, BTW_LEX_END, iE + str->first, iE + str->first, line_index));
 #if 0
     size_t ii0 = 0;
     for(size_t i = 0; i < vbtwlex_length(items); ++i) {
@@ -336,6 +337,7 @@ ErrDecl btw_parse_format_end(Btw *btw, BtwParse *parse) {/*{{{*/
     if(str_length(&parse->format)) {
         TRYC(btw_parse_text(btw, parse, &parse->format, 0));
         info(INFO_parsing_found_format, F("Format:", FG_GN_B) "%.*s", STR_F(&parse->format));
+        parse->fmt = parse->format;
         parse->format.first = parse->format.last;
     }
     return 0;
@@ -359,22 +361,97 @@ void btw_parse_format_begin(Btw *btw, BtwParse *parse) {/*{{{*/
     }
 }/*}}}*/
 
+ErrDecl btw_parse_format(BtwFormat *fmt, Str *str) { //{{{
+    ASSERT_ARG(fmt);
+    ASSERT_ARG(str);
+    //if(str_get_front(str) != '<') THROW("Expected a '<'");
+    //if(str_get_back(str) != '>') THROW("Expected a '>'");
+    fmt->skip_link = (str_ch(str, '!', 0) < str_length(str));
+    fmt->bold = (str_ch(str, '*', 0) < str_length(str));
+    fmt->italic = (str_ch(str, '/', 0) < str_length(str));
+    fmt->underline = (str_ch(str, '_', 0) < str_length(str));
+    size_t i0_fg = str_ch(str, '#', 0);
+    size_t i0_bg = str_ch(str, '\\', 0);
+    if(i0_fg < str_length(str)) {
+        Str search = STR_I0(*str, i0_fg + 1);
+        size_t iE = str_find_nany(&search, &STR("0123456789abcdefABCDEF"));
+        //printff("Checked for valid fg: %zu / %zu", iE, str_length(&search));
+        if(iE >= 6) {
+            //printff("VALID FG [%.*s]", STR_F(&STR_LL(str_iter_begin(&search), 6)));
+            fmt->color_fg = true;
+            Str rd = STR_LL(str_iter_at(&search, 0), 2);
+            Str gn = STR_LL(str_iter_at(&search, 2), 2);
+            Str bl = STR_LL(str_iter_at(&search, 4), 2);
+            int a = str_to_u8(&rd, &fmt->fg.red, 16);
+            int b = str_to_u8(&gn, &fmt->fg.green, 16);
+            int c = str_to_u8(&bl, &fmt->fg.blue, 16);
+            if(a || b || c) THROW(ERR_UNREACHABLE);
+        }
+    }
+    if(i0_bg < str_length(str)) {
+        Str search = STR_I0(*str, i0_bg + 1);
+        size_t iE = str_find_nany(&search, &STR("0123456789abcdefABCDEF"));
+        //printff("Checked for valid bg: %zu / %zu", iE, str_length(&search));
+        if(iE >= 6) {
+            //printff("VALID BG [%.*s]", STR_F(&STR_LL(str_iter_begin(&search), 6)));
+            fmt->color_bg = true;
+            Str rd = STR_LL(str_iter_at(&search, 0), 2);
+            Str gn = STR_LL(str_iter_at(&search, 2), 2);
+            Str bl = STR_LL(str_iter_at(&search, 4), 2);
+            int a = str_to_u8(&rd, &fmt->bg.red, 16);
+            int b = str_to_u8(&gn, &fmt->bg.green, 16);
+            int c = str_to_u8(&bl, &fmt->bg.blue, 16);
+            if(a || b || c) THROW(ERR_UNREACHABLE);
+        }
+    }
+    /* check which links I may have to do */
+    Str splice = {0};
+    //str_splice(
+    return 0;
+error:
+    return -1;
+} //}}}
+
 #define ERR_btw_parse_link_end(...)     "failed parsing note end"
 ErrDecl btw_parse_link_end(Btw *btw, BtwParse *parse) {/*{{{*/
     ASSERT_ARG(btw);
     ASSERT_ARG(parse);
     TRYC(btw_parse_text(btw, parse, &parse->link, 0));
+    int err = 0;
+    Str scratch = {0}; // TODO move into parse? -> less freeing
     info(INFO_parsing_found_link, F("Link:", FG_BK_B) "%.*s", STR_F(&parse->link));
     if(str_get_front(&parse->link) == '[') ++parse->link.first; /* TODO: this is stupid. should be assert or throw */
     if(str_get_back(&parse->link) == ']') --parse->link.last; /* TODO: this is stupid. should be assert or throw */
     str_trim(&parse->link);
     Str *parent = vsstr_get_back(&parse->notes);
-    printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->link));
-    TRYC(nexus_link(&parse->core, parent, &parse->link, 0));
-    TRYC(nexus_add_text(&parse->core, parent, &parse->link));
-    return 0;
+    /* check format */
+    if(str_length(&parse->fmt)) {
+        //if(str_get_front(&parse->format) == '<') ++parse->format.first; /* TODO: this is stupid. should be assert or throw */
+        //if(str_get_back(&parse->format) == '>') --parse->format.last; /* TODO: this is stupid. should be assert or throw */
+        BtwFormat fmt = {0};
+        TRYC(btw_parse_format(&fmt, &parse->fmt));
+        printff("WITH FORMAT [%.*s]", STR_F(&parse->fmt));
+        str_clear(&scratch);
+        TRYC(str_fmt_fgbg(&scratch, &parse->link, fmt.color_fg ? &fmt.fg : 0, fmt.color_bg ? &fmt.bg : 0, fmt.bold, fmt.italic, fmt.underline));
+        if(!fmt.skip_link) {
+            /* add */
+            printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->link));
+            TRYC(nexus_link(&parse->core, parent, &scratch, 0));
+        }
+        TRYC(nexus_add_text(&parse->core, parent, &scratch));
+    } else {
+        /* add */
+        printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->link));
+        TRYC(nexus_link(&parse->core, parent, &parse->link, 0));
+        TRYC(nexus_add_text(&parse->core, parent, &parse->link));
+    }
+    parse->fmt.first = parse->fmt.last; // clear format
+    parse->link.first = parse->link.last;
+clean:
+    str_free(&scratch);
+    return err;
 error:
-    return -1;
+    ERR_CLEAN;
 }/*}}}*/
 
 #define ERR_btw_parse_note_begin(...)     "failed parsing note end"
@@ -510,7 +587,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw) { //{{{
         if(parse.i_prev > parse.i) { printff(F("RECALL HAPPENED", UL BOLD IT)); }
         parse.i_prev = parse.i;
         //printff("\nSTAGE [%u]", parse.stage);
-        //printf("\n");printf("%.20s", &btw->content.s[parse.snippet.first]);platform_getch();
+        //printf("\n");printf("%.20s", &btw->content.s[btw->content.first + parse.snippet.first]);platform_getch();
         /* fetch next item */
         parse.item = vbtwlex_get_at(&btw->items, parse.i);
         parse.snippet.last = parse.item->iE;

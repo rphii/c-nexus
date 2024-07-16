@@ -56,9 +56,9 @@ int main(int argc, const char **argv)
     info_enable(INFO_parsing_add_text, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
 
     info_enable(INFO_parsing_found_format, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
+    info_enable(INFO_parsing_found_link, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
 #if 0
     info_enable(INFO_parsing_found_text, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
-    info_enable(INFO_parsing_found_link, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
     info_enable(INFO_parsing_found_note, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
     info_enable(INFO_parsing_found_text, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
 

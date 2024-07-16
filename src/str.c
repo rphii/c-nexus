@@ -82,7 +82,7 @@ void str_trim(Str *str) //{{{
 
 // pseudo directory {{{
 
-void str_cstr(Str *str, char *cstr, size_t len) {
+void str_cstr(const Str *str, char *cstr, size_t len) {
     ASSERT_ARG(str);
     ASSERT_ARG(cstr);
     cstr[0] = 0;
@@ -284,7 +284,7 @@ void str_get_line(const Str *str, size_t *i0, size_t *iE) {/*{{{*/
     ASSERT(*i0 < *iE, "expected i0 (%zu) to be smaller than iE (%zu)", *i0, *iE);
 }/*}}}*/
 
-ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bool bold, bool italic, bool underline) {
+ErrDecl str_fmt_fgbg(Str *out, const Str *text, const Rgb8 *fg, const Rgb8 *bg, bool bold, bool italic, bool underline) {
     ASSERT_ARG(out);
     ASSERT_ARG(text);
     bool do_fmt = ((fg || bg || bold || italic || underline));
@@ -302,9 +302,9 @@ ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bo
     if(italic) offs += snprintf(fmt + offs, len - offs, "%s", IT);
     if(underline) offs += snprintf(fmt + offs, len - offs, "%s", UL);
     snprintf(fmt + offs, len - offs, "%s", FS_END);
-    if(fg && bg) { TRYC(str_fmt(out, fmt, fg[0], fg[1], fg[2], bg[0], bg[1], bg[2], STR_F(text))); }
-    else if(fg) {  TRYC(str_fmt(out, fmt, fg[0], fg[1], fg[2], STR_F(text))); }
-    else if(bg) {  TRYC(str_fmt(out, fmt, bg[0], bg[1], bg[2], STR_F(text))); }
+    if(fg && bg) { TRYC(str_fmt(out, fmt, fg->red, fg->green, fg->blue, bg->red, bg->green, bg->blue, STR_F(text))); }
+    else if(fg) {  TRYC(str_fmt(out, fmt, fg->red, fg->green, fg->blue, STR_F(text))); }
+    else if(bg) {  TRYC(str_fmt(out, fmt, bg->red, bg->green, bg->blue, STR_F(text))); }
     else {         TRYC(str_fmt(out, fmt, STR_F(text))); }
     return 0;
 error:
@@ -688,6 +688,23 @@ Str str_splice(Str *to_splice, Str *prev_splice, char sep) {/*{{{*/
     result.last = result.first + str_ch(&result, sep, 0);
     return result;
 }/*}}}*/
+
+int str_to_u8(const Str *str, uint8_t *num, int base) { //{{{
+    ASSERT_ARG(str);
+    int result = -1; // assume incorrect number
+    char cstr[4];
+    char *endptr = 0;
+    str_cstr(str, cstr, 4);
+    unsigned long number = strtoul(cstr, &endptr, base);
+    // TODO: errno ...
+    if(endptr && *endptr == 0) {
+        result = 0;
+        if(num) {
+            *num = (uint8_t)number;
+        }
+    }
+    return result;
+} //}}}
 
 ErrDecl str_remove_escapes(Str *restrict out, Str *restrict in)
 {

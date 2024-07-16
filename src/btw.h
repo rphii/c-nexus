@@ -19,6 +19,7 @@ typedef enum {
     BTW_LEX_LINK_END,
     BTW_LEX_FORMAT_START,
     BTW_LEX_FORMAT_END,
+    BTW_LEX_END,
     /* ids above */
     BTW_LEX__COUNT
 } BtwLexList;
@@ -53,6 +54,7 @@ typedef struct BtwParse {
     Str format;
     Str text;
     Str link;
+    Str fmt;
     BtwParseList stage;
     size_t stage_pair;
     size_t format_i0;
@@ -64,6 +66,18 @@ typedef struct BtwParse {
     bool at_least_one_is_empty;
     NexusCore core;
 } BtwParse;
+
+typedef struct BtwFormat {
+    bool skip_link;
+    bool bold;
+    bool italic;
+    bool underline;
+    bool strikethrough;
+    bool color_fg;
+    bool color_bg;
+    Rgb8 fg;
+    Rgb8 bg;
+} BtwFormat;
 
 typedef struct BtwLink {
     Str str;
@@ -118,6 +132,9 @@ typedef struct BtwExec {
  * cy   cyan        cy-b    cyan-bright
  * wt   white       wt-b    white-bright
  */
+
+#define ERR_btw_parse_format(x, str) "failed parsing format '%.*s'", STR_F(str)
+ErrDecl btw_parse_format(BtwFormat *fmt, Str *str);
 
 void btwlex_free(BtwLex *lex);
 

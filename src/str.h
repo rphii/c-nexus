@@ -8,7 +8,7 @@
 
 #include "err.h"
 
-typedef uint8_t V3u8[3];
+//typedef uint8_t V3u8[3];
 
 /* configuration, inclusion and de-configuration of vector */
 
@@ -16,6 +16,7 @@ typedef uint8_t V3u8[3];
 #define VEC_SETTINGS_KEEP_ZERO_END 1
 #define VEC_SETTINGS_STRUCT_ITEMS s
 #include "vec.h"
+#include "rgb.h"
 
 VEC_INCLUDE(Str, str, char, BY_VAL);
 
@@ -46,7 +47,7 @@ void str_triml(Str *str);
 void str_trimr(Str *str);
 void str_trim(Str *str);
 
-void str_cstr(Str *str, char *cstr, size_t len);
+void str_cstr(const Str *str, char *cstr, size_t len);
 void str_clear_to_last(Str *str);
 
 #define ERR_str_fmt_va(str, format, argp) "failed formatting string"
@@ -69,7 +70,7 @@ ErrDecl str_fmt_line(Str *line, const Str *str, size_t i0, size_t *iE);
 void str_get_line(const Str *str, size_t *i0, size_t *iE);
 
 #define ERR_str_fmt_fgbg(out, text, ...) "failed applying foreground/background to string '%.*s'", STR_F(text)
-ErrDecl str_fmt_fgbg(Str *out, const Str *text, const V3u8 fg, const V3u8 bg, bool bold, bool italic, bool underline);
+ErrDecl str_fmt_fgbg(Str *out, const Str *text, const Rgb8 *fg, const Rgb8 *bg, bool bold, bool italic, bool underline);
 
 #define ERR_STR_GET_STR     "failed getting string from user"
 ErrDecl str_get_str(Str *str);
@@ -97,6 +98,8 @@ size_t str_irch(const Str *str, size_t iE, char ch, size_t n);
 size_t str_hash(const Str *a);
 size_t str_hash_ci(const Str *a);
 size_t str_hash_esci(const Str *a);
+
+int str_to_u8(const Str *str, uint8_t *num, int base);
 
 Str str_splice(Str *to_splice, Str *prev_splice, char sep);
 

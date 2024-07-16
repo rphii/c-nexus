@@ -378,7 +378,7 @@ ErrDecl nexus_add_text(NexusCore *core, Str *title, Str *text) { //{{{
     //}
     //printf("HELLO\n");
     if(str_length(title)) {
-        info(INFO_parsing_add_text, "Adding Text: '%.*s' -> '%.*s'", STR_F(title), STR_F(text));
+        info(INFO_parsing_add_text, "Adding Text: '%.*s' <- '%.*s'", STR_F(title), STR_F(text));
         size_t ii, jj;
         TRY(tnode_find(&core->nodes, &node, &ii, &jj), ERR_LUTD_FIND ": '%.*s'", STR_F(title));
         Node *ref = core->nodes.buckets[ii].items[jj];

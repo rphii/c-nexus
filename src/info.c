@@ -52,7 +52,7 @@ void info_handle_prev(InfoList id) {
             if(s_info.id_prev == id) {
                 //info_check(id, false);
             } else if(s_info.status[s_info.id_prev] == INFO_STATUS_PENDING) {
-                if(output) ERR_PRINTF(F("(?)", FG_BL_B) "\n");
+                if(output) ERR_PRINTF(F("(↓)", FG_BL_B) "\n");
             }
         } break;
         case INFO_TYPE_LOADING: { ABORT("not implemented"); }
@@ -81,7 +81,7 @@ void info_check(InfoList id, bool status) {
                 if(output) {
                     char *buf = status ? F("ok", FG_GN_B) : F("fail", FG_RD_B);
                     if(s_info.id_prev != id) {
-                        ERR_PRINTF("%.*s " F("..", FG_BK_B) " " F("(!)", FG_BL_B) " ", STR_F(info_query_last(id)));
+                        ERR_PRINTF("%.*s " F("..", FG_BK_B) " " F("(↑)", FG_BL_B) " ", STR_F(info_query_last(id)));
                     }
                     ERR_PRINTF("%s\n", buf);
                 }

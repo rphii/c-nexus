@@ -11,6 +11,9 @@ OPTIMIZE := #-march=native -O3 -fdevirtualize-at-ltrans -fipa-pta -fno-semantic-
 		   -fvpt -ftracer -fpeel-loops -fsplit-loops -funswitch-loops -fversion-loops-for-strides -fstdarg-opt -ffunction-sections -fdata-sections -ftoplevel-reorder \
 		   #-fprofile-partial-training -fauto-profile -fbranch-probabilities \
 
+JEMALLOC := -I`jemalloc-config --includedir` \
+			-L`jemalloc-config --libdir` -Wl,-rpath,`jemalloc-config --libdir` \
+			-ljemalloc `jemalloc-config --libs`
 
 GIT_VERSION := "$(shell git describe --abbrev=4 --dirty --always --tags)"
 CC      := gcc
@@ -18,6 +21,7 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   -Wno-unused-parameter \
 		   -DPROC_COUNT=$(shell nproc --all) \
 		   -rdynamic -Og -ggdb3 \
+		   $(JEMALLOC) \
 		   ##############\
 		   -O2 -march=native -mtune=native -DNDEBUG \
 		   ${OPTIMIZE} \
@@ -41,6 +45,7 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
+		   $(JEMALLOC) \
 		   ##############\
 		   -fsanitize=address -rdynamic \
 		   ${OPTIMIZE} \
