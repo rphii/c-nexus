@@ -272,16 +272,17 @@ void str_get_line(const Str *str, size_t *i0, size_t *iE) {/*{{{*/
     ASSERT_ARG(str);
     ASSERT_ARG(i0);
     ASSERT_ARG(iE);
-    size_t iE_temp = str_ch(&STR_I0(*str, *i0), '\n', 0);
+    size_t iE_temp = str_ch(&STR_I0(*str, *i0), '\n', 0) + *i0;
     Str fake_end = STR_IE(*str, iE_temp);
     size_t i0_temp = str_rch(&fake_end, '\n', 0) + 1;
-    if(i0_temp >= str_length(&fake_end)) {
+    if(i0_temp > str_length(&fake_end)) {
+        *iE = iE_temp;
         *i0 = 0;
     } else {
+        *iE = iE_temp;
         *i0 = i0_temp;
     }
-    *iE = iE_temp;
-    ASSERT(*i0 < *iE, "expected i0 (%zu) to be smaller than iE (%zu)", *i0, *iE);
+    ASSERT(*i0 <= *iE, "expected i0 (%zu) to be smaller than iE (%zu)", *i0, *iE);
 }/*}}}*/
 
 ErrDecl str_fmt_fgbg(Str *out, const Str *text, const Rgb8 *fg, const Rgb8 *bg, bool bold, bool italic, bool underline) {
@@ -317,11 +318,21 @@ int str_cmp(const Str *a, const Str *b) //{{{
 {
     ASSERT_ARG(a);
     ASSERT_ARG(b);
+    //return strcmp(a->s, b->s);
+    size_t la = str_length(a);
+    size_t lb = str_length(b);
     int result = -1;
-    if(str_length(a) != str_length(b)) {
-        return result;
+    //printff("CMP %zu[%.*s] %zu[%.*s]", str_length(a), STR_F(a), str_length(b), STR_F(b));
+    if(la != lb) {
+        size_t less = la < lb ? la : lb;
+        result = memcmp(str_iter_begin(a), str_iter_begin(b), less);
+        if(!result) {
+            result = la - lb;
+        }
+    } else {
+        result = memcmp(str_iter_begin(a), str_iter_begin(b), la);
     }
-    result = memcmp(str_iter_begin(a), str_iter_begin(b), str_length(a));
+    //printff("%.*s<=>%.*s === %i", STR_F(a), STR_F(b), result);
     return result;
 } //}}}
 
@@ -680,14 +691,15 @@ Str str_splice(Str *to_splice, Str *prev_splice, char sep) {/*{{{*/
     ASSERT_ARG(to_splice);
     Str result = *to_splice;
     if(prev_splice && prev_splice->s) {
-        result.first += str_ch_from(to_splice, sep, 0, prev_splice->first); // TODO is this really += ??
-        if(result.first < str_length(to_splice)) {
+        result.first += str_ch_from(to_splice, sep, 0, str_iter_begin(prev_splice) - str_iter_begin(to_splice)); // TODO is this really += ??
+        if((size_t)(str_iter_begin(&result) - str_iter_begin(to_splice)) < str_length(to_splice)) {
             ++result.first;
         }
     }
     result.last = result.first + str_ch(&result, sep, 0);
     return result;
 }/*}}}*/
+
 
 int str_to_u8(const Str *str, uint8_t *num, int base) { //{{{
     ASSERT_ARG(str);

@@ -8,7 +8,7 @@
 
 #include "err.h"
 
-//typedef uint8_t V3u8[3];
+#include "rgb.h"
 
 /* configuration, inclusion and de-configuration of vector */
 
@@ -16,7 +16,6 @@
 #define VEC_SETTINGS_KEEP_ZERO_END 1
 #define VEC_SETTINGS_STRUCT_ITEMS s
 #include "vec.h"
-#include "rgb.h"
 
 VEC_INCLUDE(Str, str, char, BY_VAL);
 

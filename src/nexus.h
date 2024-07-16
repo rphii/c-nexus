@@ -141,8 +141,8 @@ ErrDecl nexus_create_if_nonexist(NexusCore *core, Str *title);
 #define ERR_nexus_add_text(nexus, title, ...) "failed adding text to node: '%.*s'", STR_F(title)
 ErrDecl nexus_add_text(NexusCore *core, Str *title, Str *text);
 
-#define ERR_nexus_fuse(...) "failed fusing nexus cores"
-ErrDecl nexus_fuse(NexusCore *dst, NexusCore *src, size_t *links);
+#define ERR_nexus_merge(...) "failed fusing nexus cores"
+ErrDecl nexus_merge(NexusCore *dst, NexusCore *src, size_t *links);
 
 int nexus_current_view_arg(Nexus *nexus);
 

@@ -48,25 +48,6 @@ typedef struct BtwLex {
     BtwLexList id;
 } BtwLex;
 
-typedef struct BtwParse {
-    Str pending;
-    Str snippet;
-    Str format;
-    Str text;
-    Str link;
-    Str fmt;
-    BtwParseList stage;
-    size_t stage_pair;
-    size_t format_i0;
-    size_t i;
-    size_t i_prev;
-    BtwLex *item;
-    VsStr notes;
-    bool quit;
-    bool at_least_one_is_empty;
-    NexusCore core;
-} BtwParse;
-
 typedef struct BtwFormat {
     bool skip_link;
     bool bold;
@@ -77,7 +58,31 @@ typedef struct BtwFormat {
     bool color_bg;
     Rgb8 fg;
     Rgb8 bg;
+    VsStr links;
 } BtwFormat;
+
+typedef struct BtwParse {
+    NexusCore core;
+    Str pending;
+    Str snippet;
+    Str format;
+    Str text;
+    Str link;
+    Str link_scratch;
+    Str fmt;
+    VsStr notes;
+    BtwFormat fmt_parsed;
+    struct {
+        BtwLex *item;
+        BtwParseList stage;
+        size_t stage_pair;
+        size_t format_i0;
+        size_t i;
+        size_t i_prev;
+        bool quit;
+        bool at_least_one_is_empty;
+    } basic;
+} BtwParse;
 
 typedef struct BtwLink {
     Str str;
@@ -120,6 +125,7 @@ typedef struct Nexus Nexus;
 typedef struct BtwExec {
     struct Nexus *nexus;
     Btw *btw;
+    BtwParse *parse;
 } BtwExec;
 
 /* color strings
@@ -135,24 +141,28 @@ typedef struct BtwExec {
 
 #define ERR_btw_parse_format(x, str) "failed parsing format '%.*s'", STR_F(str)
 ErrDecl btw_parse_format(BtwFormat *fmt, Str *str);
+void btw_format_free(BtwFormat *fmt);
 
 void btwlex_free(BtwLex *lex);
 
 void btw_free(Btw *parse);
+void btw_parse_free(BtwParse *parse);
 
 bool btw_parse_color(Btw *btw, const Str *str, V3u8 col);
 
-#define ERR_btw_lex(items, str) "failed lexing string"
+#define ERR_btw_lex(...) "failed lexing string"
 ErrDecl btw_lex(VBtwLex *btw, Str *str);
-#define ERR_btw_parse(nexus, items) "failed parsing"
-ErrDecl btw_parse(Nexus *nexus, Btw *btw);
+#define ERR_btw_parse(...) "failed parsing"
+//ErrDecl btw_parse(Nexus *nexus, Btw *btw);
+ErrDecl btw_parse(Nexus *nexus, Btw *btw, BtwParse *parse);
 
 ErrDecl btw_parse_exec(Str *filename, void *args);
 
-#define ERR_btw_file_prepare(nexus, filename, btw) "failed preparing file '%.*s'", STR_F(filename)
+#define ERR_btw_file_prepare(nexus, filename, ...) "failed preparing file '%.*s'", STR_F(filename)
 ErrDecl btw_file_prepare(Nexus *nexus, Str *filename, Btw *btw);
-#define ERR_btw_parse_file(nexus, filename, btw) "failed parsing file '%.*s'", STR_F(filename)
-ErrDecl btw_parse_file(struct Nexus *nexus, Str *filename, Btw *btw);
+#define ERR_btw_parse_file(nexus, filename, ...) "failed parsing file '%.*s'", STR_F(filename)
+//ErrDecl btw_parse_file(struct Nexus *nexus, Str *filename, Btw *btw);
+ErrDecl btw_parse_file(Nexus *nexus, Str *filename, Btw *btw, BtwParse *parse);
 
 #define BTW_H
 #endif

@@ -58,14 +58,17 @@ int main(int argc, const char **argv)
     info_enable(INFO_parsing_found_format, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
     info_enable(INFO_parsing_found_link, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
 #if 0
+
+
+
     info_enable(INFO_parsing_found_text, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
     info_enable(INFO_parsing_found_note, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
     info_enable(INFO_parsing_found_text, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
 
 
     info_enable(INFO_parsing_skip_too_large, INFO_LEVEL_ALL);
-    //info_enable(INFO_parsing_skip_incorrect_extension, INFO_LEVEL_ALL);
-    //info_enable(INFO_skipping_nofile_nodir, INFO_LEVEL_ALL);
+    info_enable(INFO_parsing_skip_incorrect_extension, INFO_LEVEL_ALL);
+    info_enable(INFO_skipping_nofile_nodir, INFO_LEVEL_ALL);
 #endif
 
     TRY(platform_colorprint_init(), ERR_PLATFORM_COLORPRINT_INIT);
@@ -77,8 +80,8 @@ int main(int argc, const char **argv)
     TRY(nexus_arg(&nexus, &arg), ERR_NEXUS_ARG);
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
     info(INFO_nexus_init, "Successfully initialized");
+    goto clean;
     getchar();
-    //goto clean;
     screen_enter();
 
     while(!nexus.quit) {

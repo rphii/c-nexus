@@ -161,6 +161,7 @@ ErrDecl file_exec(Str *dirname, VStr *subdirs, FileFunc exec, void *args) {
         }
         char filename[FILE_PATH_MAX] = {0};
         while ((dp = readdir(dir)) != NULL) {
+            //printf("dp = %s ==> ", dp->d_name);
             if(dp->d_name[0] == '.') continue; // TODO add an argument for this
             if(!str_cmp(&STR_L(dp->d_name), &STR(".")) || !str_cmp(&STR_L(dp->d_name), &STR(".."))) continue;
             size_t len2 = snprintf(filename, FILE_PATH_MAX, "%.*s/%s", (int)len, cdir, dp->d_name);
@@ -169,10 +170,12 @@ ErrDecl file_exec(Str *dirname, VStr *subdirs, FileFunc exec, void *args) {
             Str filename2 = STR_LL(filename, len2);
             FileTypeList type2 = file_get_type(&filename2);
             if(type2 == FILE_TYPE_DIR) {
+                //printff("is dir (push to subdirs; len %zu)", vstr_length(subdirs));
                 TRYC(str_fmt(&subdir, "%.*s", STR_F(&filename2)));
                 TRY(vstr_push_back(subdirs, &subdir), ERR_VEC_PUSH_BACK);
                 str_zero(&subdir);
             } else if(type2 == FILE_TYPE_FILE) {
+                //printff("execute function");
                 TRY(exec(&filename2, args), "an error occured while executing the function");
             } else {
                 info(INFO_skipping_nofile_nodir, "skipping '%.*s' since no regular file nor directory", STR_F(dirname));

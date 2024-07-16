@@ -393,7 +393,7 @@ error:
     return -1;
 } //}}}
 
-ErrDecl nexus_fuse(NexusCore *dst, NexusCore *src, size_t *links) { //{{{
+ErrDecl nexus_merge(NexusCore *dst, NexusCore *src, size_t *links) { //{{{
     ASSERT_ARG(dst);
     ASSERT_ARG(src);
     /* add to main nexus */
@@ -1117,6 +1117,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
     int err = 0;
     Str filename = {0};
     Btw btw = {0};
+    BtwParse parse = {0};
     if (!vsstr_length(files)) {
         Node *root;
         TRY(nexus_insert_node(&nexus->core, &root, &STR(NEXUS_ROOT), CMD_NONE, &STR("Welcome to " F("c-nexus", BOLD) "\n\n"
@@ -1136,7 +1137,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
 
         TRY(content_build(nexus, root), ERR_CONTENT_BUILD);
     } else {
-        BtwExec exec_args = {.nexus = nexus, .btw = &btw};
+        BtwExec exec_args = {.nexus = nexus, .btw = &btw, .parse = &parse};
         for(size_t i = 0; i < vsstr_length(files); ++i) {
             Str *filename = vsstr_get_at(files, i);
             TRYC(file_exec(filename, &btw.dirfiles, btw_parse_exec, &exec_args));
@@ -1163,7 +1164,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
         //for(size_t i = 0; i < vstr_length(&btw.dirfiles); ++i) {
             //Str *filename = vstr_get_at(&btw.dirfiles, i);
             vstr_pop_back(&btw.dirfiles, &filename);
-            memset(btw.dirfiles.items[vstr_length(&btw.dirfiles)], 0, sizeof(Str));
+            memset(btw.dirfiles.items[vstr_length(&btw.dirfiles)], 0, sizeof(Str)); // TODO: this should probably happen in my vector!
             TRYC(file_exec(&filename, &btw.dirfiles, btw_parse_exec, &exec_args));
             str_free(&filename);
 #else
@@ -1208,6 +1209,7 @@ int nexus_build(Nexus *nexus, VsStr *files) //{{{
 clean:
     str_free(&filename);
     btw_free(&btw);
+    btw_parse_free(&parse);
     return err;
 error:
     ERR_CLEAN;

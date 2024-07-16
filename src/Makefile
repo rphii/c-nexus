@@ -1,6 +1,6 @@
 #### Start of system configuration section. ####
 
-OPTIMIZE := #-march=native -O3 -fdevirtualize-at-ltrans -fipa-pta -fno-semantic-interposition -flto=auto -pipe
+OPTIMIZE := -march=native -O3 -fdevirtualize-at-ltrans -fipa-pta -fno-semantic-interposition -flto=auto -pipe
 
 			#\
 			-fmerge-all-constants -fgcse-lm -fgcse-sm -fgcse-las -fgcse-after-reload -flive-range-shrinkage -fsched-pressure \
@@ -20,10 +20,10 @@ CC      := gcc
 CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   -Wno-unused-parameter \
 		   -DPROC_COUNT=$(shell nproc --all) \
-		   -rdynamic -Og -ggdb3 \
-		   $(JEMALLOC) \
+		   $(OPTIMIZE) $(JEMALLOC) \
 		   ##############\
 		   -O2 -march=native -mtune=native -DNDEBUG \
+		   -rdynamic -Og -ggdb3 \
 		   ${OPTIMIZE} \
 		   -O3 -march=native -DNDEBUG \
 		   -pg -rdynamic \
@@ -45,7 +45,7 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   $(JEMALLOC) \
+		   $(OPTIMIZE) $(JEMALLOC) \
 		   ##############\
 		   -fsanitize=address -rdynamic \
 		   ${OPTIMIZE} \
