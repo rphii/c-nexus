@@ -136,26 +136,26 @@ int nexus_arg(Nexus *nexus, Arg *arg) /*{{{*/
     }
     switch(arg->view) {
         case SPECIFY_NONE:
-        case SPECIFY_NORMAL: nexus->config.view = VIEW_NORMAL; break;
-        case SPECIFY_SEARCH_ALL: nexus->config.view = VIEW_SEARCH_ALL; break;
-        case SPECIFY_SEARCH_SUB: nexus->config.view = VIEW_SEARCH_SUB; break;
-        case SPECIFY_ICON: nexus->config.view = VIEW_ICON; break;
+        case SPECIFY_OPTION_NORMAL: nexus->config.view = VIEW_NORMAL; break;
+        case SPECIFY_OPTION_SEARCH_ALL: nexus->config.view = VIEW_SEARCH_ALL; break;
+        case SPECIFY_OPTION_SEARCH_SUB: nexus->config.view = VIEW_SEARCH_SUB; break;
+        case SPECIFY_OPTION_ICON: nexus->config.view = VIEW_ICON; break;
         default: THROW(ERR_UNREACHABLE ", %u", arg->view);
     }
     switch(arg->show_preview) {
-        case SPECIFY_YES: case SPECIFY_TRUE: {
+        case SPECIFY_OPTION_YES: case SPECIFY_OPTION_TRUE: case SPECIFY_OPTION_Y: {
             nexus->config.show_preview = true;
         } break;
-        case SPECIFY_NO: case SPECIFY_FALSE: {
+        case SPECIFY_OPTION_NO: case SPECIFY_OPTION_FALSE: case SPECIFY_OPTION_N: {
             nexus->config.show_preview = false;
         } break;
         default: THROW(ERR_UNREACHABLE ", %u", arg->view);
     }
     switch(arg->show_description) {
-        case SPECIFY_YES: case SPECIFY_TRUE: {
+        case SPECIFY_OPTION_YES: case SPECIFY_OPTION_TRUE: case SPECIFY_OPTION_Y: {
             nexus->config.show_desc = true;
         } break;
-        case SPECIFY_NO: case SPECIFY_FALSE: {
+        case SPECIFY_OPTION_NO: case SPECIFY_OPTION_FALSE: case SPECIFY_OPTION_N: {
             nexus->config.show_desc = false;
         } break;
         default: THROW(ERR_UNREACHABLE ", %u", arg->view);
@@ -271,7 +271,8 @@ void nexus_free(Nexus *nexus) //{{{
     //tnodeicon_free(&nexus->nodesicon);
     vview_free(&nexus->views);
     node_free(&nexus->findings);
-    node_free(&nexus->tags);
+    str_free(&nexus->tags.title);
+    //node_free(&nexus->tags);
     view_free(&nexus->view);
     //node_free(&nexus->nodeicon);
     str_free(&nexus->config.entry);
@@ -374,10 +375,13 @@ ErrDecl nexus_create_if_nonexist(NexusCore *core, Str *title, size_t *count) {
     if(str_length(title) && !tnode_has(&core->nodes, &node)) {
         info(INFO_parsing_create_note, "Creating Note: '%.*s'", STR_F(title));
         TRYC(node_create(&node, title, 0, 0));
-        TRY(tnode_add_count(&core->nodes, &node, count ? *count : 1), ERR_LUTD_ADD); // abuse count to sort by order of creation (later)
+        size_t count_real = (count && (size_t)count < SIZE_MAX) ? *count : 1; // THIS IS SCUFFED
+        count_real -= ((size_t)count == SIZE_MAX) ? 1 : 0;
+        //printff("CREATED [%.*s] @ %zu", STR_F(title), count_real);
+        TRY(tnode_add_count(&core->nodes, &node, count_real), ERR_LUTD_ADD); // abuse count to sort by order of creation (later)
         //printff("ADDED [%.*s] @ %zu", STR_F(title), count ? *count : 1);
         //if(count) getchar();
-        if(count) ++(*count);
+        if(count && (size_t)count < SIZE_MAX) ++(*count);
         /* TODO link with parent!!! */
         //TRYC(node_create(
         //TRY(nexus_insert_node(core, &panchor, title, 0, 0), ERR_LUTD_ADD);
@@ -418,6 +422,7 @@ ErrDecl nexus_merge(NexusCore *dst, NexusCore *src, size_t *links) { //{{{
     // TODO: pass in links (+notes) as stats struct (new)!!
     ASSERT_ARG(dst);
     ASSERT_ARG(src);
+    int err = 0;
     VrNode dump = {0};
     size_t *counts = 0;
     TRY(tnode_dump(&src->nodes, &dump.items, &counts, &dump.last), ERR_LUTD_DUMP);
@@ -503,9 +508,12 @@ ErrDecl nexus_merge(NexusCore *dst, NexusCore *src, size_t *links) { //{{{
         }
     }
 #endif
-    return 0;
+clean:
+    vrnode_free(&dump);
+    free(counts);
+    return err;
 error:
-    return -1;
+    ERR_CLEAN;
 } //}}}
 
 int nexus_userinput(Nexus *nexus, int key) /*{{{*/
@@ -968,6 +976,7 @@ ErrDecl nexus_link(NexusCore *core, Str *src, Str *dest, size_t *linked, size_t 
     if(!str_cmp(src, dest)) return 0;
     Node node_src = { .title = *src };
     Node node_dest = { .title = *dest };
+    //printff("LINK [%.*s] <-> [%.*s]", STR_F(src), STR_F(dest));
     TRYC(nexus_create_if_nonexist(core, src, count));
     TRYC(nexus_create_if_nonexist(core, dest, count));
 #if 0
@@ -1057,12 +1066,51 @@ ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged, size_t *c
     if(!str_length(src)) return 0;
     if(!str_length(tag)) node_tag = empty;
     if(!str_cmp(src, tag)) return 0;
-    TRYC(nexus_link(core, tag, src, tagged, count));
+    TRYC(nexus_link(core, tag, src, tagged, (size_t *)SIZE_MAX));
     size_t i1 = 0, j1 = 0;
     TRY(tnode_find(&core->nodes, &node_tag, &i1, &j1), "couldn't find '%.*s'", STR_F(&node_tag.title));
     Node *ev_tag = core->nodes.buckets[i1].items[j1];
     ev_tag->type = NODE_TYPE_ICON;
-    TRYC(nexus_tag(core, tag, &STR(NEXUS_TAG_IDENTIFIER), tagged, count));
+    TRYC(nexus_tag(core, tag, &STR(NEXUS_TAG_IDENTIFIER), tagged, (size_t *)SIZE_MAX));
+#if 0
+    ASSERT_ARG(core);
+    ASSERT_ARG(src);
+    ASSERT_ARG(tag);
+    Node empty = { .title = STR("-") };
+    Node node_src = { .title = *src };
+    Node node_tag = { .title = *tag };
+    if(!str_length(src)) return 0;
+    if(!str_length(tag)) node_tag = empty;
+    if(!str_cmp(src, tag)) return 0;
+    TRYC(nexus_link(core, tag, src, tagged));
+#if 1
+    size_t i0 = 0, i1 = 0, j0 = 0, j1 = 0;
+    //TRY(tnode_find(&core->nodes, &node_src, &i0, &j0), "couldn't find '%.*s'", STR_F(&node_src.title));
+    TRY(tnode_find(&core->nodes, &node_tag, &i1, &j1), "couldn't find '%.*s'", STR_F(&node_tag.title));
+    Node *ev_tag = core->nodes.buckets[i1].items[j1];
+    ev_tag->type = NODE_TYPE_ICON;
+    TRYC(nexus_tag(core, tag, &STR(NEXUS_TAG_IDENTIFIER), tagged));
+#else
+    if(!tnode_has(&core->nodes, &node_src)) {
+        Node temp;
+        TRY(node_copy(&temp, &node_src), ERR_NODE_COPY);
+        TRY(tnode_add_count(&core->nodes, &temp, 0), ERR_LUTD_ADD);
+    }
+    if(!node_cmp(&node_src, &node_tag)) return 0; // TODO could just be str_cmp ??
+    if(!tnode_has(&core->nodes, &node_tag)) {
+        Node temp;
+        TRY(node_copy(&temp, &node_tag), ERR_NODE_COPY);
+        TRY(tnode_add_count(&core->nodes, &temp, 0), ERR_LUTD_ADD);
+    }
+    size_t i0 = 0, i1 = 0, j0 = 0, j1 = 0;
+    TRY(tnode_find(&core->nodes, &node_src, &i0, &j0), "couldn't find '%.*s'", STR_F(&node_src.title));
+    TRY(tnode_find(&core->nodes, &node_tag, &i1, &j1), "couldn't find '%.*s'", STR_F(&node_tag.title));
+    Node *ev_src = core->nodes.buckets[i0].items[j0];
+    Node *ev_tag = core->nodes.buckets[i1].items[j1];
+    /* check for duplicates - we should be fine to only check one half */
+    // TODO: actually implement
+#endif
+#endif
     return 0;
 error:
     return -1;
@@ -1271,10 +1319,10 @@ int nexus_current_view_arg(Nexus *nexus) /* {{{ */
 {
     ViewList id = nexus->view.id;
     switch(id) {
-        case VIEW_NORMAL: return SPECIFY_NORMAL;
-        case VIEW_ICON: return SPECIFY_ICON;
-        case VIEW_SEARCH_ALL: return SPECIFY_SEARCH_ALL;
-        case VIEW_SEARCH_SUB: return SPECIFY_SEARCH_SUB;
+        case VIEW_NORMAL: return SPECIFY_OPTION_NORMAL;
+        case VIEW_ICON: return SPECIFY_OPTION_ICON;
+        case VIEW_SEARCH_ALL: return SPECIFY_OPTION_SEARCH_ALL;
+        case VIEW_SEARCH_SUB: return SPECIFY_OPTION_SEARCH_SUB;
         default: ABORT("can't translate view id (%i) to argument view id! perhaps it's argument's behavior is missing! (this is stupid)", id); return SPECIFY_NONE; /* tcc warns me if I don't have this */
     }
 } /* }}} */

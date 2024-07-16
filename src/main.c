@@ -30,6 +30,7 @@ void sigint_handler(int sig_no)
     //printf("CTRL-C pressed\n");
     sigaction(SIGINT, &old_action, NULL);
     kill(0, SIGINT);
+    // TODO: is it possible to somehow clear memory from here on ???
 }
 
 
@@ -47,10 +48,10 @@ int main(int argc, const char **argv)
     Nexus nexus = {0};
 
     info_disable_all(INFO_LEVEL_ALL);
+
 #if 0
     info_enable(INFO_nexus_stats, INFO_LEVEL_ALL);
     info_enable(INFO_nexus_init, INFO_LEVEL_ALL);
-
     info_enable(INFO_parsing_file, INFO_LEVEL_ALL);
 
     info_enable(INFO_parsing_create_note, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);

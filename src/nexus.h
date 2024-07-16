@@ -79,9 +79,9 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
 #define NEXUS_INSERT(nexus, root, ref, icon, cmd, title_note, description, ...)  do { \
         Node *temp, unused; \
         TRY(nexus_insert_node(&nexus->core, &temp, &STR_L(title_note), &STR_L(cmd), &STR_L(description)), ERR_NEXUS_INSERT_NODE); \
-        TRY(nexus_link(&nexus->core, &(root)->title, &temp->title, 0, 0), ERR_NEXUS_LINK); \
+        TRY(nexus_link(&nexus->core, &(root)->title, &temp->title, 0, (size_t *)SIZE_MAX), ERR_NEXUS_LINK); \
         Str tagstr = icon ? STR_L(icon) : STR(ICON_NONE); \
-        TRY(nexus_tag(&nexus->core, &temp->title, &tagstr, 0, 0), ERR_NEXUS_TAG); \
+        TRY(nexus_tag(&nexus->core, &temp->title, &tagstr, 0, (size_t *)SIZE_MAX), ERR_NEXUS_TAG); \
         NEXUS_LINKS_EV_STR(nexus, temp, __VA_ARGS__); \
         if(ref != 0) { \
             memcpy(ref != 0 ? ref : &unused, temp, sizeof(*temp)); \
@@ -107,7 +107,7 @@ ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged, size_t *c
             char *s = arr64789[i64789]; \
             if(!s) continue; \
             Node e64789 = {.title = STR_L(s)}; \
-            TRY(nexus_link(&nexus->core, &src->title, &e64789.title, 0, 0), ERR_NEXUS_LINK); \
+            TRY(nexus_link(&nexus->core, &src->title, &e64789.title, 0, (size_t *)SIZE_MAX), ERR_NEXUS_LINK); \
         } \
     } while(0)
 

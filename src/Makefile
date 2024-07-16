@@ -20,9 +20,9 @@ CC      := gcc
 CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   -Wno-unused-parameter \
 		   -DPROC_COUNT=$(shell nproc --all) \
-		   $(OPTIMIZE) $(JEMALLOC) \
-		   ##############\
 		   -rdynamic -Og -ggdb3 \
+		   ##############\
+		   $(OPTIMIZE) $(JEMALLOC) \
 		   -O2 -march=native -mtune=native -DNDEBUG \
 		   ${OPTIMIZE} \
 		   -O3 -march=native -DNDEBUG \
@@ -45,9 +45,9 @@ CFLAGS  := -Wall -Wextra -Wimplicit -Wfatal-errors -std=gnu99 \
 		   ###############
 LDFLAGS := \
 		   -lm \
-		   $(OPTIMIZE) $(JEMALLOC) \
-		   ##############\
 		   -rdynamic -ggdb3 \
+		   ##############\
+		   $(OPTIMIZE) $(JEMALLOC) \
 		   -fsanitize=address -rdynamic \
 		   ${OPTIMIZE} \
 		   -pg -rdynamic \
