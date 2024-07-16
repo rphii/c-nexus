@@ -29,6 +29,8 @@ VEC_INCLUDE(Vu64, vu64, uint64_t, BY_VAL);
 struct Node;
 VEC_INCLUDE(VNode, vnode, struct Node, BY_REF);
 VEC_INCLUDE(VrNode, vrnode, struct Node *, BY_VAL);
+
+void vrnode_sort_by_counts(VrNode *vec, size_t *count);
 void vrnode_sort(VrNode *vec);
 
 struct View;

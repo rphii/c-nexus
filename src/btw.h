@@ -118,6 +118,7 @@ typedef struct Btw {
         size_t success;
         size_t maxres;
         size_t links;
+        size_t notes;
     } stats;
 } Btw;
 

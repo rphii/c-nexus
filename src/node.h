@@ -51,6 +51,7 @@ typedef struct Node {
 
 void node_zero(Node *node);
 void node_free(Node *node);
+void node_clear(Node *node);
 
 int node_cmp(Node *a, Node *b);
 

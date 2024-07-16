@@ -25,8 +25,49 @@ VEC_IMPLEMENT(VrNode, vrnode, Node *, BY_VAL, 0);
 #define FAKE_TIME(x)    (x)
 #endif
 
+void vrnode_sort_by_counts(VrNode *vec, size_t *counts) {
+    ASSERT_ARG(vec);
+    ASSERT_ARG(counts);
+    size_t h, i, j, n = vrnode_length(vec);
+    Node *temp;
+    size_t temp_count = 0;
+    for (h = n; h /= 2;) {
+        for (i = h; i < n; i++) {
+            //t = a[i];
+            temp = vrnode_get_at(vec, i);
+            temp_count = counts[i];
+            //for (j = i; j >= h && t < a[j - h]; j -= h) {
+            for (j = i; j >= h && temp_count < counts[j-h]; j -= h) {
+                vrnode_set_at(vec, j, vrnode_get_at(vec, j-h));
+                counts[j] = counts[j-h];
+                //a[j] = a[j - h];
+            }
+            //a[j] = t;
+            vrnode_set_at(vec, j, temp);
+            counts[j] = temp_count;
+        }
+    }
+}
+
 void vrnode_sort(VrNode *vec)
 {
+#if 0
+    size_t h, i, j, n = vrnode_length(vec);
+    Node *temp;
+    for (h = n; h /= 2;) {
+        for (i = h; i < n; i++) {
+            //t = a[i];
+            temp = vrnode_get_at(vec, i);
+            //for (j = i; j >= h && t < a[j - h]; j -= h) {
+            for (j = i; j >= h && str_cmp(&temp->title, &vrnode_get_at(vec, j-h)->title) < 0; j -= h) {
+                vrnode_set_at(vec, j, vrnode_get_at(vec, j-h));
+                //a[j] = a[j - h];
+            }
+            //a[j] = t;
+            vrnode_set_at(vec, j, temp);
+        }
+    }
+#endif
     /* shell sort, https://rosettacode.org/wiki/Sorting_algorithms/Shell_sort#C */
 #if 0 // TODO !!!
     size_t h, i, j, n = vrnode_length(vec);

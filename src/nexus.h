@@ -79,9 +79,9 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
 #define NEXUS_INSERT(nexus, root, ref, icon, cmd, title_note, description, ...)  do { \
         Node *temp, unused; \
         TRY(nexus_insert_node(&nexus->core, &temp, &STR_L(title_note), &STR_L(cmd), &STR_L(description)), ERR_NEXUS_INSERT_NODE); \
-        TRY(nexus_link(&nexus->core, &(root)->title, &temp->title, 0), ERR_NEXUS_LINK); \
+        TRY(nexus_link(&nexus->core, &(root)->title, &temp->title, 0, 0), ERR_NEXUS_LINK); \
         Str tagstr = icon ? STR_L(icon) : STR(ICON_NONE); \
-        TRY(nexus_tag(&nexus->core, &temp->title, &tagstr, 0), ERR_NEXUS_TAG); \
+        TRY(nexus_tag(&nexus->core, &temp->title, &tagstr, 0, 0), ERR_NEXUS_TAG); \
         NEXUS_LINKS_EV_STR(nexus, temp, __VA_ARGS__); \
         if(ref != 0) { \
             memcpy(ref != 0 ? ref : &unused, temp, sizeof(*temp)); \
@@ -89,15 +89,17 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
     } while(0)
 
 #define ERR_NEXUS_LINK "failed linking nodes"
-#define ERR_nexus_link(nexus, src, dst, made_link) "failed linking nodes"
+#define ERR_nexus_link(nexus, src, dst, made_link, ...) "failed linking nodes"
 //ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst, size_t *linked);
 //ErrDecl nexus_link(Nexus *nexus, Str *src, Str *dest, size_t *linked);
-ErrDecl nexus_link(NexusCore *core, Str *src, Str *dest, size_t *linked);
+//ErrDecl nexus_link(NexusCore *core, Str *src, Str *dest, size_t *linked);
+ErrDecl nexus_link(NexusCore *core, Str *src, Str *dest, size_t *linked, size_t *count);
 
 #define ERR_NEXUS_TAG "failed tagging nodes"
-#define ERR_nexus_tag(nexus, src, dst, made_tag) "failed tagging nodes"
+#define ERR_nexus_tag(nexus, src, dst, made_tag, ...) "failed tagging nodes"
 //ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, size_t *tagged);
-ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged);
+//ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged);
+ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged, size_t *count);
 
 #define NEXUS_LINKS_EV_STR(nexus, src, ...)     do { \
         char *arr64789[] = {__VA_ARGS__}; \
@@ -105,7 +107,7 @@ ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged);
             char *s = arr64789[i64789]; \
             if(!s) continue; \
             Node e64789 = {.title = STR_L(s)}; \
-            TRY(nexus_link(&nexus->core, &src->title, &e64789.title, 0), ERR_NEXUS_LINK); \
+            TRY(nexus_link(&nexus->core, &src->title, &e64789.title, 0, 0), ERR_NEXUS_LINK); \
         } \
     } while(0)
 
@@ -137,7 +139,7 @@ ErrDecl nexus_build(Nexus *nexus, VsStr *files);
 ErrDecl nexus_build_physics(Nexus *nexus, Node *anchor);
 
 #define ERR_nexus_create_if_nonexist(nexus, title, ...) "failed creating node: '%.*s'", STR_F(title)
-ErrDecl nexus_create_if_nonexist(NexusCore *core, Str *title);
+ErrDecl nexus_create_if_nonexist(NexusCore *core, Str *title, size_t *count);
 
 #define ERR_nexus_add_text(nexus, title, ...) "failed adding text to node: '%.*s'", STR_F(title)
 ErrDecl nexus_add_text(NexusCore *core, Str *title, Str *text);

@@ -261,7 +261,7 @@ ErrDecl btw_parse_init(Btw *btw, BtwParse *parse) {/*{{{*/
     TRY(vsstr_push_back(&parse->notes, &btw->basename), ERR_VEC_PUSH_BACK);
     parse->basic.at_least_one_is_empty |= !(str_cmp(&btw->basename, &STR("")));
     if(!parse->basic.at_least_one_is_empty) {
-        TRYC(nexus_create_if_nonexist(&parse->core, &btw->basename)); // TODO:CONTINUE
+        TRYC(nexus_create_if_nonexist(&parse->core, &btw->basename, &btw->stats.notes)); // TODO:CONTINUE
     }
     TRY(tnode_init(&btw->parsed.nodes, 8), ERR_LUTD_INIT);
     parse->basic.snippet = btw->content;
@@ -444,26 +444,26 @@ ErrDecl btw_parse_format(BtwFormat *fmt, Str *str) { //{{{
     /* check which links I may have to do */
     Str splice = {0};
     Str link = {0};
-    printff("Checking tags...");
+    //printff("Checking tags...");
     size_t iT = SIZE_MAX;
     for(;;) {
         /* get splice */
         splice = str_splice(str, &splice, '[');
-        printff("splice <<%.*s>>", STR_F(&link));
+        //printff("splice <<%.*s>>", STR_F(&link));
         if(link.s) {
             bool tag = (iT <= link.first);
             size_t iE = str_ch_pair(&link, ']');
-            printff("found iE %zu / %zu", iE, str_length(&link));
+            //printff("found iE %zu / %zu", iE, str_length(&link));
             if(iE < str_length(&link)) {
                 Str link_to = STR_LL(str_iter_at(&link, 1), iE - 1);
                 str_trim(&link_to);
-                printff("TAG? %zu->%zu [%.*s] %s", iT, link.first, STR_F(&link_to), tag ? "true" : "false");
+                //printff("TAG? %zu->%zu [%.*s] %s", iT, link.first, STR_F(&link_to), tag ? "true" : "false");
                 if(tag) {
                     TRY(vsstr_push_back(&fmt->tags, &link_to), ERR_VEC_PUSH_BACK);
                 } else {
                     TRY(vsstr_push_back(&fmt->links, &link_to), ERR_VEC_PUSH_BACK);
                 }
-                printff("FMT-LINK %zu..%zu[%.*s]", link_to.first, link_to.last, STR_F(&link_to));
+                //printff("FMT-LINK %zu..%zu[%.*s]", link_to.first, link_to.last, STR_F(&link_to));
             }
         }
         /* check for any tags */
@@ -512,14 +512,14 @@ ErrDecl btw_parse_link_end(Btw *btw, BtwParse *parse) {/*{{{*/
         if(!parse->fmt_parsed.skip_link) {
             /* add */
             ////printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->basic.link));
-            TRYC(nexus_link(&parse->core, parent, &parse->link_scratch, 0));
+            TRYC(nexus_link(&parse->core, parent, &parse->link_scratch, 0, &btw->stats.notes));
         }
         //printff("add text.....");
         TRYC(nexus_add_text(&parse->core, parent, &parse->link_scratch));
     } else {
         /* add */
         ////printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->basic.link));
-        TRYC(nexus_link(&parse->core, parent, &parse->basic.link, 0));
+        TRYC(nexus_link(&parse->core, parent, &parse->basic.link, 0, &btw->stats.notes));
         //printff("add text.....");
         TRYC(nexus_add_text(&parse->core, parent, &parse->basic.link));
     }
@@ -555,20 +555,20 @@ ErrDecl btw_parse_note_begin(Btw *btw, BtwParse *parse) {/*{{{*/
                 for(size_t i = 0; i < vsstr_length(&parse->fmt_parsed.links); ++i) {
                     Str *link_to = vsstr_get_at(&parse->fmt_parsed.links, i);
                     ////printff("LINK [%.*s] .. [%.*s]", STR_F(link_to), STR_F(&title));
-                    TRYC(nexus_link(&parse->core, link_to, &title, 0));
+                    TRYC(nexus_link(&parse->core, link_to, &title, 0, &btw->stats.notes));
                 }
                 for(size_t i = 0; i < vsstr_length(&parse->fmt_parsed.tags); ++i) {
                     Str *link_to = vsstr_get_at(&parse->fmt_parsed.tags, i);
-                    TRYC(nexus_tag(&parse->core, &title, link_to, 0));
+                    TRYC(nexus_tag(&parse->core, &title, link_to, 0, &btw->stats.notes));
                     //TRYC(nexus_tag
                 }
                 vsstr_clear(&parse->fmt_parsed.tags);
             }
-            TRYC(nexus_create_if_nonexist(&parse->core, &title));
+            TRYC(nexus_create_if_nonexist(&parse->core, &title, &btw->stats.notes));
             if(vsstr_length(&parse->notes)) {
                 Str *parent = vsstr_get_back(&parse->notes);
                 //printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&title));
-                TRYC(nexus_link(&parse->core, parent, &title, 0));
+                TRYC(nexus_link(&parse->core, parent, &title, 0, &btw->stats.notes));
                 //nexus_link();
             }
         }

@@ -16,6 +16,15 @@ void node_zero(Node *node)
     memset(node, 0, sizeof(*node));
 }
 
+void node_clear(Node *node) {
+    ASSERT_ARG(node);
+    str_clear(&node->title);
+    str_clear(&node->desc);
+    str_clear(&node->cmd);
+    vrnode_clear(&node->outgoing);
+    vrnode_clear(&node->incoming);
+}
+
 void node_free(Node *node)
 {
     ASSERT_ARG(node);

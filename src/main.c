@@ -47,6 +47,7 @@ int main(int argc, const char **argv)
     Nexus nexus = {0};
 
     info_disable_all(INFO_LEVEL_ALL);
+#if 0
     info_enable(INFO_nexus_stats, INFO_LEVEL_ALL);
     info_enable(INFO_nexus_init, INFO_LEVEL_ALL);
 
@@ -57,7 +58,6 @@ int main(int argc, const char **argv)
 
     info_enable(INFO_parsing_found_format, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
     info_enable(INFO_parsing_found_link, INFO_LEVEL_TEXT | INFO_LEVEL_FILE_LINE);
-#if 0
 
 
 
@@ -81,7 +81,7 @@ int main(int argc, const char **argv)
     TRY(nexus_init(&nexus), ERR_NEXUS_INIT);
     info(INFO_nexus_init, "Successfully initialized");
     //goto clean;
-    getchar();
+    //getchar();
     screen_enter();
 
     while(!nexus.quit) {

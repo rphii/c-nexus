@@ -2,6 +2,10 @@
 #include "nexus.h"
 #include "vector.h"
 
+void view_clear(View *view) {
+    str_clear(&view->search);
+}
+
 void view_free(View *view)
 {
     str_free(&view->search);
@@ -36,9 +40,9 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             size_t sub_sel = view->sub_sel;
             size_t sub_max = vrnode_length(&findings->outgoing);
             if(sub_sel >= sub_max) sub_sel = sub_max ? sub_max - 1 : 0;
-            char *fmt = "Found " VIEW_FMT_SEARCH_INACTIVE " for : %.*s%s\n\n";
+            char *fmt = "Found " VIEW_FMT_SEARCH_INACTIVE " for : " VIEW_EDITING_SEARCH("%.*s") "%s\n\n";
             if(view->edit) {
-                fmt = "Found " VIEW_FMT_SEARCH_ACTIVE " for : %.*s%s\n\n";
+                fmt = "Found " VIEW_FMT_SEARCH_ACTIVE " for : " VIEW_EDITING_SEARCH("%.*s") "%s\n\n";
                 sub_sel = SIZE_MAX;
             }
             TRY(str_fmt(out, fmt, 4, vrnode_length(&findings->outgoing)+vrnode_length(&findings->incoming), STR_F(search), view->edit ? VIEW_EDITING_CURSOR : ""), ERR_STR_FMT);
@@ -62,9 +66,9 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             size_t sI = vrnode_length(&findings->incoming);
             size_t sub_max = sO+sI;
             if(sub_sel >= sub_max) sub_sel = sub_max ? sub_max - 1 : 0;
-            char *fmt = VIEW_FMT_SEARCH_INACTIVE " %.*s %.*s : %.*s%s\n\n";
+            char *fmt = VIEW_FMT_SEARCH_INACTIVE " %.*s %.*s : " VIEW_EDITING_SEARCH("%.*s") "%s\n\n";
             if(view->edit) {
-                fmt = VIEW_FMT_SEARCH_ACTIVE " %.*s %.*s : %.*s%s\n\n";
+                fmt = VIEW_FMT_SEARCH_ACTIVE " %.*s %.*s : " VIEW_EDITING_SEARCH("%.*s") "%s\n\n";
                 sub_sel = SIZE_MAX;
             }
             //TRYC(icons_fmt, &iconstr, &view->search_on->icons);
