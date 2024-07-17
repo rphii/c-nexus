@@ -58,6 +58,7 @@ typedef struct Nexus {
 ErrDecl nexus_init(Nexus *nexus);
 
 #define ERR_NEXUS_ARG "failed applying arguments"
+#define ERR_nexus_arg(...) "failed applying arguments"
 ErrDecl nexus_arg(Nexus *nexus, Arg *arg);
 
 void nexus_free(Nexus *nexus);

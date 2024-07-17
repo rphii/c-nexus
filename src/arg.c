@@ -44,8 +44,8 @@ static const char *static_desc[] = {
 static const Specify static_specify[ARG__COUNT] = {
     [ARG_ENTRY] = SPECIFY(SPECIFY_STRING),
     [ARG_VIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_OPTION_NORMAL, SPECIFY_OPTION_SEARCH_ALL, SPECIFY_OPTION_SEARCH_SUB, SPECIFY_OPTION_ICON),
-    [ARG_SHOW_DESCRIPTION] = SPECIFY(SPECIFY_OPTION, SPECIFY_OPTION_YES, SPECIFY_OPTION_TRUE, SPECIFY_OPTION_NO, SPECIFY_OPTION_FALSE),
-    [ARG_SHOW_PREVIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_OPTION_NO, SPECIFY_OPTION_FALSE, SPECIFY_OPTION_YES, SPECIFY_OPTION_TRUE),
+    [ARG_SHOW_DESCRIPTION] = SPECIFY(SPECIFY_OPTION, SPECIFY_OPTION_YES, SPECIFY_OPTION_Y, SPECIFY_OPTION_TRUE, SPECIFY_OPTION_NO, SPECIFY_OPTION_N, SPECIFY_OPTION_FALSE),
+    [ARG_SHOW_PREVIEW] = SPECIFY(SPECIFY_OPTION, SPECIFY_OPTION_NO, SPECIFY_OPTION_N, SPECIFY_OPTION_FALSE, SPECIFY_OPTION_YES, SPECIFY_OPTION_Y, SPECIFY_OPTION_TRUE),
     [ARG_MAX_LIST] = SPECIFY(SPECIFY_NUMBER),
     [ARG_EXTENSIONS] = SPECIFY(SPECIFY_LIST, SPECIFY_EXTENSION),
     [ARG_MAX_FILE_SIZE] = SPECIFY(SPECIFY_NUMBER, SPECIFY_MAX_FILE_SIZE),
@@ -156,11 +156,11 @@ ErrDeclStatic arg_static_execute(Arg *arg, ArgList id, Str *argY)
             //}
         } break;
         case ARG_MAX_LIST: {
-            to_verify = &arg->max_list;
-            //if(!arg->max_list) {
-            //    printf("%*s" F("%s", BOLD) "=NUMBER cannot be 0\n", arg->tabs.tiny, "", static_arg[id][1]);
-            //    arg->exit_early = true;
-            //}
+            //to_verify = &arg->max_list;
+            if(!arg->max_list) {
+                printf("%*s" F("%s", BOLD) "=NUMBER cannot be 0\n", arg->tabs.tiny, "", static_arg[id][1]);
+                arg->exit_early = true;
+            }
         } break;
         case ARG_MAX_FILE_SIZE: {
             //to_verify = &arg->max_file_size;
@@ -549,7 +549,7 @@ error: ERR_CLEAN;
 void arg_free(Arg *arg)
 {
     str_free(&arg->unknown);
-    str_free(&arg->extensions);
+    //str_free(&arg->extensions);
     str_free(&arg->entry);
     //str_free(&arg->file);
     //str_free(&arg->file);

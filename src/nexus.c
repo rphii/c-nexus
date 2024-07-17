@@ -256,27 +256,25 @@ error:
 
 void nexus_clear(Nexus *nexus) { //{{{
     ASSERT_ARG(nexus);
-    tnode_clear(&nexus->core.nodes);
+    tnode_free(&nexus->core.nodes); // TODO: eliminate memory bugs so I can clear instead of free this
     vview_clear(&nexus->views);
     node_clear(&nexus->findings);
-    node_clear(&nexus->tags);
     view_clear(&nexus->view);
+    str_clear(&nexus->config.entry);
+    str_clear(&nexus->config.extensions);
+    str_clear(&nexus->tags.title);
 } //}}}
 
 void nexus_free(Nexus *nexus) //{{{
 {
     ASSERT(nexus, ERR_NULL_ARG);
     tnode_free(&nexus->core.nodes);
-    //trnode_free(&nexus->icons);
-    //tnodeicon_free(&nexus->nodesicon);
     vview_free(&nexus->views);
     node_free(&nexus->findings);
-    str_free(&nexus->tags.title);
-    //node_free(&nexus->tags);
     view_free(&nexus->view);
-    //node_free(&nexus->nodeicon);
     str_free(&nexus->config.entry);
     str_free(&nexus->config.extensions);
+    str_free(&nexus->tags.title);
 } //}}}
 
 /* rebuild yourself {{{ */
@@ -521,9 +519,9 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
     ASSERT(nexus, ERR_NULL_ARG);
     int err = 0;
     View *view = &nexus->view;
+    Str reenter = {0};
     bool disable_default = false;
     ASSERT(view, "view is 0!\n");
-    Str reenter = {0};
     switch(view->id) {
         case VIEW_NORMAL: {
         } break;
@@ -563,9 +561,10 @@ int nexus_userinput(Nexus *nexus, int key) /*{{{*/
             case 'r': {
                 TRYC(str_copy(&reenter, &nexus->view.current->title));
                 nexus_clear(nexus);
-                nexus->config.entry = reenter;
-                str_zero(&reenter);
+                TRYC(nexus_arg(nexus, nexus->args));
+                TRYC(str_copy(&nexus->config.entry, &reenter));
                 TRYC(nexus_init(nexus));
+                node_set_sub(view->current, &view->sub_sel, view->sub_sel);
             } break;
                       /* TODO : jump to random note! */
             default: break;
@@ -1143,6 +1142,9 @@ int nexus_change_view(Nexus *nexus, View *view, ViewList id) /*{{{*/
 {
     ASSERT(nexus, ERR_NULL_ARG);
     ASSERT(view, ERR_NULL_ARG);
+    if(view->sub_sel >= vrnode_length(&view->current->outgoing) + vrnode_length(&view->current->incoming)) {
+        return 0;
+    }
     if(nexus->views.cap > nexus->views.last) {
         view_free(&nexus->views.items[nexus->views.last]);
     }
