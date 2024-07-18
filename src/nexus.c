@@ -310,7 +310,7 @@ void nexus_free(Nexus *nexus) //{{{
     view_free(&nexus->view);
     str_free(&nexus->config.entry);
     str_free(&nexus->config.extensions);
-    str_free(&nexus->tags.title);
+    //str_free(&nexus->tags.title);
 } //}}}
 
 /* rebuild yourself {{{ */
