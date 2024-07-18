@@ -70,7 +70,7 @@ Node *node_get_sub_sel(Node *node, size_t sub_sel)
     if(sub_sel < sO) {
         return vrnode_get_at(&node->outgoing, sub_sel);
     } else if(sub_sel < sO+sI) {
-        return vrnode_get_at(&node->incoming, sub_sel);
+        return vrnode_get_at(&node->incoming, sub_sel-sO);
     } else {
         //ABORT("index (%zu) out of range (%zu+%zu)", sub_sel, sO, sI);
     }
@@ -270,6 +270,24 @@ int node_follow(Node **node, size_t *sub_sel)
     return 0;
 error:
     return -1;
+}
+
+size_t node_get_sub_by_title(Node *node, Str *title) {
+    ASSERT_ARG(node);
+    ASSERT_ARG(title);
+    size_t sO = vrnode_length(&node->outgoing);
+    size_t sI = vrnode_length(&node->incoming);
+    for(size_t i = 0; i < sO; ++i) {
+        Node *node_cmp = vrnode_get_at(&node->outgoing, i);
+        //printff("cmp %zu [%.*s] <-> [%.*s]", i, STR_F(title), STR_F(&node_cmp->title));
+        if(!str_cmp(title, &node_cmp->title)) return i;
+    }
+    for(size_t i = 0; i < sI; ++i) {
+        Node *node_cmp = vrnode_get_at(&node->incoming, i);
+        //printff("cmp %zu [%.*s] <-> [%.*s]", i+sO, STR_F(title), STR_F(&node_cmp->title));
+        if(!str_cmp(title, &node_cmp->title)) return sO+i;
+    }
+    return SIZE_MAX;
 }
 
 void node_set_sub(Node *node, size_t *sub_sel, size_t to_set)

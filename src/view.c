@@ -31,9 +31,11 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             Node *findings = &nexus->findings;
             if(!nexus->findings_updated) {
                 TRY(nexus_search(nexus, 0, search, findings), ERR_NEXUS_SEARCH);
+                vrnode_sort_func(nexus->config.sort_by)(&findings->outgoing);
+                vrnode_sort_func(nexus->config.sort_by)(&findings->incoming);
                 /* on THIS line I suggest sorting stuff! */
-                vrnode_sort(&findings->outgoing);
-                vrnode_sort(&findings->incoming);
+                //vrnode_sort(&findings->outgoing);
+                //vrnode_sort(&findings->incoming);
                 nexus->findings_updated = true;
             }
             /* check that sub selection is in bounds */
@@ -56,8 +58,8 @@ int view_fmt(Nexus *nexus, Str *out, View *view)
             if(!nexus->findings_updated) {
                 TRY(nexus_search(nexus, view->search_on, search, findings), ERR_NEXUS_SEARCH);
                 /* on THIS line I suggest sorting stuff! */
-                vrnode_sort(&findings->outgoing);
-                vrnode_sort(&findings->incoming);
+                vrnode_sort_func(nexus->config.sort_by)(&findings->outgoing);
+                vrnode_sort_func(nexus->config.sort_by)(&findings->incoming);
                 nexus->findings_updated = true;
             }
             /* check that sub selection is in bounds */

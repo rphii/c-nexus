@@ -30,8 +30,11 @@ struct Node;
 VEC_INCLUDE(VNode, vnode, struct Node, BY_REF);
 VEC_INCLUDE(VrNode, vrnode, struct Node *, BY_VAL);
 
-void vrnode_sort_by_counts(VrNode *vec, size_t *count);
-void vrnode_sort(VrNode *vec);
+//enum NodeSortList;
+typedef void (*VrNodeSortFunc)(VrNode *vec);
+VrNodeSortFunc vrnode_sort_func(int id);
+void vrnode_sort_by_index(VrNode *vec);
+void vrnode_sort_by_title(VrNode *vec);
 
 struct View;
 VEC_INCLUDE(VView, vview, struct View, BY_VAL);

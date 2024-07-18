@@ -18,6 +18,13 @@ typedef enum {
     NODE_TYPE_ICON,
 } NodeType;
 
+typedef enum NodeSortList {
+    NODE_SORT_BY_INDEX,
+    NODE_SORT_BY_TITLE,
+    /* values above */
+    NODE_SORT__COUNT
+} NodeSortList;
+
 typedef struct Node {
     //Icon icon;
     //VIcon icons;
@@ -25,11 +32,10 @@ typedef struct Node {
     Str desc;
     Str cmd;
     // TODO: add/create a new/better link type! those that have a reference to the text in the desc, if pesent! adjust view accordingly
-    VrStr textlinks;
+    //VrStr textlinks;
     VrNode outgoing;
     VrNode incoming;
-    //VrNode tags;
-    NodeList id;
+    size_t index;
     // TODO it's stupid to have VrNode tags.. and also an additional TrNode icons in nexus.h ... -> add a type, saying wheter tag, etc, whatever!
     NodeType type;
 } Node;
@@ -77,6 +83,7 @@ Node *node_get_sub_sel(Node *node, size_t sub_sel);
 #define ERR_node_fmt(out, node, show_desc, select, padl, padr, active) "failed formatting '%.*s'", STR_F(&node->title)
 ErrDecl node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl, int padr, bool active);
 
+size_t node_get_sub_by_title(Node *node, Str *title);
 void node_set_sub(Node *node, size_t *sub_sel, size_t to_set);
 
 void node_mv_vertical(Node *node, int count);

@@ -512,14 +512,14 @@ ErrDecl btw_parse_link_end(Btw *btw, BtwParse *parse) {/*{{{*/
         if(!parse->fmt_parsed.skip_link) {
             /* add */
             ////printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->basic.link));
-            TRYC(nexus_link(&parse->core, parent, &parse->link_scratch, 0, &btw->stats.notes));
+            TRYC(nexus_link(&parse->core, parent, &parse->link_scratch, 0));
         }
         //printff("add text.....");
         TRYC(nexus_add_text(&parse->core, parent, &parse->link_scratch));
     } else {
         /* add */
         ////printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&parse->basic.link));
-        TRYC(nexus_link(&parse->core, parent, &parse->basic.link, 0, &btw->stats.notes));
+        TRYC(nexus_link(&parse->core, parent, &parse->basic.link, 0));
         //printff("add text.....");
         TRYC(nexus_add_text(&parse->core, parent, &parse->basic.link));
     }
@@ -555,20 +555,21 @@ ErrDecl btw_parse_note_begin(Btw *btw, BtwParse *parse) {/*{{{*/
                 for(size_t i = 0; i < vsstr_length(&parse->fmt_parsed.links); ++i) {
                     Str *link_to = vsstr_get_at(&parse->fmt_parsed.links, i);
                     ////printff("LINK [%.*s] .. [%.*s]", STR_F(link_to), STR_F(&title));
-                    TRYC(nexus_link(&parse->core, link_to, &title, 0, &btw->stats.notes));
+                    TRYC(nexus_link(&parse->core, link_to, &title, 0));
                 }
                 for(size_t i = 0; i < vsstr_length(&parse->fmt_parsed.tags); ++i) {
                     Str *link_to = vsstr_get_at(&parse->fmt_parsed.tags, i);
-                    TRYC(nexus_tag(&parse->core, &title, link_to, 0, &btw->stats.notes));
+                    TRYC(nexus_tag(&parse->core, &title, link_to, 0));
                     //TRYC(nexus_tag
                 }
                 vsstr_clear(&parse->fmt_parsed.tags);
             }
+            //printff("CREATE [%.*s] %zu", STR_F(&title), btw->stats.notes);
             TRYC(nexus_create_if_nonexist(&parse->core, &title, &btw->stats.notes));
             if(vsstr_length(&parse->notes)) {
                 Str *parent = vsstr_get_back(&parse->notes);
                 //printff("LINK [%.*s] .. [%.*s]", STR_F(parent), STR_F(&title));
-                TRYC(nexus_link(&parse->core, parent, &title, 0, &btw->stats.notes));
+                TRYC(nexus_link(&parse->core, parent, &title, 0));
                 //nexus_link();
             }
         }

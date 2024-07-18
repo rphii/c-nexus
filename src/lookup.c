@@ -51,14 +51,14 @@ LUTD_IMPLEMENT(TNode, tnode, Node, BY_REF, tnode_hash, tnode_cmp, node_free);
 LUTD_IMPLEMENT(TrNode, trnode, Node, BY_REF, tnode_hash, tnode_cmp, 0);
 LUTD_IMPLEMENT(TNodeIcon, tnodeicon, Node, BY_REF, tnodeicon_hash, tnodeicon_cmp, node_free);
 
-void tnode_sort_sub(TNode *tnode)
+void tnode_sort_sub(TNode *tnode, VrNodeSortFunc sort)
 {
     ASSERT(tnode, ERR_NULL_ARG);
     for(size_t i = 0; i < 1ULL << (tnode->width - 1); ++i) {
         for(size_t j = 0; j < tnode->buckets[i].cap; j++) { \
             Node *node = tnode->buckets[i].items[j];
-            vrnode_sort(&node->incoming);
-            vrnode_sort(&node->outgoing);
+            sort(&node->incoming);
+            sort(&node->outgoing);
         }
     }
 }

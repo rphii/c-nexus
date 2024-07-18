@@ -36,12 +36,14 @@ typedef struct Nexus {
     //Node nodeicon;
     VView views;
     View view;
+    size_t count; // TODO: intention is to use this for the sorting by time of creation (see TODO @ nexus_insert_node)
     bool quit;
     struct {
         VsStr *files;
         Str entry;
         Str extensions;
         ViewList view;
+        NodeSortList sort_by;
         bool show_desc;
         bool show_preview;
         size_t max_preview;
@@ -80,9 +82,9 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
 #define NEXUS_INSERT(nexus, root, ref, icon, cmd, title_note, description, ...)  do { \
         Node *temp, unused; \
         TRY(nexus_insert_node(&nexus->core, &temp, &STR_L(title_note), &STR_L(cmd), &STR_L(description)), ERR_NEXUS_INSERT_NODE); \
-        TRY(nexus_link(&nexus->core, &(root)->title, &temp->title, 0, (size_t *)SIZE_MAX), ERR_NEXUS_LINK); \
+        TRY(nexus_link(&nexus->core, &(root)->title, &temp->title, 0), ERR_NEXUS_LINK); \
         Str tagstr = icon ? STR_L(icon) : STR(ICON_NONE); \
-        TRY(nexus_tag(&nexus->core, &temp->title, &tagstr, 0, (size_t *)SIZE_MAX), ERR_NEXUS_TAG); \
+        TRY(nexus_tag(&nexus->core, &temp->title, &tagstr, 0), ERR_NEXUS_TAG); \
         NEXUS_LINKS_EV_STR(nexus, temp, __VA_ARGS__); \
         if(ref != 0) { \
             memcpy(ref != 0 ? ref : &unused, temp, sizeof(*temp)); \
@@ -94,13 +96,13 @@ ErrDecl nexus_tag_node(Nexus *nexus, Node *node, Node *temp, IconBundle icon);
 //ErrDecl nexus_link(Nexus *nexus, Node *src, Node *dst, size_t *linked);
 //ErrDecl nexus_link(Nexus *nexus, Str *src, Str *dest, size_t *linked);
 //ErrDecl nexus_link(NexusCore *core, Str *src, Str *dest, size_t *linked);
-ErrDecl nexus_link(NexusCore *core, Str *src, Str *dest, size_t *linked, size_t *count);
+ErrDecl nexus_link(NexusCore *core, Str *src, Str *dest, size_t *linked);
 
 #define ERR_NEXUS_TAG "failed tagging nodes"
 #define ERR_nexus_tag(nexus, src, dst, made_tag, ...) "failed tagging nodes"
 //ErrDecl nexus_tag(Nexus *nexus, Node *src, Node *tag, size_t *tagged);
 //ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged);
-ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged, size_t *count);
+ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged);
 
 #define NEXUS_LINKS_EV_STR(nexus, src, ...)     do { \
         char *arr64789[] = {__VA_ARGS__}; \
@@ -108,7 +110,7 @@ ErrDecl nexus_tag(NexusCore *core, Str *src, Str *tag, size_t *tagged, size_t *c
             char *s = arr64789[i64789]; \
             if(!s) continue; \
             Node e64789 = {.title = STR_L(s)}; \
-            TRY(nexus_link(&nexus->core, &src->title, &e64789.title, 0, (size_t *)SIZE_MAX), ERR_NEXUS_LINK); \
+            TRY(nexus_link(&nexus->core, &src->title, &e64789.title, 0), ERR_NEXUS_LINK); \
         } \
     } while(0)
 
