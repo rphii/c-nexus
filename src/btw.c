@@ -642,7 +642,6 @@ error:
     return -1;
 }/*}}}*/
 
-
 ErrDecl btw_parse_add(Nexus *nexus, Btw *btw, BtwParse *parse, BtwParseList id) {/*{{{*/
     ASSERT_ARG(nexus);
     ASSERT_ARG(btw);

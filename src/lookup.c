@@ -57,6 +57,7 @@ void tnode_sort_sub(TNode *tnode, VrNodeSortFunc sort)
     for(size_t i = 0; i < 1ULL << (tnode->width - 1); ++i) {
         for(size_t j = 0; j < tnode->buckets[i].cap; j++) { \
             Node *node = tnode->buckets[i].items[j];
+            //printf("SORTING [%.*s]\n", STR_F(&node->title));
             sort(&node->incoming);
             sort(&node->outgoing);
         }

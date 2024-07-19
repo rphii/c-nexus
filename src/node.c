@@ -1,6 +1,7 @@
 #include "err.h"
 #include "node.h"
 #include "cmd.h"
+#include "nexus.h"
 #include "str.h"
 #include "vector.h"
 
@@ -100,17 +101,23 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
 #endif
     /* icons */
     bool tagged = false;
-    for(size_t i = 0; i < vrnode_length(&node->outgoing); ++i) {
-        Node *tag = vrnode_get_at(&node->outgoing, i);
-        if(tag->type != NODE_TYPE_ICON) continue;
-        TRYC(str_fmt(out, "%s%.*s", tagged ? " " : "", STR_F(&tag->title)));
-        tagged = true;
-    }
-    for(size_t i = 0; i < vrnode_length(&node->incoming); ++i) {
-        Node *tag = vrnode_get_at(&node->incoming, i);
-        if(tag->type != NODE_TYPE_ICON) continue;
-        TRYC(str_fmt(out, "%s%.*s", tagged ? " " : "", STR_F(&tag->title)));
-        tagged = true;
+    if(str_cmp(&node->title, &STR(NEXUS_TAG_IDENTIFIER))) {
+        //vrnode_sort_by_title(&node->outgoing);
+        //vrnode_sort_by_title(&node->incoming);
+        for(size_t i = 0; i < vrnode_length(&node->outgoing); ++i) {
+            Node *tag = vrnode_get_at(&node->outgoing, i);
+            if(tag->type != NODE_TYPE_ICON) continue;
+            TRYC(str_fmt(out, "%s%.*s", tagged ? " " : "", STR_F(&tag->title)));
+            tagged = true;
+        }
+        for(size_t i = 0; i < vrnode_length(&node->incoming); ++i) {
+            Node *tag = vrnode_get_at(&node->incoming, i);
+            if(tag->type != NODE_TYPE_ICON) continue;
+            TRYC(str_fmt(out, "%s%.*s", tagged ? " " : "", STR_F(&tag->title)));
+            tagged = true;
+        }
+        //vrnode_sort_by_index(&node->outgoing);
+        //vrnode_sort_by_index(&node->incoming);
     }
     if(!tagged) {
         TRYC(str_fmt(out, "-"));
@@ -125,11 +132,11 @@ int node_fmt(Str *out, Node *node, bool show_desc, const char *select, int padl,
     }
 #endif
     //for(size_t i = 0; i < vicon_length(&node->icons); ++i) {
-        //IconBundle *icon = vicon_get_at(&node->icons, i);
-        //IconStr iconstr = {0};
-        //icon_fmt(iconstr, icon->time);
-        //TRYC(icons_fmt, out, &node->icons);
-        TRYC(str_fmt(out, " : %.*s\n", STR_F(&node->title)));
+    //IconBundle *icon = vicon_get_at(&node->icons, i);
+    //IconStr iconstr = {0};
+    //icon_fmt(iconstr, icon->time);
+    //TRYC(icons_fmt, out, &node->icons);
+    TRYC(str_fmt(out, " : %.*s\n", STR_F(&node->title)));
     //}
     if(show_desc) {
         TRY(node_fmt_desc(out, node), ERR_NODE_FMT_DESC);
