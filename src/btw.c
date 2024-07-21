@@ -226,7 +226,6 @@ void btw_format_clear(BtwFormat *fmt) { //{{{
     vsstr_clear(&fmt->tags);
 } //}}}
 
-
 void btw_parse_clear(BtwParse *parse) { //{{{
     ASSERT_ARG(parse);
     tnode_clear(&parse->core.nodes); // TODO maybe make a new functions ??
@@ -708,6 +707,7 @@ ErrDecl btw_parse(Nexus *nexus, Btw *btw, BtwParse *parse) { //{{{
         /* prepare for next parse->basic.item */
         parse->basic.snippet.first = parse->basic.item->iE;
     } //printf("\n");
+    TRYC(btw_parse_text(btw, parse, &parse->basic.snippet, 0));
     TRYC(nexus_merge(&nexus->core, &parse->core, &btw->stats.links));
 clean:
     //btw_parse_free(&parse);
